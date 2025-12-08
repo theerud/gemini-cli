@@ -176,13 +176,10 @@ describe('Core System Prompt (prompts.ts)', () => {
         getModel: vi.fn().mockReturnValue('auto'),
         getPreviewFeatures: vi.fn().mockReturnValue(false),
         isInFallbackMode: vi.fn().mockReturnValue(false),
-<<<<<<< HEAD
         getAgentRegistry: vi.fn().mockReturnValue({
           getDirectoryContext: vi.fn().mockReturnValue('Mock Agent Directory'),
         }),
-=======
         getApprovalMode: vi.fn().mockReturnValue(ApprovalMode.DEFAULT),
->>>>>>> a0066f9be (feat: add plan mode prompt)
       } as unknown as Config;
 
       const prompt = getCoreSystemPrompt(testConfig);
