@@ -113,7 +113,7 @@ available combinations.
 ## Additional context-specific shortcuts
 
 - `Ctrl+Y`: Toggle YOLO (auto-approval) mode for tool calls.
-- `Shift+Tab`: Toggle Auto Edit (auto-accept edits) mode.
+- `Shift+Tab`: Cycle through approval modes (Default -> Auto-Edit -> Plan Mode).
 - `Option+M` (macOS): Entering `µ` with Option+M also toggles Markdown
   rendering, matching `Cmd+M`.
 - `!` on an empty prompt: Enter or exit shell mode.

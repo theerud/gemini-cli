@@ -26,6 +26,11 @@ export const AutoAcceptIndicator: React.FC<AutoAcceptIndicatorProps> = ({
       textContent = 'accepting edits';
       subText = ' (shift + tab to toggle)';
       break;
+    case ApprovalMode.PLAN_MODE:
+      textColor = theme.text.accent;
+      textContent = 'Plan Mode';
+      subText = ' (shift + tab to toggle)';
+      break;
     case ApprovalMode.YOLO:
       textColor = theme.status.error;
       textContent = 'YOLO mode';

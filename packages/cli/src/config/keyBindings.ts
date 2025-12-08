@@ -62,6 +62,7 @@ export enum Command {
   TOGGLE_IDE_CONTEXT_DETAIL = 'toggleIDEContextDetail',
   TOGGLE_MARKDOWN = 'toggleMarkdown',
   TOGGLE_COPY_MODE = 'toggleCopyMode',
+  TOGGLE_PLAN_MODE = 'togglePlanMode',
   QUIT = 'quit',
   EXIT = 'exit',
   SHOW_MORE_LINES = 'showMoreLines',
@@ -200,6 +201,7 @@ export const defaultKeyBindings: KeyBindingConfig = {
   [Command.TOGGLE_IDE_CONTEXT_DETAIL]: [{ key: 'g', ctrl: true }],
   [Command.TOGGLE_MARKDOWN]: [{ key: 'm', command: true }],
   [Command.TOGGLE_COPY_MODE]: [{ key: 's', ctrl: true }],
+  [Command.TOGGLE_PLAN_MODE]: [{ key: 'tab', shift: true }],
   [Command.QUIT]: [{ key: 'c', ctrl: true }],
   [Command.EXIT]: [{ key: 'd', ctrl: true }],
   [Command.SHOW_MORE_LINES]: [{ key: 's', ctrl: true }],
@@ -302,6 +304,7 @@ export const commandCategories: readonly CommandCategory[] = [
       Command.TOGGLE_IDE_CONTEXT_DETAIL,
       Command.TOGGLE_MARKDOWN,
       Command.TOGGLE_COPY_MODE,
+      Command.TOGGLE_PLAN_MODE,
       Command.SHOW_MORE_LINES,
       Command.TOGGLE_SHELL_INPUT_FOCUS,
     ],
@@ -351,6 +354,7 @@ export const commandDescriptions: Readonly<Record<Command, string>> = {
   [Command.TOGGLE_MARKDOWN]: 'Toggle Markdown rendering.',
   [Command.TOGGLE_COPY_MODE]:
     'Toggle copy mode when the terminal is using the alternate buffer.',
+  [Command.TOGGLE_PLAN_MODE]: 'Cycle between approval modes (Default -> Auto-Edit -> Plan Mode).',
   [Command.QUIT]: 'Cancel the current request or quit the CLI.',
   [Command.EXIT]: 'Exit the CLI when the input buffer is empty.',
   [Command.SHOW_MORE_LINES]:

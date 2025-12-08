@@ -21,5 +21,6 @@ export const READ_FILE_TOOL_NAME = 'read_file';
 export const LS_TOOL_NAME = 'list_directory';
 export const MEMORY_TOOL_NAME = 'save_memory';
 export const ASK_USER_QUESTION_TOOL_NAME = 'ask_user_question';
+export const EXIT_PLAN_MODE_TOOL_NAME = 'exit_plan_mode';
 export const EDIT_TOOL_NAMES = new Set([EDIT_TOOL_NAME, WRITE_FILE_TOOL_NAME]);
 export const DELEGATE_TO_AGENT_TOOL_NAME = 'delegate_to_agent';

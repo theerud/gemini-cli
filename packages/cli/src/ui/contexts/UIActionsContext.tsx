@@ -8,7 +8,11 @@ import { createContext, useContext } from 'react';
 import { type Key } from '../hooks/useKeypress.js';
 import { type IdeIntegrationNudgeResult } from '../IdeIntegrationNudge.js';
 import { type FolderTrustChoice } from '../components/FolderTrustDialog.js';
-import { type AuthType, type EditorType } from '@google/gemini-cli-core';
+import {
+  type AuthType,
+  type EditorType,
+  type ApprovalMode,
+} from '@google/gemini-cli-core';
 import { type LoadableSettingScope } from '../../config/settings.js';
 import type { AuthState } from '../types.js';
 import { type PermissionsDialogProps } from '../components/PermissionsModifyTrustDialog.js';
@@ -56,6 +60,7 @@ export interface UIActions {
   handleApiKeyCancel: () => void;
   setBannerVisible: (visible: boolean) => void;
   setEmbeddedShellFocused: (value: boolean) => void;
+  setApprovalMode: (mode: ApprovalMode) => Promise<void>;
 }
 
 export const UIActionsContext = createContext<UIActions | null>(null);

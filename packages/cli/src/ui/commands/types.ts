@@ -15,6 +15,7 @@ import type {
   GitService,
   Logger,
   CommandActionReturn,
+  ApprovalMode,
 } from '@google/gemini-cli-core';
 import type { LoadedSettings } from '../../config/settings.js';
 import type { UseHistoryManagerReturn } from '../hooks/useHistoryManager.js';
@@ -77,6 +78,7 @@ export interface CommandContext {
     dispatchExtensionStateUpdate: (action: ExtensionUpdateAction) => void;
     addConfirmUpdateExtensionRequest: (value: ConfirmationRequest) => void;
     removeComponent: () => void;
+    setApprovalMode: (mode: ApprovalMode) => Promise<void>;
   };
   // Session-specific data
   session: {

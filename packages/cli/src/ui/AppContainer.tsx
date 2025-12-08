@@ -763,7 +763,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
     pendingHistoryItems: pendingGeminiHistoryItems,
     thought,
     cancelOngoingRequest,
-    handleApprovalModeChange,
+    handleApprovalModeChange: originalHandleApprovalModeChange,
     activePtyId,
     loopDetectionConfirmationRequest,
     lastOutputTime,
@@ -786,6 +786,15 @@ Logging in with Google... Restarting Gemini CLI to continue.
     terminalWidth,
     terminalHeight,
     embeddedShellFocused,
+  );
+
+  const [approvalModeTick, setApprovalModeTick] = useState(0);
+  const handleApprovalModeChange = useCallback(
+    async (mode: ApprovalMode) => {
+      await originalHandleApprovalModeChange(mode);
+      setApprovalModeTick((prev) => prev + 1);
+    },
+    [originalHandleApprovalModeChange],
   );
 
   // Auto-accept indicator
@@ -1536,6 +1545,8 @@ Logging in with Google... Restarting Gemini CLI to continue.
       warningMessage,
       bannerData,
       bannerVisible,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      _approvalModeTick: approvalModeTick,
     }),
     [
       isThemeDialogOpen,
@@ -1627,6 +1638,8 @@ Logging in with Google... Restarting Gemini CLI to continue.
       warningMessage,
       bannerData,
       bannerVisible,
+      approvalModeTick,
+      handleApprovalModeChange,
     ],
   );
 
@@ -1670,6 +1683,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       handleApiKeyCancel,
       setBannerVisible,
       setEmbeddedShellFocused,
+      setApprovalMode: handleApprovalModeChange,
     }),
     [
       handleThemeSelect,
@@ -1705,6 +1719,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       handleApiKeyCancel,
       setBannerVisible,
       setEmbeddedShellFocused,
+      handleApprovalModeChange,
     ],
   );
 

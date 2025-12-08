@@ -1,0 +1,39 @@
+# Rules for Plan Mode
+
+[[rule]]
+toolName = "exit_plan_mode"
+decision = "allow"
+priority = 50
+modes = ["planMode"]
+
+# Explicitly deny write tools in plan mode, overriding auto-edit or default ask_user
+[[rule]]
+toolName = "replace"
+decision = "deny"
+priority = 20
+modes = ["planMode"]
+
+[[rule]]
+toolName = "save_memory"
+decision = "deny"
+priority = 20
+modes = ["planMode"]
+
+[[rule]]
+toolName = "run_shell_command"
+decision = "deny"
+priority = 20
+modes = ["planMode"]
+
+[[rule]]
+toolName = "write_file"
+decision = "deny"
+priority = 20
+modes = ["planMode"]
+
+# Allow web_fetch for research/docs
+[[rule]]
+toolName = "web_fetch"
+decision = "allow"
+priority = 20
+modes = ["planMode"]

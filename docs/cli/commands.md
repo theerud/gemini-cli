@@ -154,7 +154,30 @@ Slash commands provide meta-level control over the CLI itself.
     - **Note:** For more details on how `GEMINI.md` files contribute to
       hierarchical memory, see the
       [CLI Configuration documentation](../get-started/configuration.md).
+- **`/permissions`**
+  - **Description:** Manage folder permissions and trust settings. (This command
+    is only available if folder trust is enabled).
+  - **Sub-commands:**
+    - **`verify`**:
+      - **Description:** Verify the current folder's trust status and
+        permissions.
+    - **`change`**:
+      - **Description:** Change the trust status of the current folder. This
+        will open an interactive dialog.
 
+- **`/plan-mode`**
+  - **Description:** Enter Plan Mode. In this mode, the agent is restricted to
+    read-only operations and cannot modify files or execute shell commands. This
+    is useful for planning complex tasks without risk of accidental changes.
+  - **Behavior:**
+    - Disables all write tools (e.g., `write_file`, `replace`,
+      `run_shell_command`).
+    - Allows read-only tools (e.g., `read_file`, `search_file_content`).
+    - Allows `web_fetch` for research.
+    - Enables the `exit_plan_mode` tool for the agent to autonomously return to
+      default mode when the plan is ready.
+  - **Keyboard shortcut:** Press **Shift+Tab** to cycle through approval modes
+    (Default -> Auto-Edit -> Plan Mode).- **`/restore`**
 - **`/restore`**
   - **Description:** Restores the project files to the state they were in just
     before a tool was executed. This is particularly useful for undoing file
