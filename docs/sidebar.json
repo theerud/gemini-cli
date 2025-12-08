@@ -171,6 +171,10 @@
         "slug": "docs/tools/todos"
       },
       {
+        "label": "Ask User",
+        "slug": "docs/tools/ask-user"
+      },
+      {
         "label": "MCP servers",
         "slug": "docs/tools/mcp-server"
       }

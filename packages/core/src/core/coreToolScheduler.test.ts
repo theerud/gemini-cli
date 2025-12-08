@@ -676,7 +676,7 @@ describe('CoreToolScheduler with payload', () => {
     )) as WaitingToolCall;
     const confirmationDetails = awaitingCall.confirmationDetails;
 
-    if (confirmationDetails) {
+    if (confirmationDetails && confirmationDetails.type === 'edit') {
       const payload: ToolConfirmationPayload = { newContent: 'final version' };
       await confirmationDetails.onConfirm(
         ToolConfirmationOutcome.ProceedOnce,

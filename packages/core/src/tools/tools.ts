@@ -677,11 +677,38 @@ export interface ToolInfoConfirmationDetails {
   urls?: string[];
 }
 
+export interface Question {
+  question: string;
+  header: string;
+  multiSelect: boolean;
+  options: Option[];
+}
+
+export interface Option {
+  label: string;
+  description: string;
+}
+
+export interface ToolAskUserQuestionDetails {
+  type: 'ask_user';
+  title: string;
+  onConfirm: (
+    outcome: ToolConfirmationOutcome,
+    payload?: ToolAskUserQuestionPayload,
+  ) => Promise<void>;
+  questions: Question[];
+}
+
+export interface ToolAskUserQuestionPayload {
+  answers: Record<string, string>;
+}
+
 export type ToolCallConfirmationDetails =
   | ToolEditConfirmationDetails
   | ToolExecuteConfirmationDetails
   | ToolMcpConfirmationDetails
-  | ToolInfoConfirmationDetails;
+  | ToolInfoConfirmationDetails
+  | ToolAskUserQuestionDetails;
 
 export enum ToolConfirmationOutcome {
   ProceedOnce = 'proceed_once',
