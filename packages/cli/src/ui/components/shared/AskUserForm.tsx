@@ -233,12 +233,7 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
             }
 
             let color = theme.text.primary;
-            if (isActive) color = theme.status.success;
-<<<<<<< HEAD
             if (item.isDone && isActive) color = theme.status.success;
-=======
-            if (item.isDone && isActive) color = theme.status.info;
->>>>>>> cd95682ca (feat: implement AskUserQuestion tool for interactive user input)
 
             return (
               <Box key={item.key} flexDirection="column" marginBottom={0}>
