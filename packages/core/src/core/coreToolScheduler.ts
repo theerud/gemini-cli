@@ -890,7 +890,10 @@ export class CoreToolScheduler {
                   // eslint-disable-next-line @typescript-eslint/no-floating-promises
                   this.handleConfirmationResponse(
                     reqInfo.callId,
-                    confirmationDetails.onConfirm,
+                    confirmationDetails.onConfirm as unknown as (
+                      outcome: ToolConfirmationOutcome,
+                      payload?: unknown,
+                    ) => Promise<void>,
                     ToolConfirmationOutcome.ProceedOnce,
                     signal,
                   );
@@ -898,7 +901,10 @@ export class CoreToolScheduler {
                   // eslint-disable-next-line @typescript-eslint/no-floating-promises
                   this.handleConfirmationResponse(
                     reqInfo.callId,
-                    confirmationDetails.onConfirm,
+                    confirmationDetails.onConfirm as unknown as (
+                      outcome: ToolConfirmationOutcome,
+                      payload?: unknown,
+                    ) => Promise<void>,
                     ToolConfirmationOutcome.Cancel,
                     signal,
                   );
@@ -915,7 +921,10 @@ export class CoreToolScheduler {
               ) =>
                 this.handleConfirmationResponse(
                   reqInfo.callId,
-                  originalOnConfirm,
+                  originalOnConfirm as unknown as (
+                    outcome: ToolConfirmationOutcome,
+                    payload?: unknown,
+                  ) => Promise<void>,
                   outcome,
                   signal,
                   payload,
@@ -1021,10 +1030,11 @@ export class CoreToolScheduler {
       }
     } else {
       // If the client provided new content, apply it before scheduling.
-      if (payload?.newContent && toolCall) {
+      const confirmationPayload = payload as ToolConfirmationPayload;
+      if (confirmationPayload?.newContent && toolCall) {
         await this._applyInlineModify(
           toolCall as WaitingToolCall,
-          payload,
+          confirmationPayload,
           signal,
         );
       }

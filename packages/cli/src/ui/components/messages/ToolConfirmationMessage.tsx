@@ -297,7 +297,9 @@ export const ToolConfirmationMessage: React.FC<
           )}
         </Box>
       );
-    } else if (confirmationDetails.type === 'ask_user') {
+    } else if (
+      (confirmationDetails as unknown as { type: string }).type === 'ask_user'
+    ) {
       // Handled below
     } else {
       // mcp tool confirmation
@@ -327,9 +329,13 @@ export const ToolConfirmationMessage: React.FC<
       <AskUserForm
         questions={confirmationDetails.questions}
         onComplete={(answers) =>
-          onConfirm(ToolConfirmationOutcome.ProceedOnce, { answers })
+          confirmationDetails.onConfirm(ToolConfirmationOutcome.ProceedOnce, {
+            answers,
+          })
         }
-        onCancel={() => onConfirm(ToolConfirmationOutcome.Cancel)}
+        onCancel={() =>
+          confirmationDetails.onConfirm(ToolConfirmationOutcome.Cancel)
+        }
       />
     );
   }

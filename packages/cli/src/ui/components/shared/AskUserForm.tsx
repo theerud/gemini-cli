@@ -199,7 +199,7 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
       {isInputActive ? (
         <Box flexDirection="column">
           <Text>Enter custom value:</Text>
-          <Box borderStyle="single" borderColor={theme.border.active}>
+          <Box borderStyle="single" borderColor={theme.status.success}>
             <TextInput
               buffer={buffer}
               onSubmit={handleInputSubmit}
@@ -234,7 +234,7 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
 
             let color = theme.text.primary;
             if (isActive) color = theme.status.success;
-            if (item.isDone && isActive) color = theme.status.info;
+            if (item.isDone && isActive) color = theme.status.success;
 
             return (
               <Box key={item.key} flexDirection="column" marginBottom={0}>
