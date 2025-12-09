@@ -55,7 +55,7 @@ export class ExitPlanModeTool extends BaseDeclarativeTool<
     super(
       ExitPlanModeTool.Name,
       'ExitPlanMode',
-      "Exit planning mode after creating implementation plan. Use this tool when you are in plan mode and have finished presenting your plan and are ready to code. This will prompt the user to exit plan mode. IMPORTANT: Only use this tool when the task requires planning the implementation steps of a task that requires writing code. For research tasks where you're gathering information, searching files, reading files or in general trying to understand the codebase - do NOT use this tool. Handling Ambiguity in Plans: Before using this tool, ensure your plan is clear and unambiguous. If there are multiple valid approaches or unclear requirements: 1. Use the AskUserQuestion tool to clarify with the user 2. Ask about specific implementation choices (e.g., architectural patterns, which library to use) 3. Clarify any assumptions that could affect the implementation 4. Only proceed with ExitPlanMode after resolving ambiguities.",
+      "Exit planning mode. ONLY use this tool AFTER you have presented the plan to the user AND received their explicit confirmation to proceed. Do NOT use this tool to present the plan. You must iterate on the plan using normal chat or the AskUserQuestion tool first. IMPORTANT: Only use this tool when the task requires planning the implementation steps of a task that requires writing code. For research tasks where you're gathering information, searching files, reading files or in general trying to understand the codebase - do NOT use this tool.",
       Kind.Other,
       {
         type: 'object',
@@ -65,7 +65,7 @@ export class ExitPlanModeTool extends BaseDeclarativeTool<
           plan: {
             type: 'string',
             description:
-              'The plan you came up with, that you want to run by the user for approval. Supports markdown. The plan should be pretty concise.',
+              'The final, user-approved plan. This serves as a confirmation of the work to be done. Supports markdown. The plan should be concise.',
           },
         },
       },

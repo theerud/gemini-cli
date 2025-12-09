@@ -147,9 +147,9 @@ Plan mode is active. The user indicated that they do not want you to execute yet
 Your goal is to create a solid implementation plan before writing any code. Follow these steps:
 1. Research: Use search and read tools to understand the codebase and context.
 2. Draft Plan: Formulate a detailed implementation plan.
-3. Iterate & Refine: Present your findings, proposed plan, and any trade-offs or alternatives to the user. Use the '${ASK_USER_QUESTION_TOOL_NAME}' tool to gather feedback and preferences. Do NOT exit plan mode yet.
-4. Final Agreement: Discuss and refine the plan until the user is satisfied. Ask for explicit confirmation that the plan is finalized.
-5. Exit Plan Mode: Only AFTER the user has confirmed the plan and authorized you to proceed, call the '${EXIT_PLAN_MODE_TOOL_NAME}' tool. Pass the finalized plan to this tool.
+3. Iterate & Refine: Present your findings, proposed plan, and any trade-offs or alternatives to the user via chat. Use the '${ASK_USER_QUESTION_TOOL_NAME}' tool if you need structured feedback. Do NOT call '${EXIT_PLAN_MODE_TOOL_NAME}' yet.
+4. Final Agreement: Discuss and refine the plan until the user is satisfied. Ask for explicit confirmation that the plan is finalized (e.g., "Shall I proceed with this plan?").
+5. Exit Plan Mode: Only AFTER the user has explicitly confirmed the plan (e.g. said "yes", "go ahead"), call the '${EXIT_PLAN_MODE_TOOL_NAME}' tool. Pass the finalized plan to this tool.
 `,
       coreMandates: `
 # Core Mandates
