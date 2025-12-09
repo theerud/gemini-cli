@@ -33,9 +33,14 @@ describe('ExitPlanModeTool', () => {
       plan: 'My plan',
     };
 
-    const result = await tool.buildAndExecute(params, new AbortController().signal);
+    const result = await tool.buildAndExecute(
+      params,
+      new AbortController().signal,
+    );
 
-    expect(mockConfig.setApprovalMode).toHaveBeenCalledWith(ApprovalMode.DEFAULT);
+    expect(mockConfig.setApprovalMode).toHaveBeenCalledWith(
+      ApprovalMode.DEFAULT,
+    );
     expect(result.llmContent).toContain('Exited plan mode');
   });
 
@@ -47,8 +52,8 @@ describe('ExitPlanModeTool', () => {
   });
 
   it('should validate missing plan', () => {
-    // @ts-expect-error testing invalid params
     const params = {};
+    // @ts-expect-error testing invalid params
     const validationError = tool.validateToolParams(params);
     expect(validationError).toBeTruthy();
   });
