@@ -104,7 +104,7 @@ class TestApprovalInvocation extends BaseToolInvocation<
       newContent: 'Test content',
       onConfirm: async (outcome: ToolConfirmationOutcome) => {
         if (outcome === ToolConfirmationOutcome.ProceedAlways) {
-          this.config.setApprovalMode(ApprovalMode.AUTO_EDIT);
+          await this.config.setApprovalMode(ApprovalMode.AUTO_EDIT);
         }
       },
     };
@@ -233,7 +233,7 @@ function createMockConfig(overrides: Partial<Config> = {}): Config {
     getUsageStatisticsEnabled: () => true,
     getDebugMode: () => false,
     getApprovalMode: () => ApprovalMode.DEFAULT,
-    setApprovalMode: () => {},
+    setApprovalMode: vi.fn(() => Promise.resolve()),
     getAllowedTools: () => [],
     getContentGeneratorConfig: () => ({
       model: 'test-model',
@@ -1481,7 +1481,7 @@ describe('CoreToolScheduler request queueing', () => {
     let approvalMode = ApprovalMode.DEFAULT;
     const mockConfig = createMockConfig({
       getApprovalMode: () => approvalMode,
-      setApprovalMode: (mode: ApprovalMode) => {
+      setApprovalMode: async (mode: ApprovalMode) => {
         approvalMode = mode;
       },
       isInteractive: () => false,

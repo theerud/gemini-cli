@@ -31,7 +31,7 @@ export function useAutoAcceptIndicator({
   }, [currentConfigValue]);
 
   useKeypress(
-    (key) => {
+    async (key) => {
       let nextApprovalMode: ApprovalMode | undefined;
 
       if (key.ctrl && key.name === 'y') {
@@ -70,7 +70,7 @@ export function useAutoAcceptIndicator({
 
       if (nextApprovalMode) {
         try {
-          config.setApprovalMode(nextApprovalMode);
+          await config.setApprovalMode(nextApprovalMode);
           // Update local state immediately for responsiveness
           setShowAutoAcceptIndicator(nextApprovalMode);
 

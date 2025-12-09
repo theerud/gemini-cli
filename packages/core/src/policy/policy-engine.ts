@@ -213,9 +213,25 @@ export class PolicyEngine {
     this.rules.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
   }
 
+  /**
+   * Replace all rules in the policy engine.
+   */
+  setRules(rules: PolicyRule[]): void {
+    this.rules = rules.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+  }
+
   addChecker(checker: SafetyCheckerRule): void {
     this.checkers.push(checker);
     this.checkers.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+  }
+
+  /**
+   * Replace all checkers in the policy engine.
+   */
+  setCheckers(checkers: SafetyCheckerRule[]): void {
+    this.checkers = checkers.sort(
+      (a, b) => (b.priority ?? 0) - (a.priority ?? 0),
+    );
   }
 
   /**

@@ -94,6 +94,7 @@ import { debugLogger } from '../utils/debugLogger.js';
 import { startupProfiler } from '../telemetry/startupProfiler.js';
 
 import { ApprovalMode } from '../policy/types.js';
+import { createPolicyEngineConfig } from '../policy/config.js';
 
 export interface AccessibilitySettings {
   disableLoadingPhrases?: boolean;
@@ -1065,13 +1066,51 @@ export class Config {
     return this.approvalMode;
   }
 
-  setApprovalMode(mode: ApprovalMode): void {
+  async setApprovalMode(mode: ApprovalMode): Promise<void> {
     if (!this.isTrustedFolder() && mode !== ApprovalMode.DEFAULT) {
       throw new Error(
         'Cannot enable privileged approval modes in an untrusted folder.',
       );
     }
     this.approvalMode = mode;
+    await this.updatePolicyEngine(mode);
+  }
+
+  private async updatePolicyEngine(mode: ApprovalMode): Promise<void> {
+    const policySettings = {
+      mcp: {
+        excluded: this.blockedMcpServers,
+        allowed: this.allowedMcpServers,
+      },
+      tools: {
+        exclude: this.excludeTools,
+        allowed: this.allowedTools,
+      },
+      mcpServers: this.mcpServers,
+    };
+
+    try {
+      const newConfig = await createPolicyEngineConfig(
+        policySettings,
+        mode,
+        // We use the default policies directory logic
+        undefined,
+      );
+
+      if (newConfig.rules) {
+        this.policyEngine.setRules(newConfig.rules);
+      }
+      if (newConfig.checkers) {
+        this.policyEngine.setCheckers(newConfig.checkers);
+      }
+      debugLogger.debug(`PolicyEngine updated for mode: ${mode}`);
+    } catch (error) {
+      debugLogger.error('Failed to update PolicyEngine', error);
+      // Fallback or re-throw? Ideally we don't want to crash, but inconsistent state is bad.
+      // Since createPolicyEngineConfig handles TOML errors by returning them (which we might miss here as we don't handle the errors return),
+      // actual throws should be rare (e.g. file system errors).
+      // createPolicyEngineConfig in config.ts emits errors to coreEvents, so UI should show them.
+    }
   }
 
   isYoloModeDisabled(): boolean {

@@ -30,7 +30,7 @@ class ExitPlanModeToolInvocation extends BaseToolInvocation<
   }
 
   async execute(_signal: AbortSignal): Promise<ToolResult> {
-    this.config.setApprovalMode(ApprovalMode.DEFAULT);
+    await this.config.setApprovalMode(ApprovalMode.DEFAULT);
     return {
       llmContent: `Exited plan mode. The plan has been presented to the user.`,
       returnDisplay: `Exited plan mode.`,

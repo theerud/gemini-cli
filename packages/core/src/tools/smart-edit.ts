@@ -681,7 +681,7 @@ class EditToolInvocation
       newContent: editData.newContent,
       onConfirm: async (outcome: ToolConfirmationOutcome) => {
         if (outcome === ToolConfirmationOutcome.ProceedAlways) {
-          this.config.setApprovalMode(ApprovalMode.AUTO_EDIT);
+          await this.config.setApprovalMode(ApprovalMode.AUTO_EDIT);
         }
 
         if (ideConfirmation) {
