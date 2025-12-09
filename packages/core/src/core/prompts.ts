@@ -17,11 +17,14 @@ import {
   WRITE_FILE_TOOL_NAME,
   WRITE_TODOS_TOOL_NAME,
   DELEGATE_TO_AGENT_TOOL_NAME,
+  ASK_USER_QUESTION_TOOL_NAME,
+  EXIT_PLAN_MODE_TOOL_NAME,
 } from '../tools/tool-names.js';
 import process from 'node:process';
 import { isGitRepository } from '../utils/gitUtils.js';
 import { CodebaseInvestigatorAgent } from '../agents/codebase-investigator.js';
 import type { Config } from '../config/config.js';
+import { ApprovalMode } from '../policy/types.js';
 import { GEMINI_DIR } from '../utils/paths.js';
 import { debugLogger } from '../utils/debugLogger.js';
 import { WriteTodosTool } from '../tools/write-todos.js';
@@ -137,6 +140,17 @@ export function getCoreSystemPrompt(
   } else {
     const promptConfig = {
       preamble: `You are ${interactiveMode ? 'an interactive ' : 'a non-interactive '}CLI agent specializing in software engineering tasks. Your primary goal is to help users safely and efficiently, adhering strictly to the following instructions and utilizing your available tools.`,
+      planMode: `
+# Plan Mode Active
+Plan mode is active. The user indicated that they do not want you to execute yet -- you MUST NOT make any edits, run any non-readonly tools (including changing configs or making commits), or otherwise make any changes to the system. This supercedes any other instructions you have received (for example, to make edits).
+
+Your goal is to create a solid implementation plan before writing any code. Follow these steps:
+1. Research: Use search and read tools to understand the codebase and context.
+2. Draft Plan: Formulate a detailed implementation plan.
+3. Iterate & Refine: Present your findings, proposed plan, and any trade-offs or alternatives to the user. Use the '${ASK_USER_QUESTION_TOOL_NAME}' tool to gather feedback and preferences. Do NOT exit plan mode yet.
+4. Final Agreement: Discuss and refine the plan until the user is satisfied. Ask for explicit confirmation that the plan is finalized.
+5. Exit Plan Mode: Only AFTER the user has confirmed the plan and authorized you to proceed, call the '${EXIT_PLAN_MODE_TOOL_NAME}' tool. Pass the finalized plan to this tool.
+`,
       coreMandates: `
 # Core Mandates
 
@@ -330,10 +344,13 @@ ${(function () {
 Your core function is efficient and safe assistance. Balance extreme conciseness with the crucial need for clarity, especially regarding safety and potential system modifications. Always prioritize user control and project conventions. Never make assumptions about the contents of files; instead use '${READ_FILE_TOOL_NAME}' to ensure you aren't making broad assumptions. Finally, you are an agent - please keep going until the user's query is completely resolved.`,
     };
 
-    const orderedPrompts: Array<keyof typeof promptConfig> = [
-      'preamble',
-      'coreMandates',
-    ];
+    const orderedPrompts: Array<keyof typeof promptConfig> = ['preamble'];
+
+    if (config.getApprovalMode() === ApprovalMode.PLAN_MODE) {
+      orderedPrompts.push('planMode');
+    }
+
+    orderedPrompts.push('coreMandates');
 
     if (enableCodebaseInvestigator && enableWriteTodosTool) {
       orderedPrompts.push('primaryWorkflows_prefix_ci_todo');

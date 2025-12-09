@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import type { Config } from '../config/config.js';
+import { ApprovalMode } from '../policy/types.js';
 import { CodebaseInvestigatorAgent } from '../agents/codebase-investigator.js';
 import { GEMINI_DIR } from '../utils/paths.js';
 import { debugLogger } from '../utils/debugLogger.js';
@@ -72,8 +73,18 @@ describe('Core System Prompt (prompts.ts)', () => {
       getAgentRegistry: vi.fn().mockReturnValue({
         getDirectoryContext: vi.fn().mockReturnValue('Mock Agent Directory'),
       }),
+      getApprovalMode: vi.fn().mockReturnValue(ApprovalMode.DEFAULT),
     } as unknown as Config;
     vi.mocked(getEffectiveModel).mockReturnValue(DEFAULT_GEMINI_MODEL);
+  });
+
+  it('should include plan mode instructions when approval mode is PLAN_MODE', () => {
+    vi.mocked(mockConfig.getApprovalMode).mockReturnValue(
+      ApprovalMode.PLAN_MODE,
+    );
+    const prompt = getCoreSystemPrompt(mockConfig);
+    expect(prompt).toContain('Plan mode is active');
+    expect(prompt).toContain('exit_plan_mode');
   });
 
   it('should use chatty system prompt for preview model', () => {
@@ -165,9 +176,13 @@ describe('Core System Prompt (prompts.ts)', () => {
         getModel: vi.fn().mockReturnValue('auto'),
         getPreviewFeatures: vi.fn().mockReturnValue(false),
         isInFallbackMode: vi.fn().mockReturnValue(false),
+<<<<<<< HEAD
         getAgentRegistry: vi.fn().mockReturnValue({
           getDirectoryContext: vi.fn().mockReturnValue('Mock Agent Directory'),
         }),
+=======
+        getApprovalMode: vi.fn().mockReturnValue(ApprovalMode.DEFAULT),
+>>>>>>> a0066f9be (feat: add plan mode prompt)
       } as unknown as Config;
 
       const prompt = getCoreSystemPrompt(testConfig);
