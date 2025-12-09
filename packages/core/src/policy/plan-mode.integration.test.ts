@@ -8,11 +8,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import {
-  ApprovalMode,
-  createPolicyEngineConfig,
-  PolicyDecision,
-} from './config.js';
+import { createPolicyEngineConfig } from './config.js';
+import { ApprovalMode, PolicyDecision } from './types.js';
 import { PolicyEngine } from './policy-engine.js';
 
 describe('Plan Mode Policy Integration', () => {
@@ -44,18 +41,33 @@ describe('Plan Mode Policy Integration', () => {
     const engine = new PolicyEngine(config);
 
     // Test Write File
-    const writeResult = await engine.check({ name: 'write_file', args: {} });
+    const writeResult = await engine.check(
+      {
+        name: 'write_file',
+        args: {},
+      },
+      undefined,
+    );
     expect(writeResult.decision).toBe(PolicyDecision.DENY);
 
     // Test Replace
-    const replaceResult = await engine.check({ name: 'replace', args: {} });
+    const replaceResult = await engine.check(
+      {
+        name: 'replace',
+        args: {},
+      },
+      undefined,
+    );
     expect(replaceResult.decision).toBe(PolicyDecision.DENY);
 
     // Test Shell
-    const shellResult = await engine.check({
-      name: 'run_shell_command',
-      args: {},
-    });
+    const shellResult = await engine.check(
+      {
+        name: 'run_shell_command',
+        args: {},
+      },
+      undefined,
+    );
     expect(shellResult.decision).toBe(PolicyDecision.DENY);
   });
 
@@ -70,7 +82,13 @@ describe('Plan Mode Policy Integration', () => {
 
     const engine = new PolicyEngine(config);
 
-    const result = await engine.check({ name: 'exit_plan_mode', args: {} });
+    const result = await engine.check(
+      {
+        name: 'exit_plan_mode',
+        args: {},
+      },
+      undefined,
+    );
     expect(result.decision).toBe(PolicyDecision.ALLOW);
   });
 
@@ -85,7 +103,13 @@ describe('Plan Mode Policy Integration', () => {
 
     const engine = new PolicyEngine(config);
 
-    const result = await engine.check({ name: 'read_file', args: {} });
+    const result = await engine.check(
+      {
+        name: 'read_file',
+        args: {},
+      },
+      undefined,
+    );
     // Should be ALLOW based on read-only.toml which applies generally (no mode restriction usually means all modes)
     // Actually read-only.toml doesn't have a mode set, so it applies to all modes.
     expect(result.decision).toBe(PolicyDecision.ALLOW);
@@ -102,7 +126,13 @@ describe('Plan Mode Policy Integration', () => {
 
     const engine = new PolicyEngine(config);
 
-    const result = await engine.check({ name: 'web_fetch', args: {} });
+    const result = await engine.check(
+      {
+        name: 'web_fetch',
+        args: {},
+      },
+      undefined,
+    );
     // plan-mode.toml explicitly allows web_fetch
     expect(result.decision).toBe(PolicyDecision.ALLOW);
   });
@@ -119,7 +149,13 @@ describe('Plan Mode Policy Integration', () => {
     const engine = new PolicyEngine(config);
 
     // Write file should be ASK_USER in default mode
-    const writeResult = await engine.check({ name: 'write_file', args: {} });
+    const writeResult = await engine.check(
+      {
+        name: 'write_file',
+        args: {},
+      },
+      undefined,
+    );
     expect(writeResult.decision).toBe(PolicyDecision.ASK_USER);
 
     // Exit Plan Mode tool isn't explicitly denied in default, but it's useless.

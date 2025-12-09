@@ -36,6 +36,10 @@ class ExitPlanModeToolInvocation extends BaseToolInvocation<
       returnDisplay: `Exited plan mode.`,
     };
   }
+
+  getDescription(): string {
+    return 'Exiting plan mode';
+  }
 }
 
 export class ExitPlanModeTool extends BaseDeclarativeTool<

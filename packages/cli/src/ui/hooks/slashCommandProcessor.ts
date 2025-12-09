@@ -8,12 +8,11 @@ import { useCallback, useMemo, useEffect, useState } from 'react';
 import { type PartListUnion } from '@google/genai';
 import process from 'node:process';
 import type { UseHistoryManagerReturn } from './useHistoryManager.js';
-import type {
-  Config,
-  ExtensionsStartingEvent,
-  ExtensionsStoppingEvent,
-} from '@google/gemini-cli-core';
 import {
+  type ApprovalMode,
+  type Config,
+  type ExtensionsStartingEvent,
+  type ExtensionsStoppingEvent,
   GitService,
   Logger,
   logSlashCommand,
@@ -61,6 +60,7 @@ interface SlashCommandProcessorActions {
   toggleDebugProfiler: () => void;
   dispatchExtensionStateUpdate: (action: ExtensionUpdateAction) => void;
   addConfirmUpdateExtensionRequest: (request: ConfirmationRequest) => void;
+  setApprovalMode: (mode: ApprovalMode) => Promise<void>;
 }
 
 /**
@@ -220,6 +220,7 @@ export const useSlashCommandProcessor = (
         addConfirmUpdateExtensionRequest:
           actions.addConfirmUpdateExtensionRequest,
         removeComponent: () => setCustomDialog(null),
+        setApprovalMode: actions.setApprovalMode,
       },
       session: {
         stats: session.stats,

@@ -199,6 +199,7 @@ describe('useSlashCommandProcessor', () => {
             toggleDebugProfiler: vi.fn(),
             dispatchExtensionStateUpdate: vi.fn(),
             addConfirmUpdateExtensionRequest: vi.fn(),
+            setApprovalMode: vi.fn(),
           },
           new Map(), // extensionsUpdateState
           true, // isConfigInitialized

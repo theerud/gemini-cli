@@ -31,6 +31,7 @@ import { MessageType, StreamingState } from './types.js';
 import {
   type EditorType,
   type Config,
+  type ApprovalMode,
   type IdeInfo,
   type IdeContext,
   type UserTierId,
@@ -612,6 +613,10 @@ Logging in with Google... Restarting Gemini CLI to continue.
 
   const { toggleVimEnabled } = useVimMode();
 
+  const approvalModeChangeHandlerRef = useRef<
+    (mode: ApprovalMode) => Promise<void>
+  >(async () => {});
+
   const slashCommandActions = useMemo(
     () => ({
       openAuthDialog: () => setAuthState(AuthState.Updating),
@@ -634,6 +639,8 @@ Logging in with Google... Restarting Gemini CLI to continue.
       toggleDebugProfiler,
       dispatchExtensionStateUpdate,
       addConfirmUpdateExtensionRequest,
+      setApprovalMode: (mode: ApprovalMode) =>
+        approvalModeChangeHandlerRef.current(mode),
     }),
     [
       setAuthState,
@@ -796,6 +803,10 @@ Logging in with Google... Restarting Gemini CLI to continue.
     },
     [originalHandleApprovalModeChange],
   );
+
+  useEffect(() => {
+    approvalModeChangeHandlerRef.current = handleApprovalModeChange;
+  }, [handleApprovalModeChange]);
 
   // Auto-accept indicator
   const showAutoAcceptIndicator = useAutoAcceptIndicator({
@@ -1545,7 +1556,6 @@ Logging in with Google... Restarting Gemini CLI to continue.
       warningMessage,
       bannerData,
       bannerVisible,
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       _approvalModeTick: approvalModeTick,
     }),
     [
@@ -1639,7 +1649,6 @@ Logging in with Google... Restarting Gemini CLI to continue.
       bannerData,
       bannerVisible,
       approvalModeTick,
-      handleApprovalModeChange,
     ],
   );
 

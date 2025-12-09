@@ -354,7 +354,8 @@ export const commandDescriptions: Readonly<Record<Command, string>> = {
   [Command.TOGGLE_MARKDOWN]: 'Toggle Markdown rendering.',
   [Command.TOGGLE_COPY_MODE]:
     'Toggle copy mode when the terminal is using the alternate buffer.',
-  [Command.TOGGLE_PLAN_MODE]: 'Cycle between approval modes (Default -> Auto-Edit -> Plan Mode).',
+  [Command.TOGGLE_PLAN_MODE]:
+    'Cycle between approval modes (Default -> Auto-Edit -> Plan Mode).',
   [Command.QUIT]: 'Cancel the current request or quit the CLI.',
   [Command.EXIT]: 'Exit the CLI when the input buffer is empty.',
   [Command.SHOW_MORE_LINES]:
