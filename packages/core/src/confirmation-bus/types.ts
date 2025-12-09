@@ -34,6 +34,7 @@ export interface ToolConfirmationResponse {
    * show its legacy confirmation UI instead of auto-proceeding.
    */
   requiresUserConfirmation?: boolean;
+  reason?: string;
 }
 
 export interface UpdatePolicy {

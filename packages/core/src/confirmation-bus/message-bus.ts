@@ -56,7 +56,7 @@ export class MessageBus extends EventEmitter {
       }
 
       if (message.type === MessageBusType.TOOL_CONFIRMATION_REQUEST) {
-        const { decision } = await this.policyEngine.check(
+        const { decision, reason } = await this.policyEngine.check(
           message.toolCall,
           message.serverName,
         );
@@ -80,6 +80,7 @@ export class MessageBus extends EventEmitter {
               type: MessageBusType.TOOL_CONFIRMATION_RESPONSE,
               correlationId: message.correlationId,
               confirmed: false,
+              reason,
             });
             break;
           case PolicyDecision.ASK_USER:

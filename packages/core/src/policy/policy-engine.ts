@@ -120,6 +120,7 @@ export class PolicyEngine {
   ): Promise<{
     decision: PolicyDecision;
     rule?: PolicyRule;
+    reason?: string;
   }> {
     let stringifiedArgs: string | undefined;
     // Compute stringified args once before the loop
@@ -178,6 +179,7 @@ export class PolicyEngine {
               return {
                 decision: PolicyDecision.DENY,
                 rule: matchedRule,
+                reason: result.reason,
               };
             } else if (result.decision === SafetyCheckDecision.ASK_USER) {
               debugLogger.debug(

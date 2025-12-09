@@ -91,16 +91,26 @@ export abstract class BaseToolInvocation<
     abortSignal: AbortSignal,
   ): Promise<ToolCallConfirmationDetails | false> {
     if (this.messageBus) {
-      const decision = await this.getMessageBusDecision(abortSignal);
+      const decisionResult = await this.getMessageBusDecision(abortSignal);
+      // Normalize decision string or object
+      const decision =
+        typeof decisionResult === 'string'
+          ? decisionResult
+          : decisionResult.decision;
+
       if (decision === 'ALLOW') {
         return false;
       }
 
       if (decision === 'DENY') {
+        const reason =
+          typeof decisionResult === 'object' && decisionResult.reason
+            ? `: ${decisionResult.reason}`
+            : ' by policy.';
         throw new Error(
           `Tool execution for "${
             this._toolDisplayName || this._toolName
-          }" denied by policy.`,
+          }" denied${reason}`,
         );
       }
 
@@ -145,7 +155,9 @@ export abstract class BaseToolInvocation<
 
   protected getMessageBusDecision(
     abortSignal: AbortSignal,
-  ): Promise<'ALLOW' | 'DENY' | 'ASK_USER'> {
+  ): Promise<
+    'ALLOW' | 'DENY' | 'ASK_USER' | { decision: 'DENY'; reason: string }
+  > {
     if (!this.messageBus) {
       // If there's no message bus, we can't make a decision, so we allow.
       // The legacy confirmation flow will still apply if the tool needs it.
@@ -158,7 +170,9 @@ export abstract class BaseToolInvocation<
       args: this.params as Record<string, unknown>,
     };
 
-    return new Promise<'ALLOW' | 'DENY' | 'ASK_USER'>((resolve) => {
+    return new Promise<
+      'ALLOW' | 'DENY' | 'ASK_USER' | { decision: 'DENY'; reason: string }
+    >((resolve) => {
       if (!this.messageBus) {
         resolve('ALLOW');
         return;
@@ -196,7 +210,11 @@ export abstract class BaseToolInvocation<
           } else if (response.confirmed) {
             resolve('ALLOW');
           } else {
-            resolve('DENY');
+            resolve(
+              response.reason
+                ? { decision: 'DENY', reason: response.reason }
+                : 'DENY',
+            );
           }
         }
       };
