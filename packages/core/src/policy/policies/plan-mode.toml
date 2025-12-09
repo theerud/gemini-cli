@@ -31,9 +31,22 @@ decision = "deny"
 priority = 20
 modes = ["planMode"]
 
+[[rule]]
+toolName = "write_todos"
+decision = "deny"
+priority = 20
+modes = ["planMode"]
+
 # Allow web_fetch for research/docs
 [[rule]]
 toolName = "web_fetch"
 decision = "allow"
 priority = 20
+modes = ["planMode"]
+
+# Allow asking user questions for clarification
+[[rule]]
+toolName = "ask_user_question"
+decision = "allow"
+priority = 50
 modes = ["planMode"]

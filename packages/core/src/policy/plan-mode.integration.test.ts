@@ -69,6 +69,37 @@ describe('Plan Mode Policy Integration', () => {
       undefined,
     );
     expect(shellResult.decision).toBe(PolicyDecision.DENY);
+
+    // Test Write Todos
+    const todoResult = await engine.check(
+      {
+        name: 'write_todos',
+        args: {},
+      },
+      undefined,
+    );
+    expect(todoResult.decision).toBe(PolicyDecision.DENY);
+  });
+
+  it('should allow ask_user_question in PLAN_MODE', async () => {
+    const defaultPoliciesDir = path.resolve(__dirname, 'policies');
+
+    const config = await createPolicyEngineConfig(
+      { tools: {}, mcp: {} },
+      ApprovalMode.PLAN_MODE,
+      defaultPoliciesDir,
+    );
+
+    const engine = new PolicyEngine(config);
+
+    const result = await engine.check(
+      {
+        name: 'ask_user_question',
+        args: {},
+      },
+      undefined,
+    );
+    expect(result.decision).toBe(PolicyDecision.ALLOW);
   });
 
   it('should allow exit_plan_mode in PLAN_MODE', async () => {
