@@ -1074,6 +1074,7 @@ export class Config {
     }
     this.approvalMode = mode;
     await this.updatePolicyEngine(mode);
+    await this.updateSystemInstructionIfInitialized();
   }
 
   private async updatePolicyEngine(mode: ApprovalMode): Promise<void> {
