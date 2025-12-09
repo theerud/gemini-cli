@@ -173,20 +173,8 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
   if (!currentQuestion) return null;
 
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="round"
-      borderColor={theme.border.default}
-      padding={1}
-    >
+    <Box flexDirection="column">
       <Box marginBottom={1}>
-        {currentQuestion.header && (
-          <Box marginRight={1}>
-            <Text color={theme.text.secondary} bold>
-              [{currentQuestion.header}]
-            </Text>
-          </Box>
-        )}
         <Text bold>{currentQuestion.question}</Text>
         {currentQuestion.multiSelect && (
           <Text color={theme.text.secondary}>
@@ -199,14 +187,12 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
       {isInputActive ? (
         <Box flexDirection="column">
           <Text>Enter custom value:</Text>
-          <Box borderStyle="single" borderColor={theme.status.success}>
-            <TextInput
-              buffer={buffer}
-              onSubmit={handleInputSubmit}
-              onCancel={handleInputCancel}
-              focus={true}
-            />
-          </Box>
+          <TextInput
+            buffer={buffer}
+            onSubmit={handleInputSubmit}
+            onCancel={handleInputCancel}
+            focus={true}
+          />
         </Box>
       ) : (
         <Box flexDirection="column">
@@ -262,12 +248,6 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
           })}
         </Box>
       )}
-
-      <Box marginTop={1}>
-        <Text color={theme.text.secondary}>
-          Question {questionIndex + 1} of {questions.length}
-        </Text>
-      </Box>
     </Box>
   );
 };

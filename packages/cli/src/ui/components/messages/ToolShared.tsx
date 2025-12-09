@@ -102,8 +102,10 @@ export const ToolInfo: React.FC<ToolInfoProps> = ({
       <Text strikethrough={status === ToolCallStatus.Canceled} wrap="truncate">
         <Text color={nameColor} bold>
           {name}
-        </Text>{' '}
-        <Text color={theme.text.secondary}>{description}</Text>
+        </Text>
+        {description && description.length > 0 && (
+          <Text color={theme.text.secondary}>: {description}</Text>
+        )}
       </Text>
     </Box>
   );

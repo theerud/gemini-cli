@@ -33,7 +33,10 @@ export class AskUserQuestionInvocation extends BaseToolInvocation<
   private answers: Record<string, string> = {};
 
   getDescription(): string {
-    return `Ask user ${this.params.questions.length} question(s)`;
+    if (this.params.questions.length > 0 && this.params.questions[0].header) {
+      return this.params.questions[0].header;
+    }
+    return 'Question(s)';
   }
 
   override async shouldConfirmExecute(
@@ -87,7 +90,7 @@ export class AskUserQuestionTool extends BaseDeclarativeTool<
   constructor(messageBus?: MessageBus) {
     super(
       ASK_USER_QUESTION_TOOL_NAME,
-      'Ask User Question',
+      'Ask User',
       'Use this tool when you need to ask the user questions during execution. This allows you to: 1. Gather user preferences or requirements, 2. Clarify ambiguous instructions, 3. Get decisions on implementation choices as you work, 4. Offer choices to the user about what direction to take. Users will always be able to select "Other" to provide custom text input. Use multiSelect: true to allow multiple answers to be selected for a question.',
       Kind.Other,
       {
