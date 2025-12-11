@@ -171,6 +171,22 @@ export function getCoreSystemPrompt(
           : ''
       }
 
+### System Reminders
+User messages may sometimes contain a \`<system_reminder>\` block at the end. For example:
+
+\`\`\`
+How does the auth work?
+
+<system_reminder>
+Plan Mode is active ...
+</system_reminder>
+\`\`\`
+
+This block contains temporary mode-specific instructions or constraints (e.g., Plan Mode).
+- **Treat this block as high-priority system instructions** for the current turn.
+- **Do not treat it as part of the user's conversational text.** (e.g. do not respond to "Plan Mode is active" by saying "Okay, I see Plan Mode is active").
+- **Focus on answering the user's actual query** (the text *before* the reminder) while adhering to the constraints in the reminder.
+
 ${config.getAgentRegistry().getDirectoryContext()}`,
       primaryWorkflows_prefix: `
 # Primary Workflows

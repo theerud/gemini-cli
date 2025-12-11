@@ -1042,6 +1042,32 @@ export const useGeminiStream = (
               if (activeQueryIdRef.current === queryId) {
                 setIsResponding(false);
               }
+
+              // Clean up Plan Mode injection from history to prevent context pollution
+              if (config.getApprovalMode() === ApprovalMode.PLAN_MODE) {
+                const chatHistory = geminiClient.getHistory();
+
+                if (chatHistory.length > 0) {
+                  // Find the last user message
+                  for (let i = chatHistory.length - 1; i >= 0; i--) {
+                    if (chatHistory[i].role === 'user') {
+                      const parts = chatHistory[i].parts;
+                      if (parts && parts.length > 0 && parts[0].text) {
+                        const originalText = parts[0].text;
+                        const injection = `\n\n<system_reminder>\n${PLAN_MODE_REMINDER}\n</system_reminder>`;
+                        if (originalText.endsWith(injection)) {
+                          parts[0].text = originalText.slice(
+                            0,
+                            -injection.length,
+                          );
+                          geminiClient.setHistory(chatHistory);
+                        }
+                      }
+                      break; // Only clean the last user message
+                    }
+                  }
+                }
+              }
             }
           });
         },
