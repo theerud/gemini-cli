@@ -852,21 +852,6 @@ export class Config {
     this.modelAvailabilityService.resetTurn();
   }
 
-  getActiveModel(): string {
-    return this._activeModel ?? this.model;
-  }
-
-  setActiveModel(model: string): void {
-    if (this._activeModel !== model) {
-      this._activeModel = model;
-      coreEvents.emitModelChanged(model);
-    }
-  }
-
-  resetTurn(): void {
-    this.modelAvailabilityService.resetTurn();
-  }
-
   isInFallbackMode(): boolean {
     return this.inFallbackMode;
   }
