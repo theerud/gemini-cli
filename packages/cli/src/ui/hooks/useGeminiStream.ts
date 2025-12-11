@@ -38,6 +38,7 @@ import {
   runInDevTraceSpan,
   EDIT_TOOL_NAMES,
   processRestorableToolCalls,
+  PLAN_MODE_REMINDER,
 } from '@google/gemini-cli-core';
 import { type Part, type PartListUnion, FinishReason } from '@google/genai';
 import type {
@@ -506,6 +507,14 @@ export const useGeminiStream = (
         );
         return { queryToSend: null, shouldProceed: false };
       }
+
+      if (
+        config.getApprovalMode() === ApprovalMode.PLAN_MODE &&
+        typeof localQueryToSendToGemini === 'string'
+      ) {
+        localQueryToSendToGemini += `\n\n<system_reminder>\n${PLAN_MODE_REMINDER}\n</system_reminder>`;
+      }
+
       return { queryToSend: localQueryToSendToGemini, shouldProceed: true };
     },
     [

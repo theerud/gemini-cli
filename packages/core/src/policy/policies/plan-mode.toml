@@ -2,7 +2,7 @@
 
 [[rule]]
 toolName = "exit_plan_mode"
-decision = "allow"
+decision = "ask_user"
 priority = 50
 modes = ["planMode"]
 

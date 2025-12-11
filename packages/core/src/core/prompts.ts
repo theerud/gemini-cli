@@ -24,11 +24,23 @@ import process from 'node:process';
 import { isGitRepository } from '../utils/gitUtils.js';
 import { CodebaseInvestigatorAgent } from '../agents/codebase-investigator.js';
 import type { Config } from '../config/config.js';
-import { ApprovalMode } from '../policy/types.js';
 import { GEMINI_DIR } from '../utils/paths.js';
 import { debugLogger } from '../utils/debugLogger.js';
 import { WriteTodosTool } from '../tools/write-todos.js';
 import { getEffectiveModel, PREVIEW_GEMINI_MODEL } from '../config/models.js';
+
+export const PLAN_MODE_REMINDER = `
+# Plan Mode Active
+Plan Mode is active. You are now a consultant and co-programmer.
+Your goals:
+1. Answer questions comprehensively but concisely.
+2. Research using read-only tools (search, read files) to understand the context.
+3. Brainstorm, propose ideas, and discuss trade-offs.
+4. Ask clarifying questions or solicit structured feedback using the '${ASK_USER_QUESTION_TOOL_NAME}' tool.
+5. DO NOT modify any files or run any side-effect tools (like running shells that change state).
+6. When you and the user have agreed on a path forward, use the '${EXIT_PLAN_MODE_TOOL_NAME}' tool to present the final plan for confirmation.
+7. If the user rejects the plan tool call, ask for feedback and iterate.
+`.trim();
 
 export function resolvePathFromEnv(envVar?: string): {
   isSwitch: boolean;
@@ -140,17 +152,7 @@ export function getCoreSystemPrompt(
   } else {
     const promptConfig = {
       preamble: `You are ${interactiveMode ? 'an interactive ' : 'a non-interactive '}CLI agent specializing in software engineering tasks. Your primary goal is to help users safely and efficiently, adhering strictly to the following instructions and utilizing your available tools.`,
-      planMode: `
-# Plan Mode Active
-Plan mode is active. The user indicated that they do not want you to execute yet -- you MUST NOT make any edits, run any non-readonly tools (including changing configs or making commits), or otherwise make any changes to the system. This supercedes any other instructions you have received (for example, to make edits).
-
-Your goal is to create a solid implementation plan before writing any code. Follow these steps:
-1. Research: Use search and read tools to understand the codebase and context.
-2. Draft Plan: Formulate a detailed implementation plan.
-3. Iterate & Refine: Present your findings, proposed plan, and any trade-offs or alternatives to the user via chat. Use the '${ASK_USER_QUESTION_TOOL_NAME}' tool if you need structured feedback. Do NOT call '${EXIT_PLAN_MODE_TOOL_NAME}' yet.
-4. Final Agreement: Discuss and refine the plan until the user is satisfied. Ask for explicit confirmation that the plan is finalized (e.g., "Shall I proceed with this plan?").
-5. Exit Plan Mode: Only AFTER the user has explicitly confirmed the plan (e.g. said "yes", "go ahead"), call the '${EXIT_PLAN_MODE_TOOL_NAME}' tool. Pass the finalized plan to this tool.
-`,
+      planMode: PLAN_MODE_REMINDER,
       coreMandates: `
 # Core Mandates
 
@@ -345,10 +347,6 @@ Your core function is efficient and safe assistance. Balance extreme conciseness
     };
 
     const orderedPrompts: Array<keyof typeof promptConfig> = ['preamble'];
-
-    if (config.getApprovalMode() === ApprovalMode.PLAN_MODE) {
-      orderedPrompts.push('planMode');
-    }
 
     orderedPrompts.push('coreMandates');
 

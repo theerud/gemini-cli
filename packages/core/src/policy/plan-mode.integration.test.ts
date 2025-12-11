@@ -120,7 +120,7 @@ describe('Plan Mode Policy Integration', () => {
       },
       undefined,
     );
-    expect(result.decision).toBe(PolicyDecision.ALLOW);
+    expect(result.decision).toBe(PolicyDecision.ASK_USER);
   });
 
   it('should allow read-only tools in PLAN_MODE', async () => {

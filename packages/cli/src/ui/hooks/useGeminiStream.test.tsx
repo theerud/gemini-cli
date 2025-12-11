@@ -35,6 +35,7 @@ import {
   ToolConfirmationOutcome,
   tokenLimit,
   debugLogger,
+  PLAN_MODE_REMINDER, // Added PLAN_MODE_REMINDER
 } from '@google/gemini-cli-core';
 import type { Part, PartListUnion } from '@google/genai';
 import type { UseHistoryManagerReturn } from './useHistoryManager.js';
@@ -47,6 +48,7 @@ const mockSendMessageStream = vi
   .fn()
   .mockReturnValue((async function* () {})());
 const mockStartChat = vi.fn();
+let mockGetApprovalMode: Mock; // Declare outside beforeEach
 
 const MockedGeminiClientClass = vi.hoisted(() =>
   vi.fn().mockImplementation(function (this: any, _config: any) {
@@ -182,6 +184,7 @@ describe('useGeminiStream', () => {
       authType: AuthType.USE_GEMINI,
     };
 
+    mockGetApprovalMode = vi.fn().mockReturnValue(ApprovalMode.DEFAULT); // Initialize the exposed mock
     mockConfig = {
       apiKey: 'test-api-key',
       model: 'gemini-pro',
@@ -208,7 +211,7 @@ describe('useGeminiStream', () => {
       getProjectRoot: vi.fn(() => '/test/dir'),
       getCheckpointingEnabled: vi.fn(() => false),
       getGeminiClient: mockGetGeminiClient,
-      getApprovalMode: () => ApprovalMode.DEFAULT,
+      getApprovalMode: mockGetApprovalMode, // Assign the exposed mock
       getUsageStatisticsEnabled: () => true,
       getDebugMode: () => false,
       addHistory: vi.fn(),
@@ -420,6 +423,7 @@ describe('useGeminiStream', () => {
       onAuthError?: () => void;
       setModelSwitched?: Mock;
       modelSwitched?: boolean;
+      geminiClient?: any;
     } = {},
   ) => {
     const {
@@ -430,11 +434,12 @@ describe('useGeminiStream', () => {
       onAuthError = () => {},
       setModelSwitched = vi.fn(),
       modelSwitched = false,
+      geminiClient = new MockedGeminiClientClass(mockConfig),
     } = options;
 
     return renderHook(() =>
       useGeminiStream(
-        new MockedGeminiClientClass(mockConfig),
+        geminiClient,
         [],
         mockAddItem,
         mockConfig,
@@ -2706,5 +2711,37 @@ describe('useGeminiStream', () => {
         expect(result.current.loopDetectionConfirmationRequest).not.toBeNull();
       });
     });
+  });
+
+  it('should inject plan mode reminder into user query when in PLAN_MODE', async () => {
+    // 1. Setup
+    const testQuery = 'My plan request.';
+    const mockGeminiClient = new MockedGeminiClientClass(mockConfig);
+    mockGetApprovalMode.mockReturnValue(ApprovalMode.PLAN_MODE);
+
+    let capturedQuery: PartListUnion | undefined;
+    mockSendMessageStream.mockImplementation(async (query: PartListUnion) => {
+      capturedQuery = query;
+      return (async function* () {})() as AsyncGenerator<any>;
+    });
+
+    const { result } = renderHookWithDefaults({
+      geminiClient: mockGeminiClient,
+    });
+
+    // 2. Action
+    await act(async () => {
+      await result.current.submitQuery(testQuery);
+    });
+
+    // 3. Assertion
+    await waitFor(() => {
+      expect(mockSendMessageStream).toHaveBeenCalledTimes(1);
+    });
+
+    // Expect the original query + the reminder
+    const expectedQueryContent = `${testQuery}\n\n<system_reminder>\n${PLAN_MODE_REMINDER}\n</system_reminder>`;
+
+    expect(capturedQuery).toEqual(expectedQueryContent);
   });
 });

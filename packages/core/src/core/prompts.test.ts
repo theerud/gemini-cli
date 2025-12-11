@@ -20,6 +20,7 @@ import {
   getEffectiveModel,
   PREVIEW_GEMINI_MODEL,
 } from '../config/models.js';
+import { PLAN_MODE_REMINDER } from './prompts.js';
 
 // Mock tool names if they are dynamically generated or complex
 vi.mock('../tools/ls', () => ({ LSTool: { Name: 'list_directory' } }));
@@ -78,13 +79,12 @@ describe('Core System Prompt (prompts.ts)', () => {
     vi.mocked(getEffectiveModel).mockReturnValue(DEFAULT_GEMINI_MODEL);
   });
 
-  it('should include plan mode instructions when approval mode is PLAN_MODE', () => {
+  it('should NOT include plan mode instructions in the system prompt (relying on user message injection instead)', () => {
     vi.mocked(mockConfig.getApprovalMode).mockReturnValue(
       ApprovalMode.PLAN_MODE,
     );
     const prompt = getCoreSystemPrompt(mockConfig);
-    expect(prompt).toContain('Plan mode is active');
-    expect(prompt).toContain('exit_plan_mode');
+    expect(prompt).not.toContain(PLAN_MODE_REMINDER);
   });
 
   it('should use chatty system prompt for preview model', () => {
