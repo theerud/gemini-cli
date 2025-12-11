@@ -45,25 +45,36 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
   const [otherText, setOtherText] = useState('');
 
   const currentQuestion = questions[questionIndex];
-  const { columns } = useTerminalSize();
+  const { columns, rows } = useTerminalSize();
   const buffer = useTextBuffer({
     initialText: '',
-    viewport: { width: columns, height: 1 }, // Single line input usually
+    viewport: { width: columns, height: Math.min(10, Math.max(5, rows - 10)) },
     isValidPath: () => true, // Not relevant here
-    singleLine: true,
+    singleLine: false,
   });
   const { setText: bufferSetText } = buffer;
 
   // Reset state when advancing to next question
   useEffect(() => {
     setMultiSelection(new Set());
-    setIsInputActive(false);
     setOtherText('');
     bufferSetText('');
-  }, [questionIndex, bufferSetText]);
+
+    // If no options (or empty), automatically activate input mode
+    if (questions[questionIndex]?.options?.length === 0) {
+      setIsInputActive(true);
+    } else {
+      setIsInputActive(false);
+    }
+  }, [questionIndex, bufferSetText, questions]);
 
   const items: FormItem[] = useMemo(() => {
     if (!currentQuestion) return [];
+
+    // If we have no options, we don't render items, we just use the input
+    if (currentQuestion.options.length === 0) {
+      return [];
+    }
 
     const opts: FormItem[] = currentQuestion.options.map((opt) => ({
       key: opt.label,

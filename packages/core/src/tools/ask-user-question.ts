@@ -105,7 +105,7 @@ export class AskUserQuestionTool extends BaseDeclarativeTool<
             maxItems: 4,
             items: {
               type: 'object',
-              required: ['question', 'header', 'options', 'multiSelect'],
+              required: ['question', 'header', 'multiSelect'],
               additionalProperties: false,
               properties: {
                 question: {
@@ -126,8 +126,8 @@ export class AskUserQuestionTool extends BaseDeclarativeTool<
                 options: {
                   type: 'array',
                   description:
-                    "The available choices for this question. Must have 2-4 options. Each option should be a distinct, mutually exclusive choice (unless multiSelect is enabled). There should be no 'Other' option, that will be provided automatically.",
-                  minItems: 2,
+                    'The available choices for this question. If provided, must have 2-4 options. If omitted or empty, the user will be asked to provide free-form text input.',
+                  minItems: 0,
                   maxItems: 4,
                   items: {
                     type: 'object',
