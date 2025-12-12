@@ -70,7 +70,7 @@ describe('AskUserForm', () => {
     await write('\x1B[B');
 
     // Should show active input indicator/placeholder
-    expect(lastFrame()).toContain('(+)');
+    expect(lastFrame()).toContain('●');
     expect(lastFrame()).toContain('Type something...');
   });
 
