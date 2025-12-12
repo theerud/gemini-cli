@@ -19,6 +19,8 @@ export interface TextInputProps {
   placeholder?: string;
   onSubmit?: (value: string) => void;
   onCancel?: () => void;
+  onArrowUp?: () => void;
+  onArrowDown?: () => void;
   focus?: boolean;
 }
 
@@ -27,6 +29,8 @@ export function TextInput({
   placeholder = '',
   onSubmit,
   onCancel,
+  onArrowUp,
+  onArrowDown,
   focus = true,
 }: TextInputProps): React.JSX.Element {
   const {
@@ -35,6 +39,7 @@ export function TextInput({
     visualCursor,
     viewportVisualLines,
     visualScrollRow,
+    allVisualLines,
   } = buffer;
   const [cursorVisualRowAbsolute, cursorVisualColAbsolute] = visualCursor;
 
@@ -50,9 +55,32 @@ export function TextInput({
         return;
       }
 
+      if (key.name === 'up' && onArrowUp) {
+        if (cursorVisualRowAbsolute === 0) {
+          onArrowUp();
+          return;
+        }
+      }
+
+      if (key.name === 'down' && onArrowDown) {
+        if (cursorVisualRowAbsolute === allVisualLines.length - 1) {
+          onArrowDown();
+          return;
+        }
+      }
+
       handleInput(key);
     },
-    [handleInput, onCancel, onSubmit, text],
+    [
+      handleInput,
+      onCancel,
+      onSubmit,
+      text,
+      onArrowUp,
+      onArrowDown,
+      cursorVisualRowAbsolute,
+      allVisualLines.length,
+    ],
   );
 
   useKeypress(handleKeyPress, { isActive: focus });

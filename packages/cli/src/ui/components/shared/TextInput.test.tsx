@@ -22,6 +22,7 @@ vi.mock('./text-buffer.js', () => {
     cursor: [0, 0],
     visualCursor: [0, 0],
     viewportVisualLines: [''],
+    allVisualLines: [''],
     handleInput: vi.fn((key) => {
       // Simulate basic input for testing
       if (key.sequence) {
@@ -74,6 +75,7 @@ describe('TextInput', () => {
       cursor: [0, 0],
       visualCursor: [0, 0],
       viewportVisualLines: [''],
+      allVisualLines: [''],
       handleInput: vi.fn((key) => {
         if (key.sequence) {
           buffer.text += key.sequence;
@@ -109,6 +111,7 @@ describe('TextInput', () => {
       cursor: [0, 4],
       visualCursor: [0, 4],
       viewportVisualLines: ['test'],
+      allVisualLines: ['test'],
       handleInput: vi.fn(),
       setText: vi.fn(),
     };
@@ -129,6 +132,7 @@ describe('TextInput', () => {
       cursor: [0, 0],
       visualCursor: [0, 0],
       viewportVisualLines: [''],
+      allVisualLines: [''],
       handleInput: vi.fn(),
       setText: vi.fn(),
     };
