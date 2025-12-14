@@ -244,6 +244,7 @@ ${textContent}
         if (outcome === ToolConfirmationOutcome.ProceedAlways) {
           await this.config.setApprovalMode(ApprovalMode.AUTO_EDIT);
         }
+        await this.publishPolicyUpdate(outcome);
       },
     };
     return confirmationDetails;

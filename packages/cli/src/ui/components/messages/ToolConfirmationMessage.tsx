@@ -11,8 +11,6 @@ import { DiffRenderer } from './DiffRenderer.js';
 import { RenderInline } from '../../utils/InlineMarkdownRenderer.js';
 import type {
   ToolCallConfirmationDetails,
-  ToolExecuteConfirmationDetails,
-  ToolMcpConfirmationDetails,
   Config,
 } from '@google/gemini-cli-core';
 import { IdeClient, ToolConfirmationOutcome } from '@google/gemini-cli-core';
@@ -118,6 +116,11 @@ export const ToolConfirmationMessage: React.FC<
             value: ToolConfirmationOutcome.ProceedAlways,
             key: 'Yes, allow always',
           });
+          options.push({
+            label: 'Yes, allow always and save to policy',
+            value: ToolConfirmationOutcome.ProceedAlwaysAndSave,
+            key: 'Yes, allow always and save to policy',
+          });
         }
         if (!config.getIdeMode() || !isDiffingEnabled) {
           options.push({
@@ -134,8 +137,7 @@ export const ToolConfirmationMessage: React.FC<
         });
       }
     } else if (confirmationDetails.type === 'exec') {
-      const executionProps =
-        confirmationDetails as ToolExecuteConfirmationDetails;
+      const executionProps = confirmationDetails;
 
       question = `Allow execution of: '${executionProps.rootCommand}'?`;
       options.push({
@@ -148,6 +150,11 @@ export const ToolConfirmationMessage: React.FC<
           label: `Yes, allow always ...`,
           value: ToolConfirmationOutcome.ProceedAlways,
           key: `Yes, allow always ...`,
+        });
+        options.push({
+          label: `Yes, allow always and save to policy`,
+          value: ToolConfirmationOutcome.ProceedAlwaysAndSave,
+          key: `Yes, allow always and save to policy`,
         });
       }
       options.push({
@@ -168,6 +175,11 @@ export const ToolConfirmationMessage: React.FC<
           value: ToolConfirmationOutcome.ProceedAlways,
           key: 'Yes, allow always',
         });
+        options.push({
+          label: 'Yes, allow always and save to policy',
+          value: ToolConfirmationOutcome.ProceedAlwaysAndSave,
+          key: 'Yes, allow always and save to policy',
+        });
       }
       options.push({
         label: 'No, suggest changes (esc)',
@@ -179,7 +191,7 @@ export const ToolConfirmationMessage: React.FC<
       return { question: '', bodyContent: null, options: [] };
     } else {
       // mcp tool confirmation
-      const mcpProps = confirmationDetails as ToolMcpConfirmationDetails;
+      const mcpProps = confirmationDetails;
       question = `Allow execution of MCP tool "${mcpProps.toolName}" from server "${mcpProps.serverName}"?`;
       options.push({
         label: 'Yes, allow once',
@@ -196,6 +208,11 @@ export const ToolConfirmationMessage: React.FC<
           label: `Yes, always allow all tools from server "${mcpProps.serverName}"`,
           value: ToolConfirmationOutcome.ProceedAlwaysServer,
           key: `Yes, always allow all tools from server "${mcpProps.serverName}"`,
+        });
+        options.push({
+          label: `Yes, allow always tool "${mcpProps.toolName}" and save to policy`,
+          value: ToolConfirmationOutcome.ProceedAlwaysAndSave,
+          key: `Yes, allow always tool "${mcpProps.toolName}" and save to policy`,
         });
       }
       options.push({
@@ -245,8 +262,7 @@ export const ToolConfirmationMessage: React.FC<
         );
       }
     } else if (confirmationDetails.type === 'exec') {
-      const executionProps =
-        confirmationDetails as ToolExecuteConfirmationDetails;
+      const executionProps = confirmationDetails;
       let bodyContentHeight = availableBodyContentHeight();
       if (bodyContentHeight !== undefined) {
         bodyContentHeight -= 2; // Account for padding;
@@ -303,7 +319,7 @@ export const ToolConfirmationMessage: React.FC<
       // Handled below
     } else {
       // mcp tool confirmation
-      const mcpProps = confirmationDetails as ToolMcpConfirmationDetails;
+      const mcpProps = confirmationDetails;
 
       bodyContent = (
         <Box flexDirection="column">
