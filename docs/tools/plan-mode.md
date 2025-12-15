@@ -11,8 +11,8 @@ and return to the default operating mode where it can execute write operations.
 
 **Plan Mode** is a safety state where the agent is restricted to read-only
 operations (like reading files, searching code, and fetching web pages). Write
-operations (like writing files, editing code, or running shell commands) are
-strictly prohibited.
+operations (like writing files or editing code) are strictly prohibited. Shell
+commands require explicit user approval.
 
 This mode allows the agent to safely research, investigate, and formulate a
 comprehensive plan for complex tasks without the risk of making accidental or

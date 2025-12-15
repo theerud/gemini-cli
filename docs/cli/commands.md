@@ -167,11 +167,12 @@ Slash commands provide meta-level control over the CLI itself.
 
 - **`/plan-mode`**
   - **Description:** Enter Plan Mode. In this mode, the agent is restricted to
-    read-only operations and cannot modify files or execute shell commands. This
-    is useful for planning complex tasks without risk of accidental changes.
+    read-only operations. Write tools like `write_file` are disabled. Shell
+    commands can be executed but require explicit user approval. This is useful
+    for planning complex tasks without risk of accidental changes.
   - **Behavior:**
-    - Disables all write tools (e.g., `write_file`, `replace`,
-      `run_shell_command`).
+    - Disables write tools (e.g., `write_file`, `replace`).
+    - Requires approval for `run_shell_command`.
     - Allows read-only tools (e.g., `read_file`, `search_file_content`).
     - Allows `web_fetch` for research.
     - Enables the `exit_plan_mode` tool for the agent to autonomously return to

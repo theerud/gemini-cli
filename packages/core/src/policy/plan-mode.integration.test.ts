@@ -68,7 +68,7 @@ describe('Plan Mode Policy Integration', () => {
       },
       undefined,
     );
-    expect(shellResult.decision).toBe(PolicyDecision.DENY);
+    expect(shellResult.decision).toBe(PolicyDecision.ASK_USER);
 
     // Test Write Todos
     const todoResult = await engine.check(

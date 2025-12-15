@@ -21,7 +21,7 @@ modes = ["planMode"]
 
 [[rule]]
 toolName = "run_shell_command"
-decision = "deny"
+decision = "ask_user"
 priority = 20
 modes = ["planMode"]
 
