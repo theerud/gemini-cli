@@ -56,6 +56,7 @@ import { ideContextStore } from '../ide/ideContext.js';
 import { WriteTodosTool } from '../tools/write-todos.js';
 import { AskUserQuestionTool } from '../tools/ask-user-question.js';
 import { ExitPlanModeTool } from '../tools/exit-plan-mode.js';
+import { EnterPlanModeTool } from '../tools/enter-plan-mode.js';
 import type { FileSystemService } from '../services/fileSystemService.js';
 import { StandardFileSystemService } from '../services/fileSystemService.js';
 import { logRipgrepFallback } from '../telemetry/loggers.js';
@@ -1615,6 +1616,7 @@ export class Config {
     registerCoreTool(WebSearchTool, this);
     registerCoreTool(AskUserQuestionTool, this);
     registerCoreTool(ExitPlanModeTool, this);
+    registerCoreTool(EnterPlanModeTool, this);
     if (this.getUseWriteTodos()) {
       registerCoreTool(WriteTodosTool, this);
     }
