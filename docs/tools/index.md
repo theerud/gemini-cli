@@ -88,8 +88,8 @@ Gemini CLI's built-in tools can be broadly categorized as follows:
   requests.
 - **[Ask User Tool](./ask-user.md) (`ask_user_question`):** For asking
   structured questions to the user.
-- **[Exit Plan Mode Tool](./plan-mode.md) (`exit_plan_mode`):** For the agent
-  to autonomously exit Plan Mode.
+- **[Exit Plan Mode Tool](./plan-mode.md) (`exit_plan_mode`):** For the agent to
+  autonomously exit Plan Mode.
 
 Additionally, these tools incorporate:
 

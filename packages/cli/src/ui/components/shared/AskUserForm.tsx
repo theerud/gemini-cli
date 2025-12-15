@@ -313,7 +313,7 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
   };
 
   const saveAnswer = (answer: string) => {
-    const newAnswers = { ...answers, [currentQuestion!.question]: answer };
+    const newAnswers = { ...answers, [currentQuestion.question]: answer };
 
     setAnswers(newAnswers);
 
