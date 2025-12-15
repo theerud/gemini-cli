@@ -15,7 +15,7 @@ modes = ["planMode"]
 
 [[rule]]
 toolName = "save_memory"
-decision = "deny"
+decision = "ask_user"
 priority = 20
 modes = ["planMode"]
 

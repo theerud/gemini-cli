@@ -775,7 +775,6 @@ export class CoreToolScheduler {
         } else if (otherCalls.length > 0) {
           const PROHIBITED_PLAN_MODE_TOOLS = [
             'replace',
-            'save_memory',
             'write_file',
             'write_todos',
             'edit', // SmartEditTool also uses 'edit' as its base name

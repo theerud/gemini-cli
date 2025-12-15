@@ -172,7 +172,7 @@ Slash commands provide meta-level control over the CLI itself.
     for planning complex tasks without risk of accidental changes.
   - **Behavior:**
     - Disables write tools (e.g., `write_file`, `replace`).
-    - Requires approval for `run_shell_command`.
+    - Requires approval for `run_shell_command` and `save_memory`.
     - Allows read-only tools (e.g., `read_file`, `search_file_content`).
     - Allows `web_fetch` for research.
     - Enables the `exit_plan_mode` tool for the agent to autonomously return to

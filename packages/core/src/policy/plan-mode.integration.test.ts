@@ -70,6 +70,16 @@ describe('Plan Mode Policy Integration', () => {
     );
     expect(shellResult.decision).toBe(PolicyDecision.ASK_USER);
 
+    // Test Save Memory
+    const memoryResult = await engine.check(
+      {
+        name: 'save_memory',
+        args: {},
+      },
+      undefined,
+    );
+    expect(memoryResult.decision).toBe(PolicyDecision.ASK_USER);
+
     // Test Write Todos
     const todoResult = await engine.check(
       {
