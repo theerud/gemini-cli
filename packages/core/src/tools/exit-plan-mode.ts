@@ -30,6 +30,12 @@ class ExitPlanModeToolInvocation extends BaseToolInvocation<
   }
 
   async execute(_signal: AbortSignal): Promise<ToolResult> {
+    if (this.config.getApprovalMode() !== ApprovalMode.PLAN_MODE) {
+      return {
+        llmContent: `Not currently in Plan Mode.`,
+        returnDisplay: `Not currently in Plan Mode.`,
+      };
+    }
     await this.config.setApprovalMode(ApprovalMode.DEFAULT);
     return {
       llmContent: `Exited plan mode. The plan has been presented to the user.`,
@@ -55,7 +61,7 @@ export class ExitPlanModeTool extends BaseDeclarativeTool<
     super(
       ExitPlanModeTool.Name,
       'ExitPlanMode',
-      'Exit planning mode. ONLY use this tool AFTER you and the user have agreed on a concrete plan. calling this tool will present the plan to the user for final confirmation. Once confirmed, you will automatically switch to the standard mode to begin implementation.',
+      'Exit planning mode. ONLY use this tool AFTER you and the user have agreed on a concrete plan. calling this tool will present the plan to the user for final confirmation. Once confirmed, you will automatically switch to the standard mode to begin implementation. Do NOT use this tool if you are not currently in Plan Mode.',
       Kind.Other,
       {
         type: 'object',

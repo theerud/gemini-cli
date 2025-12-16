@@ -30,6 +30,12 @@ class EnterPlanModeToolInvocation extends BaseToolInvocation<
   }
 
   async execute(_signal: AbortSignal): Promise<ToolResult> {
+    if (this.config.getApprovalMode() === ApprovalMode.PLAN_MODE) {
+      return {
+        llmContent: `Already in Plan Mode.`,
+        returnDisplay: `Already in Plan Mode.`,
+      };
+    }
     await this.config.setApprovalMode(ApprovalMode.PLAN_MODE);
     return {
       llmContent: `Entered Plan Mode. Rationale: ${this.params.rationale}`,
@@ -55,7 +61,7 @@ export class EnterPlanModeTool extends BaseDeclarativeTool<
     super(
       EnterPlanModeTool.Name,
       'EnterPlanMode',
-      'Switch to Plan Mode. Use this when the user wants to discuss, brainstorm, or plan before implementation, or when you need to work out complex details/decisions with the user. This restricts you to read-only tools.',
+      'Switch to Plan Mode. Use this when the user wants to discuss, brainstorm, or plan before implementation, or when you need to work out complex details/decisions with the user. This restricts you to read-only tools. Do NOT use this tool if you are already in Plan Mode.',
       Kind.Other,
       {
         type: 'object',

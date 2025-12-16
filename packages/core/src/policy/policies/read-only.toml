@@ -59,3 +59,8 @@ priority = 50
 toolName = "SubagentInvocation"
 decision = "allow"
 priority = 50
+
+[[rule]]
+toolName = "enter_plan_mode"
+decision = "allow"
+priority = 50
