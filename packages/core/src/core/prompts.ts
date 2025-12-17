@@ -28,7 +28,7 @@ import type { Config } from '../config/config.js';
 import { GEMINI_DIR } from '../utils/paths.js';
 import { debugLogger } from '../utils/debugLogger.js';
 import { WriteTodosTool } from '../tools/write-todos.js';
-import { getEffectiveModel, PREVIEW_GEMINI_MODEL } from '../config/models.js';
+import { resolveModel, isPreviewModel } from '../config/models.js';
 
 export const PLAN_MODE_REMINDER = `
 # Plan Mode Active
@@ -122,13 +122,12 @@ export function getCoreSystemPrompt(
   }
 
   // TODO(joshualitt): Replace with system instructions on model configs.
-  const desiredModel = getEffectiveModel(
-    config.isInFallbackMode(),
-    config.getModel(),
+  const desiredModel = resolveModel(
+    config.getActiveModel(),
     config.getPreviewFeatures(),
   );
 
-  const isGemini3 = desiredModel === PREVIEW_GEMINI_MODEL;
+  const isGemini3 = isPreviewModel(desiredModel);
 
   const mandatesVariant = isGemini3
     ? `
@@ -195,7 +194,7 @@ ${config.getAgentRegistry().getDirectoryContext()}`,
 
 ## Software Engineering Tasks
 When requested to perform tasks like fixing bugs, adding features, refactoring, or explaining code, follow this sequence:
-1. **Understand:** Think about the user's request and the relevant codebase context. **Treat the User as a primary source of context. If the request is high-level (e.g., "improve UX") or lacks specific requirements, use '${ASK_USER_QUESTION_TOOL_NAME}' (without options) to "interview" the user and gather the missing product context needed to proceed.** Use '${GREP_TOOL_NAME}' and '${GLOB_TOOL_NAME}' search tools extensively (in parallel if independent) to understand file structures, existing code patterns, and conventions. 
+1. **Understand:** Think about the user's request and the relevant codebase context. **Treat the User as a primary source of context. If the request is high-level (e.g., "improve UX") or lacks specific requirements, use '${ASK_USER_QUESTION_TOOL_NAME}' (without options) to "interview" the user and gather the missing product context needed to proceed.** Use '${GREP_TOOL_NAME}' and '${GLOB_TOOL_NAME}' search tools extensively (in parallel if independent) to understand file structures, existing code patterns, and conventions.
 Use '${READ_FILE_TOOL_NAME}' to understand context and validate any assumptions you may have. If you need to read multiple files, you should make multiple parallel calls to '${READ_FILE_TOOL_NAME}'.
 2. **Plan:** Build a coherent and grounded (based on the understanding in step 1) plan for how you intend to resolve the user's task. **Identify key decision points where user preference is the deciding factor (e.g., architectural trade-offs, new library vs. custom code). Use '${ASK_USER_QUESTION_TOOL_NAME}' with defined options to present these choices and their implications to the user.** ${interactiveMode ? `If the plan is complex, requires significant architectural decisions, or if the user clearly wants to be involved in the design details, **call '${ENTER_PLAN_MODE_TOOL_NAME}'**. This allows you to iterate on the design as a consultant without the risk of premature implementation. ` : ''}Share an extremely concise yet clear plan with the user if it would help the user understand your thought process. As part of the plan, you should use an iterative development process that includes writing unit tests to verify your changes. Use output logs or debug statements as part of this process to arrive at a solution.`,
 
@@ -452,7 +451,7 @@ The structure MUST be as follows:
          - Build Command: \`npm run build\`
          - Testing: Tests are run with \`npm test\`. Test files must end in \`.test.ts\`.
          - API Endpoint: The primary API endpoint is \`https://api.example.com/v2\`.
-         
+
         -->
     </key_knowledge>
 
