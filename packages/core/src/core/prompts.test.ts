@@ -71,7 +71,6 @@ describe('Core System Prompt (prompts.ts)', () => {
       getModel: vi.fn().mockReturnValue(DEFAULT_GEMINI_MODEL_AUTO),
       getActiveModel: vi.fn().mockReturnValue(DEFAULT_GEMINI_MODEL),
       getPreviewFeatures: vi.fn().mockReturnValue(false),
-      isInFallbackMode: vi.fn().mockReturnValue(false),
       getAgentRegistry: vi.fn().mockReturnValue({
         getDirectoryContext: vi.fn().mockReturnValue('Mock Agent Directory'),
       }),
@@ -184,7 +183,6 @@ describe('Core System Prompt (prompts.ts)', () => {
         getModel: vi.fn().mockReturnValue('auto'),
         getActiveModel: vi.fn().mockReturnValue(DEFAULT_GEMINI_MODEL),
         getPreviewFeatures: vi.fn().mockReturnValue(false),
-        isInFallbackMode: vi.fn().mockReturnValue(false),
         getAgentRegistry: vi.fn().mockReturnValue({
           getDirectoryContext: vi.fn().mockReturnValue('Mock Agent Directory'),
         }),

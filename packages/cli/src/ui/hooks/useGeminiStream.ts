@@ -39,6 +39,7 @@ import {
   EDIT_TOOL_NAMES,
   processRestorableToolCalls,
   PLAN_MODE_REMINDER,
+  recordToolCallInteractions,
 } from '@google/gemini-cli-core';
 import { type Part, type PartListUnion, FinishReason } from '@google/genai';
 import type {
@@ -164,6 +165,11 @@ export const useGeminiStream = (
               currentModel,
               completedToolCallsFromScheduler,
             );
+
+          await recordToolCallInteractions(
+            config,
+            completedToolCallsFromScheduler,
+          );
         } catch (error) {
           debugLogger.warn(
             `Error recording completed tool call information: ${error}`,

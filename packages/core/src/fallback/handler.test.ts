@@ -29,7 +29,6 @@ import {
 } from '../config/models.js';
 import type { FallbackModelHandler } from './types.js';
 import { openBrowserSecurely } from '../utils/secure-browser-launcher.js';
-import { coreEvents } from '../utils/events.js';
 import { debugLogger } from '../utils/debugLogger.js';
 import * as policyHelpers from '../availability/policyHelpers.js';
 import { createDefaultPolicy } from '../availability/policyCatalog.js';
@@ -63,13 +62,6 @@ const AUTH_API_KEY = AuthType.USE_GEMINI;
 
 const createMockConfig = (overrides: Partial<Config> = {}): Config =>
   ({
-    isInFallbackMode: vi.fn(() => false),
-    setFallbackMode: vi.fn(),
-    isModelAvailabilityServiceEnabled: vi.fn(() => true),
-    isPreviewModelFallbackMode: vi.fn(() => false),
-    setPreviewModelFallbackMode: vi.fn(),
-    isPreviewModelBypassMode: vi.fn(() => false),
-    setPreviewModelBypassMode: vi.fn(),
     fallbackHandler: undefined,
     getFallbackModelHandler: vi.fn(),
     setActiveModel: vi.fn(),
@@ -91,7 +83,6 @@ describe('handleFallback', () => {
   let mockConfig: Config;
   let mockHandler: Mock<FallbackModelHandler>;
   let consoleErrorSpy: MockInstance;
-  let fallbackEventSpy: MockInstance;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -107,12 +98,10 @@ describe('handleFallback', () => {
     // But tests might check console.error usage in legacy code if any?
     // The handler uses console.error in legacyHandleFallback.
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    fallbackEventSpy = vi.spyOn(coreEvents, 'emitFallbackModeChanged');
   });
 
   afterEach(() => {
     consoleErrorSpy.mockRestore();
-    fallbackEventSpy.mockRestore();
   });
 
   describe('policy-driven flow', () => {
@@ -130,9 +119,6 @@ describe('handleFallback', () => {
       policyConfig = createMockConfig();
 
       // Ensure we test the availability path
-      vi.mocked(policyConfig.isModelAvailabilityServiceEnabled).mockReturnValue(
-        true,
-      );
       vi.mocked(policyConfig.getModelAvailabilityService).mockReturnValue(
         availability,
       );
@@ -215,14 +201,6 @@ describe('handleFallback', () => {
         expect(policyConfig.setActiveModel).toHaveBeenCalledWith(
           DEFAULT_GEMINI_FLASH_MODEL,
         );
-        // Silent actions should not trigger the legacy fallback mode (via activateFallbackMode),
-        // but setActiveModel might trigger it via legacy sync if it switches to Flash.
-        // However, the test requirement is "doesn't emit fallback mode".
-        // Since we are mocking setActiveModel, we can verify setFallbackMode isn't called *independently*.
-        // But setActiveModel is mocked, so it won't trigger side effects unless the implementation does.
-        // We verified setActiveModel is called.
-        // We verify setFallbackMode is NOT called (which would happen if activateFallbackMode was called).
-        expect(policyConfig.setFallbackMode).not.toHaveBeenCalled();
       } finally {
         chainSpy.mockRestore();
       }
@@ -414,7 +392,6 @@ describe('handleFallback', () => {
 
       expect(result).toBe(true);
       expect(policyConfig.setActiveModel).toHaveBeenCalledWith(FALLBACK_MODEL);
-      expect(policyConfig.setFallbackMode).not.toHaveBeenCalled();
       // TODO: add logging expect statement
     });
 
