@@ -763,7 +763,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
     pendingHistoryItems: pendingGeminiHistoryItems,
     thought,
     cancelOngoingRequest,
-    handleApprovalModeChange: originalHandleApprovalModeChange,
+    handleApprovalModeChange,
     activePtyId,
     loopDetectionConfirmationRequest,
     lastOutputTime,
@@ -786,15 +786,6 @@ Logging in with Google... Restarting Gemini CLI to continue.
     terminalWidth,
     terminalHeight,
     embeddedShellFocused,
-  );
-
-  const [approvalModeTick, setApprovalModeTick] = useState(0);
-  const handleApprovalModeChange = useCallback(
-    async (mode: ApprovalMode) => {
-      await originalHandleApprovalModeChange(mode);
-      setApprovalModeTick((prev) => prev + 1);
-    },
-    [originalHandleApprovalModeChange],
   );
 
   useEffect(() => {
@@ -1549,7 +1540,6 @@ Logging in with Google... Restarting Gemini CLI to continue.
       warningMessage,
       bannerData,
       bannerVisible,
-      _approvalModeTick: approvalModeTick,
       terminalBackgroundColor: config.getTerminalBackground(),
     }),
     [
@@ -1642,7 +1632,6 @@ Logging in with Google... Restarting Gemini CLI to continue.
       warningMessage,
       bannerData,
       bannerVisible,
-      approvalModeTick,
       config,
     ],
   );
