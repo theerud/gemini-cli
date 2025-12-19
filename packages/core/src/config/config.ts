@@ -454,6 +454,7 @@ export class Config {
 
   private readonly experimentalJitContext: boolean;
   private contextManager?: ContextManager;
+  private terminalBackground: string | undefined = undefined;
 
   constructor(params: ConfigParameters) {
     this.sessionId = params.sessionId;
@@ -822,6 +823,14 @@ export class Config {
 
   setSessionId(sessionId: string): void {
     this.sessionId = sessionId;
+  }
+
+  setTerminalBackground(terminalBackground: string | undefined): void {
+    this.terminalBackground = terminalBackground;
+  }
+
+  getTerminalBackground(): string | undefined {
+    return this.terminalBackground;
   }
 
   shouldLoadMemoryFromIncludeDirectories(): boolean {
