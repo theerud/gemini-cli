@@ -21,6 +21,7 @@ import { useKeypress } from '../../hooks/useKeypress.js';
 import { theme } from '../../semantic-colors.js';
 import { AskUserForm } from '../shared/AskUserForm.js';
 import { useAlternateBuffer } from '../../hooks/useAlternateBuffer.js';
+import { useSettings } from '../../contexts/SettingsContext.js';
 
 export interface ToolConfirmationMessageProps {
   confirmationDetails: ToolCallConfirmationDetails;
@@ -42,6 +43,9 @@ export const ToolConfirmationMessage: React.FC<
   const { onConfirm } = confirmationDetails;
 
   const isAlternateBuffer = useAlternateBuffer();
+  const settings = useSettings();
+  const allowPermanentApproval =
+    settings.merged.security?.enablePermanentToolApproval ?? false;
 
   const [ideClient, setIdeClient] = useState<IdeClient | null>(null);
   const [isDiffingEnabled, setIsDiffingEnabled] = useState(false);
@@ -116,11 +120,13 @@ export const ToolConfirmationMessage: React.FC<
             value: ToolConfirmationOutcome.ProceedAlways,
             key: 'Allow for this session',
           });
-          options.push({
-            label: 'Allow for all future sessions',
-            value: ToolConfirmationOutcome.ProceedAlwaysAndSave,
-            key: 'Allow for all future sessions',
-          });
+          if (allowPermanentApproval) {
+            options.push({
+              label: 'Allow for all future sessions',
+              value: ToolConfirmationOutcome.ProceedAlwaysAndSave,
+              key: 'Allow for all future sessions',
+            });
+          }
         }
         if (!config.getIdeMode() || !isDiffingEnabled) {
           options.push({
@@ -151,11 +157,13 @@ export const ToolConfirmationMessage: React.FC<
           value: ToolConfirmationOutcome.ProceedAlways,
           key: `Allow for this session`,
         });
-        options.push({
-          label: `Allow for all future sessions`,
-          value: ToolConfirmationOutcome.ProceedAlwaysAndSave,
-          key: `Allow for all future sessions`,
-        });
+        if (allowPermanentApproval) {
+          options.push({
+            label: `Allow for all future sessions`,
+            value: ToolConfirmationOutcome.ProceedAlwaysAndSave,
+            key: `Allow for all future sessions`,
+          });
+        }
       }
       options.push({
         label: 'No, suggest changes (esc)',
@@ -175,11 +183,13 @@ export const ToolConfirmationMessage: React.FC<
           value: ToolConfirmationOutcome.ProceedAlways,
           key: 'Allow for this session',
         });
-        options.push({
-          label: 'Allow for all future sessions',
-          value: ToolConfirmationOutcome.ProceedAlwaysAndSave,
-          key: 'Allow for all future sessions',
-        });
+        if (allowPermanentApproval) {
+          options.push({
+            label: 'Allow for all future sessions',
+            value: ToolConfirmationOutcome.ProceedAlwaysAndSave,
+            key: 'Allow for all future sessions',
+          });
+        }
       }
       options.push({
         label: 'No, suggest changes (esc)',
@@ -209,11 +219,13 @@ export const ToolConfirmationMessage: React.FC<
           value: ToolConfirmationOutcome.ProceedAlwaysServer,
           key: 'Allow all server tools for this session',
         });
-        options.push({
-          label: 'Allow tool for all future sessions',
-          value: ToolConfirmationOutcome.ProceedAlwaysAndSave,
-          key: 'Allow tool for all future sessions',
-        });
+        if (allowPermanentApproval) {
+          options.push({
+            label: 'Allow tool for all future sessions',
+            value: ToolConfirmationOutcome.ProceedAlwaysAndSave,
+            key: 'Allow tool for all future sessions',
+          });
+        }
       }
       options.push({
         label: 'No, suggest changes (esc)',
@@ -338,6 +350,7 @@ export const ToolConfirmationMessage: React.FC<
     availableTerminalHeight,
     terminalWidth,
     isAlternateBuffer,
+    allowPermanentApproval,
   ]);
 
   if (confirmationDetails.type === 'ask_user') {
