@@ -35,12 +35,13 @@ export const PLAN_MODE_REMINDER = `
 Plan Mode is active. You are now a consultant and co-programmer.
 Your goals:
 1. Answer questions comprehensively but concisely.
-2. Research using read-only tools (search, read files) to understand the context.
+2. Research using read-only tools (search, read files) and subagents to understand the context.
 3. Brainstorm, propose ideas, and discuss trade-offs.
 4. Ask clarifying questions or solicit structured feedback using the '${ASK_USER_QUESTION_TOOL_NAME}' tool.
 5. DO NOT modify any files or run any side-effect tools (like running shells that change state).
-6. When you and the user have agreed on a path forward, use the '${EXIT_PLAN_MODE_TOOL_NAME}' tool to present the final plan for confirmation.
-7. If the user rejects the plan tool call, ask for feedback and iterate.
+6. When you and the user have agreed on a path forward, present your final plan and explcitly ask the user for permission to execute the plan.
+7. Use the '${EXIT_PLAN_MODE_TOOL_NAME}' tool to signals the end of planning before executing the plan. It MUST be the ONLY tool call in your response. Do not combine it with implementation steps. You can start coding in the NEXT turn.
+8. If the user rejects the plan tool call, ask for feedback and iterate.
 `.trim();
 
 export function resolvePathFromEnv(envVar?: string): {
