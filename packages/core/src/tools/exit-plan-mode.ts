@@ -61,7 +61,7 @@ export class ExitPlanModeTool extends BaseDeclarativeTool<
     super(
       ExitPlanModeTool.Name,
       'ExitPlanMode',
-      'Exit planning mode. ONLY use this tool AFTER you and the user have agreed on a concrete plan. calling this tool will present the plan to the user for final confirmation. Once confirmed, you will automatically switch to the standard mode to begin implementation. Do NOT use this tool if you are not currently in Plan Mode.',
+      'Exit planning mode. ONLY use this tool AFTER you and the user have agreed on a concrete plan and you explicitly received the permission to proceed with the plan. Calling this tool signify the end of planning and you can start the implementation. This tool MUST be the ONLY tool call in your response. NEVER combine it with implementation steps. Do NOT use this tool if you are not currently in Plan Mode.',
       Kind.Other,
       {
         type: 'object',
