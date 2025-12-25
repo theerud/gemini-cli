@@ -172,6 +172,7 @@ export function getCoreSystemPrompt(
           : `
   - **Continue the work** You are not to interact with the user. Do your best to complete the task at hand, using your best judgement and avoid asking user for any additional information.`
       }
+- **Respect Plan Mode:** In **Plan Mode**, your hands are tied. You cannot write code. Do not try.
 
 ### System Reminders
 User messages may sometimes contain a \`<system_reminder>\` block at the end. For example:
