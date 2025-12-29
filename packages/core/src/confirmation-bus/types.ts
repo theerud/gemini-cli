@@ -42,7 +42,7 @@ export interface UpdatePolicy {
   toolName: string;
   persist?: boolean;
   argsPattern?: string;
-  commandPrefix?: string;
+  commandPrefix?: string | string[];
   mcpName?: string;
 }
 
