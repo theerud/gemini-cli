@@ -40,6 +40,7 @@ import {
   processRestorableToolCalls,
   PLAN_MODE_REMINDER,
   recordToolCallInteractions,
+  ToolErrorType,
 } from '@google/gemini-cli-core';
 import { type Part, type PartListUnion, FinishReason } from '@google/genai';
 import type {
@@ -1185,6 +1186,28 @@ export const useGeminiStream = (
       );
 
       if (geminiTools.length === 0) {
+        return;
+      }
+
+      // Check if any tool requested to stop execution immediately
+      const stopExecutionTool = geminiTools.find(
+        (tc) => tc.response.errorType === ToolErrorType.STOP_EXECUTION,
+      );
+
+      if (stopExecutionTool && stopExecutionTool.response.error) {
+        addItem(
+          {
+            type: MessageType.INFO,
+            text: `Agent execution stopped: ${stopExecutionTool.response.error.message}`,
+          },
+          Date.now(),
+        );
+        setIsResponding(false);
+
+        const callIdsToMarkAsSubmitted = geminiTools.map(
+          (toolCall) => toolCall.request.callId,
+        );
+        markToolsAsSubmitted(callIdsToMarkAsSubmitted);
         return;
       }
 

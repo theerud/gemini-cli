@@ -74,6 +74,9 @@ export enum ToolErrorType {
 
   // Policy-specific Errors
   POLICY_VIOLATION = 'policy_violation',
+
+  // Hook-specific Errors
+  STOP_EXECUTION = 'stop_execution',
 }
 
 /**

@@ -14,10 +14,12 @@ import {
   createHookOutput,
   NotificationType,
   type DefaultHookOutput,
+  BeforeToolHookOutput,
 } from '../hooks/types.js';
 import type {
   ToolCallConfirmationDetails,
   ToolResult,
+  AnyDeclarativeTool,
 } from '../tools/tools.js';
 import { ToolErrorType } from '../tools/tool-error.js';
 import { debugLogger } from '../utils/debugLogger.js';
@@ -263,11 +265,14 @@ export async function executeToolWithHooks(
   signal: AbortSignal,
   messageBus: MessageBus | undefined,
   hooksEnabled: boolean,
+  tool: AnyDeclarativeTool,
   liveOutputCallback?: (outputChunk: string | AnsiOutput) => void,
   shellExecutionConfig?: ShellExecutionConfig,
   setPidCallback?: (pid: number) => void,
 ): Promise<ToolResult> {
   const toolInput = (invocation.params || {}) as Record<string, unknown>;
+  let inputWasModified = false;
+  let modifiedKeys: string[] = [];
 
   // Fire BeforeTool hook through MessageBus (only if hooks are enabled)
   if (hooksEnabled && messageBus) {
@@ -276,6 +281,19 @@ export async function executeToolWithHooks(
       toolName,
       toolInput,
     );
+
+    // Check if hook requested to stop entire agent execution
+    if (beforeOutput?.shouldStopExecution()) {
+      const reason = beforeOutput.getEffectiveReason();
+      return {
+        llmContent: `Agent execution stopped by hook: ${reason}`,
+        returnDisplay: `Agent execution stopped by hook: ${reason}`,
+        error: {
+          type: ToolErrorType.STOP_EXECUTION,
+          message: reason,
+        },
+      };
+    }
 
     // Check if hook blocked the tool execution
     const blockingError = beforeOutput?.getBlockingError();
@@ -290,17 +308,36 @@ export async function executeToolWithHooks(
       };
     }
 
-    // Check if hook requested to stop entire agent execution
-    if (beforeOutput?.shouldStopExecution()) {
-      const reason = beforeOutput.getEffectiveReason();
-      return {
-        llmContent: `Agent execution stopped by hook: ${reason}`,
-        returnDisplay: `Agent execution stopped by hook: ${reason}`,
-        error: {
-          type: ToolErrorType.EXECUTION_FAILED,
-          message: `Agent execution stopped: ${reason}`,
-        },
-      };
+    // Check if hook requested to update tool input
+    if (beforeOutput instanceof BeforeToolHookOutput) {
+      const modifiedInput = beforeOutput.getModifiedToolInput();
+      if (modifiedInput) {
+        // We modify the toolInput object in-place, which should be the same reference as invocation.params
+        // We use Object.assign to update properties
+        Object.assign(invocation.params, modifiedInput);
+        debugLogger.debug(`Tool input modified by hook for ${toolName}`);
+        inputWasModified = true;
+        modifiedKeys = Object.keys(modifiedInput);
+
+        // Recreate the invocation with the new parameters
+        // to ensure any derived state (like resolvedPath in ReadFileTool) is updated.
+        try {
+          // We use the tool's build method to validate and create the invocation
+          // This ensures consistent behavior with the initial creation
+          invocation = tool.build(invocation.params);
+        } catch (error) {
+          return {
+            llmContent: `Tool parameter modification by hook failed validation: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+            returnDisplay: `Tool parameter modification by hook failed validation.`,
+            error: {
+              type: ToolErrorType.INVALID_TOOL_PARAMS,
+              message: String(error),
+            },
+          };
+        }
+      }
     }
   }
 
@@ -319,6 +356,24 @@ export async function executeToolWithHooks(
       liveOutputCallback,
       shellExecutionConfig,
     );
+  }
+
+  // Append notification if parameters were modified
+  if (inputWasModified) {
+    const modificationMsg = `\n\n[System] Tool input parameters (${modifiedKeys.join(
+      ', ',
+    )}) were modified by a hook before execution.`;
+    if (typeof toolResult.llmContent === 'string') {
+      toolResult.llmContent += modificationMsg;
+    } else if (Array.isArray(toolResult.llmContent)) {
+      toolResult.llmContent.push({ text: modificationMsg });
+    } else if (toolResult.llmContent) {
+      // Handle single Part case by converting to an array
+      toolResult.llmContent = [
+        toolResult.llmContent,
+        { text: modificationMsg },
+      ];
+    }
   }
 
   // Fire AfterTool hook through MessageBus (only if hooks are enabled)
@@ -341,8 +396,21 @@ export async function executeToolWithHooks(
         llmContent: `Agent execution stopped by hook: ${reason}`,
         returnDisplay: `Agent execution stopped by hook: ${reason}`,
         error: {
+          type: ToolErrorType.STOP_EXECUTION,
+          message: reason,
+        },
+      };
+    }
+
+    // Check if hook blocked the tool result
+    const blockingError = afterOutput?.getBlockingError();
+    if (blockingError?.blocked) {
+      return {
+        llmContent: `Tool result blocked: ${blockingError.reason}`,
+        returnDisplay: `Tool result blocked: ${blockingError.reason}`,
+        error: {
           type: ToolErrorType.EXECUTION_FAILED,
-          message: `Agent execution stopped: ${reason}`,
+          message: blockingError.reason,
         },
       };
     }
