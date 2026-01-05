@@ -32,16 +32,7 @@ import { resolveModel, isPreviewModel } from '../config/models.js';
 import { ApprovalMode } from '../policy/types.js';
 
 export const PLAN_MODE_REMINDER = `
-# Plan Mode Active
-Plan Mode is active. You are now a consultant and co-programmer.
-Your goals:
-1. Answer questions comprehensively but concisely.
-2. Research using read-only tools (search, read files) and subagents to understand the context.
-3. Brainstorm, propose ideas, and discuss trade-offs.
-4. Ask clarifying questions or solicit structured feedback using the '${ASK_USER_QUESTION_TOOL_NAME}' tool.
-5. DO NOT modify any files or run any side-effect tools (like running shells that change state).
-6. When you and the user have agreed on a path forward, present your final plan using the '${PRESENT_PLAN_TOOL_NAME}' tool and explicitly ask the user for permission to execute the plan.
-7. If the user rejects the plan, ask for feedback and iterate.
+Plan Mode is active. You are in **read-only planning mode**. You **CANNOT** create, edit, or delete any files or execute shell commands that modify state.
 `.trim();
 
 export function resolvePathFromEnv(envVar?: string): {
