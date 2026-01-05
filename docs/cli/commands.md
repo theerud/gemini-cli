@@ -165,20 +165,28 @@ Slash commands provide meta-level control over the CLI itself.
       - **Description:** Change the trust status of the current folder. This
         will open an interactive dialog.
 
-- **`/plan-mode`**
-  - **Description:** Enter Plan Mode. In this mode, the agent is restricted to
-    read-only operations. Write tools like `write_file` are disabled. Shell
-    commands can be executed but require explicit user approval. This is useful
-    for planning complex tasks without risk of accidental changes.
-  - **Behavior:**
-    - Disables write tools (e.g., `write_file`, `replace`).
-    - Requires approval for `run_shell_command` and `save_memory`.
-    - Allows read-only tools (e.g., `read_file`, `search_file_content`).
-    - Allows `web_fetch` for research.
-    - Enables the `exit_plan_mode` tool for the agent to autonomously return to
-      default mode when the plan is ready.
-  - **Keyboard shortcut:** Press **Shift+Tab** to cycle through approval modes
-    (Default -> Auto-Edit -> Plan Mode).- **`/restore`**
+- [**`/plan`**](./plan-mode.md)
+  - **Description:** Manage implementation plans created in Plan Mode.
+  - **Sub-commands:**
+    - **`list`**:
+      - **Description:** List all saved implementation plans. Shows
+        `[last viewed]` indicator for the most recently viewed plan.
+    - **`view`**:
+      - **Description:** View a saved plan's content and mark it as last viewed.
+      - **Usage:** `/plan view <title>`
+    - **`resume`** (or **`execute`**):
+      - **Description:** Load a saved plan and switch to Auto Edit mode for
+        implementation.
+      - **Usage:** `/plan resume <title>`
+    - **`delete`**:
+      - **Description:** Delete a saved plan.
+      - **Usage:** `/plan delete <title>`
+    - **`export`**:
+      - **Description:** Export a plan's content to a file.
+      - **Usage:** `/plan export <title> <filename>`
+  - **Note:** Plans are stored in `.gemini/plans/` as Markdown files. See
+    [Plan Mode documentation](./plan-mode.md) for details.
+
 - **`/restore`**
   - **Description:** Restores the project files to the state they were in just
     before a tool was executed. This is particularly useful for undoing file

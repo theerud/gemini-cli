@@ -195,6 +195,19 @@ export type HistoryItemChatList = HistoryItemBase & {
   chats: ChatDetail[];
 };
 
+export interface PlanDetail {
+  id: string;
+  title: string;
+  updatedAt: string;
+  status: 'draft' | 'saved' | 'executed';
+  lastViewed?: string;
+}
+
+export type HistoryItemPlanList = HistoryItemBase & {
+  type: 'plan_list';
+  plans: PlanDetail[];
+};
+
 export interface ToolDefinition {
   name: string;
   displayName: string;
@@ -294,6 +307,7 @@ export type HistoryItemWithoutId =
   | HistoryItemSkillsList
   | HistoryItemMcpStatus
   | HistoryItemChatList
+  | HistoryItemPlanList
   | HistoryItemHooksList;
 
 export type HistoryItem = HistoryItemWithoutId & { id: number };
@@ -317,6 +331,7 @@ export enum MessageType {
   SKILLS_LIST = 'skills_list',
   MCP_STATUS = 'mcp_status',
   CHAT_LIST = 'chat_list',
+  PLAN_LIST = 'plan_list',
   HOOKS_LIST = 'hooks_list',
 }
 
@@ -417,4 +432,27 @@ export interface ConfirmationRequest {
 
 export interface LoopDetectionConfirmationRequest {
   onComplete: (result: { userSelection: 'disable' | 'keep' }) => void;
+}
+
+/**
+ * Request to show plan completion dialog after present_plan tool executes.
+ */
+export interface PlanCompletionRequest {
+  /** The plan title */
+  title: string;
+  /** The full plan content in markdown */
+  content: string;
+  /** List of files that will be affected */
+  affectedFiles: string[];
+  /** Dependencies/commands to run first */
+  dependencies: string[];
+  /** The original user prompt that triggered planning */
+  originalPrompt: string;
+  /** The saved plan ID (auto-saved as draft) */
+  planId: string;
+  /** Callback when user makes a choice */
+  onChoice: (
+    choice: 'execute' | 'save' | 'refine' | 'cancel',
+    feedback?: string,
+  ) => void;
 }

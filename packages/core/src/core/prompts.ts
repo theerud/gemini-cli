@@ -12,6 +12,7 @@ import {
   GLOB_TOOL_NAME,
   GREP_TOOL_NAME,
   MEMORY_TOOL_NAME,
+  PRESENT_PLAN_TOOL_NAME,
   READ_FILE_TOOL_NAME,
   SHELL_TOOL_NAME,
   WRITE_FILE_TOOL_NAME,
@@ -30,6 +31,7 @@ import { GEMINI_DIR } from '../utils/paths.js';
 import { debugLogger } from '../utils/debugLogger.js';
 import { WriteTodosTool } from '../tools/write-todos.js';
 import { resolveModel, isPreviewModel } from '../config/models.js';
+import { ApprovalMode } from '../policy/types.js';
 
 export const PLAN_MODE_REMINDER = `
 # Plan Mode Active
@@ -95,10 +97,102 @@ export function resolvePathFromEnv(envVar?: string): {
   };
 }
 
+/**
+ * Returns the system prompt for Plan Mode.
+ * This prompt emphasizes read-only research and planning without code modifications.
+ */
+function getPlanModeSystemPrompt(config: Config, userMemory?: string): string {
+  const enableCodebaseInvestigator = config
+    .getToolRegistry()
+    .getAllToolNames()
+    .includes(CodebaseInvestigatorAgent.name);
+
+  const planPrompt = `# PLANNING MODE ACTIVE
+
+You are in **read-only planning mode**. Your role is to research the codebase and create detailed implementation plans WITHOUT making any code modifications.
+
+## CRITICAL RESTRICTIONS
+
+You **CANNOT**:
+- Create, edit, or delete any files
+- Execute shell commands that modify state
+- Use the '${EDIT_TOOL_NAME}', '${WRITE_FILE_TOOL_NAME}', or '${SHELL_TOOL_NAME}' tools
+- Use any MCP (external) tools - they are all blocked in planning mode
+
+You **CAN**:
+- Read files using '${READ_FILE_TOOL_NAME}'
+- Search the codebase using '${GREP_TOOL_NAME}' and '${GLOB_TOOL_NAME}'
+- Fetch web content for research
+${enableCodebaseInvestigator ? `- Delegate to the '${CodebaseInvestigatorAgent.name}' agent for complex exploration` : ''}
+
+## YOUR WORKFLOW
+
+1. **Research Phase**: Thoroughly explore the codebase to understand:
+   - Existing patterns and conventions
+   - File structure and dependencies
+   - Related code and potential impacts
+
+2. **Parallel Exploration** (CRITICAL FOR EFFICIENCY):
+   You MUST call multiple read-only tools in a SINGLE response whenever possible. This executes them in parallel and dramatically speeds up research.
+
+   **Example - Instead of sequential calls:**
+   ❌ First call: glob("**/*.ts")
+   ❌ Second call: grep("authentication")
+   ❌ Third call: read_file("src/auth.ts")
+
+   **Do this - All in ONE response:**
+   ✅ glob("**/*.ts") + grep("authentication") + read_file("src/auth.ts")
+
+   When you need to gather context, ALWAYS batch your tool calls:
+   - Search for multiple patterns at once (glob + grep)
+   - Read multiple related files simultaneously
+   ${enableCodebaseInvestigator ? `- Delegate focused questions to the '${CodebaseInvestigatorAgent.name}' agent` : ''}
+   - Only proceed to conclusions after ALL parallel results return
+
+3. **Plan Creation**: Create a comprehensive implementation plan including:
+   - Summary of what will be implemented
+   - Specific files that need to be created or modified
+   - Step-by-step implementation sequence
+   - Testing strategy
+   - Potential risks or edge cases
+
+## OUTPUT FORMAT
+
+Structure your plan using clear markdown:
+- **Summary**: Brief description of the implementation
+- **Files to Modify**: List specific file paths and what changes are needed
+- **Implementation Steps**: Numbered steps with details
+- **Testing Strategy**: How to verify the implementation
+- **Considerations**: Risks, edge cases, dependencies
+
+## TONE
+
+Be thorough but concise. Focus on actionable, specific information rather than general descriptions. Reference exact file paths, function names, and code patterns from your research.
+
+## COMPLETING YOUR PLAN
+
+When you have finished researching and created a complete plan, you MUST call the '${PRESENT_PLAN_TOOL_NAME}' tool to present it to the user. This will show them options to execute, save, or refine the plan.
+
+**Important:** Do NOT attempt to implement anything. Your job is ONLY to create the plan. The user will decide whether to execute it.
+`;
+
+  const memorySuffix =
+    userMemory && userMemory.trim().length > 0
+      ? `\n\n---\n\n${userMemory.trim()}`
+      : '';
+
+  return `${planPrompt}${memorySuffix}`;
+}
+
 export function getCoreSystemPrompt(
   config: Config,
   userMemory?: string,
 ): string {
+  // Check if we're in Plan Mode and return the planning prompt
+  if (config.getApprovalMode() === ApprovalMode.PLAN) {
+    return getPlanModeSystemPrompt(config, userMemory);
+  }
+
   // A flag to indicate whether the system prompt override is active.
   let systemMdEnabled = false;
   // The default path for the system prompt file. This can be overridden.

@@ -7,7 +7,6 @@
 import { useState, useEffect } from 'react';
 import { ApprovalMode, type Config } from '@google/gemini-cli-core';
 import { useKeypress } from './useKeypress.js';
-import { keyMatchers, Command } from '../keyMatchers.js';
 import type { HistoryItemWithoutId } from '../types.js';
 import { MessageType } from '../types.js';
 
@@ -54,16 +53,14 @@ export function useAutoAcceptIndicator({
           config.getApprovalMode() === ApprovalMode.YOLO
             ? ApprovalMode.DEFAULT
             : ApprovalMode.YOLO;
-      } else if (keyMatchers[Command.TOGGLE_PLAN_MODE](key)) {
-        const currentMode = config.getApprovalMode();
-        if (currentMode === ApprovalMode.DEFAULT) {
+      } else if (key.shift && key.name === 'tab') {
+        // Cycle through: DEFAULT -> AUTO_EDIT -> PLAN -> DEFAULT
+        const current = config.getApprovalMode();
+        if (current === ApprovalMode.DEFAULT) {
           nextApprovalMode = ApprovalMode.AUTO_EDIT;
-        } else if (currentMode === ApprovalMode.AUTO_EDIT) {
-          nextApprovalMode = ApprovalMode.PLAN_MODE;
-        } else if (currentMode === ApprovalMode.PLAN_MODE) {
-          nextApprovalMode = ApprovalMode.DEFAULT;
-        } else {
-          // Fallback for YOLO or other states
+        } else if (current === ApprovalMode.AUTO_EDIT) {
+          nextApprovalMode = ApprovalMode.PLAN;
+        } else if (current === ApprovalMode.PLAN) {
           nextApprovalMode = ApprovalMode.DEFAULT;
         }
       }
