@@ -30,6 +30,7 @@ import { ShellTool } from '../tools/shell.js';
 import { WriteFileTool } from '../tools/write-file.js';
 import { WebFetchTool } from '../tools/web-fetch.js';
 import { MemoryTool, setGeminiMdFilename } from '../tools/memoryTool.js';
+import { PresentPlanTool } from '../tools/present-plan.js';
 import { WebSearchTool } from '../tools/web-search.js';
 import { GeminiClient } from '../core/client.js';
 import { BaseLlmClient } from '../core/baseLlmClient.js';
@@ -1209,7 +1210,14 @@ export class Config {
         'Cannot enable privileged approval modes in an untrusted folder.',
       );
     }
+    const previousMode = this.policyEngine.getApprovalMode();
     this.policyEngine.setApprovalMode(mode);
+
+    // When switching to/from PLAN mode, update the system instruction
+    // since PLAN mode uses a different system prompt
+    if (previousMode === ApprovalMode.PLAN || mode === ApprovalMode.PLAN) {
+      void this.updateSystemInstructionIfInitialized();
+    }
   }
 
   isYoloModeDisabled(): boolean {
@@ -1695,6 +1703,7 @@ export class Config {
     registerCoreTool(WebFetchTool, this);
     registerCoreTool(ShellTool, this);
     registerCoreTool(MemoryTool);
+    registerCoreTool(PresentPlanTool);
     registerCoreTool(WebSearchTool, this);
     if (this.getUseWriteTodos()) {
       registerCoreTool(WriteTodosTool, this);
