@@ -407,12 +407,12 @@ describe('FileSearch', () => {
 
   it('should throw AbortError when filter is aborted', async () => {
     const controller = new AbortController();
-    const dummyPaths = Array.from({ length: 5000 }, (_, i) => `file${i}.js`); // Large array to ensure yielding
+    const dummyPaths = Array.from({ length: 20000 }, (_, i) => `file${i}.js`); // Larger array to ensure yielding
 
     const filterPromise = filter(dummyPaths, '*.js', controller.signal);
 
     // Abort after a short delay to ensure filter has started
-    setTimeout(() => controller.abort(), 1);
+    setTimeout(() => controller.abort(), 10);
 
     await expect(filterPromise).rejects.toThrow(AbortError);
   });

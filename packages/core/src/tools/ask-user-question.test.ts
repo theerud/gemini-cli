@@ -10,15 +10,18 @@ import {
   AskUserQuestionInvocation,
 } from './ask-user-question.js';
 import { ToolConfirmationOutcome } from './tools.js';
+import type { MessageBus } from '../confirmation-bus/message-bus.js';
+
+const mockMessageBus = {} as MessageBus;
 
 describe('AskUserQuestionTool', () => {
   it('should instantiate correctly', () => {
-    const tool = new AskUserQuestionTool();
+    const tool = new AskUserQuestionTool(mockMessageBus);
     expect(tool.name).toBe('ask_user_question');
   });
 
   it('should validate valid parameters', () => {
-    const tool = new AskUserQuestionTool();
+    const tool = new AskUserQuestionTool(mockMessageBus);
     const params = {
       questions: [
         {
@@ -37,7 +40,7 @@ describe('AskUserQuestionTool', () => {
   });
 
   it('should throw on invalid parameters (missing options)', () => {
-    const tool = new AskUserQuestionTool();
+    const tool = new AskUserQuestionTool(mockMessageBus);
     const params = {
       questions: [
         {
@@ -67,7 +70,7 @@ describe('AskUserQuestionInvocation', () => {
         },
       ],
     };
-    const invocation = new AskUserQuestionInvocation(params);
+    const invocation = new AskUserQuestionInvocation(params, mockMessageBus);
     const details = await invocation.shouldConfirmExecute(
       new AbortController().signal,
     );
@@ -93,7 +96,7 @@ describe('AskUserQuestionInvocation', () => {
         },
       ],
     };
-    const invocation = new AskUserQuestionInvocation(params);
+    const invocation = new AskUserQuestionInvocation(params, mockMessageBus);
     const details = await invocation.shouldConfirmExecute(
       new AbortController().signal,
     );

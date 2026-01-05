@@ -16,12 +16,11 @@ import { CodebaseInvestigatorAgent } from '../agents/codebase-investigator.js';
 import { GEMINI_DIR } from '../utils/paths.js';
 import { debugLogger } from '../utils/debugLogger.js';
 import {
-  PREVIEW_GEMINI_MODEL,
-  PREVIEW_GEMINI_FLASH_MODEL,
   DEFAULT_GEMINI_MODEL_AUTO,
   DEFAULT_GEMINI_MODEL,
+  PREVIEW_GEMINI_MODEL,
+  PREVIEW_GEMINI_FLASH_MODEL,
 } from '../config/models.js';
-import { PLAN_MODE_REMINDER } from './prompts.js';
 
 // Mock tool names if they are dynamically generated or complex
 vi.mock('../tools/ls', () => ({ LSTool: { Name: 'list_directory' } }));
@@ -71,7 +70,6 @@ describe('Core System Prompt (prompts.ts)', () => {
       getModel: vi.fn().mockReturnValue(DEFAULT_GEMINI_MODEL_AUTO),
       getActiveModel: vi.fn().mockReturnValue(DEFAULT_GEMINI_MODEL),
       getPreviewFeatures: vi.fn().mockReturnValue(false),
-      getApprovalMode: vi.fn().mockReturnValue('default'),
       getAgentRegistry: vi.fn().mockReturnValue({
         getDirectoryContext: vi.fn().mockReturnValue('Mock Agent Directory'),
       }),
@@ -80,14 +78,6 @@ describe('Core System Prompt (prompts.ts)', () => {
         getSkills: vi.fn().mockReturnValue([]),
       }),
     } as unknown as Config;
-  });
-
-  it('should NOT include plan mode instructions in the system prompt (relying on user message injection instead)', () => {
-    vi.mocked(mockConfig.getApprovalMode).mockReturnValue(
-      ApprovalMode.PLAN_MODE,
-    );
-    const prompt = getCoreSystemPrompt(mockConfig);
-    expect(prompt).not.toContain(PLAN_MODE_REMINDER);
   });
 
   it('should include available_skills when provided in config', () => {
@@ -229,7 +219,6 @@ describe('Core System Prompt (prompts.ts)', () => {
         getModel: vi.fn().mockReturnValue('auto'),
         getActiveModel: vi.fn().mockReturnValue(DEFAULT_GEMINI_MODEL),
         getPreviewFeatures: vi.fn().mockReturnValue(false),
-        getApprovalMode: vi.fn().mockReturnValue('default'),
         getAgentRegistry: vi.fn().mockReturnValue({
           getDirectoryContext: vi.fn().mockReturnValue('Mock Agent Directory'),
         }),

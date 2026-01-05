@@ -87,7 +87,7 @@ export class AskUserQuestionTool extends BaseDeclarativeTool<
   AskUserQuestionParams,
   ToolResult
 > {
-  constructor(messageBus?: MessageBus) {
+  constructor(messageBus: MessageBus) {
     super(
       ASK_USER_QUESTION_TOOL_NAME,
       'Ask User',
@@ -157,17 +157,17 @@ export class AskUserQuestionTool extends BaseDeclarativeTool<
           },
         },
       },
+      messageBus,
       // isOutputMarkdown
       false,
       // canUpdateOutput
       false,
-      messageBus,
     );
   }
 
   protected createInvocation(
     params: AskUserQuestionParams,
-    messageBus?: MessageBus,
+    messageBus: MessageBus,
     toolName?: string,
     displayName?: string,
   ): ToolInvocation<AskUserQuestionParams, ToolResult> {

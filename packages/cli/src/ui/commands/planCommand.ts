@@ -167,7 +167,7 @@ const resumeCommand: SlashCommand = {
     // Switch to AUTO_EDIT mode for execution
     const config = context.services.config;
     if (config) {
-      await config.setApprovalMode(ApprovalMode.AUTO_EDIT);
+      config.setApprovalMode(ApprovalMode.AUTO_EDIT);
     }
 
     // Mark plan as executed

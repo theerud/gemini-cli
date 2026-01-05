@@ -34,7 +34,7 @@ describe('Plan Mode Policy Integration', () => {
 
     const config = await createPolicyEngineConfig(
       { tools: {}, mcp: {} },
-      ApprovalMode.PLAN_MODE,
+      ApprovalMode.PLAN,
       defaultPoliciesDir,
     );
 
@@ -96,7 +96,7 @@ describe('Plan Mode Policy Integration', () => {
 
     const config = await createPolicyEngineConfig(
       { tools: {}, mcp: {} },
-      ApprovalMode.PLAN_MODE,
+      ApprovalMode.PLAN,
       defaultPoliciesDir,
     );
 
@@ -112,33 +112,12 @@ describe('Plan Mode Policy Integration', () => {
     expect(result.decision).toBe(PolicyDecision.ALLOW);
   });
 
-  it('should allow exit_plan_mode in PLAN_MODE', async () => {
-    const defaultPoliciesDir = path.resolve(__dirname, 'policies');
-
-    const config = await createPolicyEngineConfig(
-      { tools: {}, mcp: {} },
-      ApprovalMode.PLAN_MODE,
-      defaultPoliciesDir,
-    );
-
-    const engine = new PolicyEngine(config);
-
-    const result = await engine.check(
-      {
-        name: 'exit_plan_mode',
-        args: {},
-      },
-      undefined,
-    );
-    expect(result.decision).toBe(PolicyDecision.ASK_USER);
-  });
-
   it('should allow read-only tools in PLAN_MODE', async () => {
     const defaultPoliciesDir = path.resolve(__dirname, 'policies');
 
     const config = await createPolicyEngineConfig(
       { tools: {}, mcp: {} },
-      ApprovalMode.PLAN_MODE,
+      ApprovalMode.PLAN,
       defaultPoliciesDir,
     );
 
@@ -161,7 +140,7 @@ describe('Plan Mode Policy Integration', () => {
 
     const config = await createPolicyEngineConfig(
       { tools: {}, mcp: {} },
-      ApprovalMode.PLAN_MODE,
+      ApprovalMode.PLAN,
       defaultPoliciesDir,
     );
 

@@ -60,8 +60,6 @@ import type { MCPOAuthConfig } from '../mcp/oauth-provider.js';
 import { ideContextStore } from '../ide/ideContext.js';
 import { WriteTodosTool } from '../tools/write-todos.js';
 import { AskUserQuestionTool } from '../tools/ask-user-question.js';
-import { ExitPlanModeTool } from '../tools/exit-plan-mode.js';
-import { EnterPlanModeTool } from '../tools/enter-plan-mode.js';
 import type { FileSystemService } from '../services/fileSystemService.js';
 import { StandardFileSystemService } from '../services/fileSystemService.js';
 import { logRipgrepFallback, logFlashFallback } from '../telemetry/loggers.js';
@@ -1207,7 +1205,7 @@ export class Config {
     return this.policyEngine.getApprovalMode();
   }
 
-  async setApprovalMode(mode: ApprovalMode): Promise<void> {
+  setApprovalMode(mode: ApprovalMode): void {
     if (!this.isTrustedFolder() && mode !== ApprovalMode.DEFAULT) {
       throw new Error(
         'Cannot enable privileged approval modes in an untrusted folder.',
@@ -1709,8 +1707,6 @@ export class Config {
     registerCoreTool(PresentPlanTool);
     registerCoreTool(WebSearchTool, this);
     registerCoreTool(AskUserQuestionTool, this);
-    registerCoreTool(ExitPlanModeTool, this);
-    registerCoreTool(EnterPlanModeTool, this);
     if (this.getUseWriteTodos()) {
       registerCoreTool(WriteTodosTool, this);
     }

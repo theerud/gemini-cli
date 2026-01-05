@@ -111,7 +111,7 @@ class TestApprovalInvocation extends BaseToolInvocation<
       newContent: 'Test content',
       onConfirm: async (outcome: ToolConfirmationOutcome) => {
         if (outcome === ToolConfirmationOutcome.ProceedAlways) {
-          await this.config.setApprovalMode(ApprovalMode.AUTO_EDIT);
+          this.config.setApprovalMode(ApprovalMode.AUTO_EDIT);
         }
       },
     };

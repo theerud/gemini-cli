@@ -62,7 +62,7 @@ class PresentPlanToolInvocation extends BaseToolInvocation<
 > {
   constructor(
     params: PresentPlanParams,
-    messageBus?: MessageBus,
+    messageBus: MessageBus,
     toolName?: string,
     displayName?: string,
   ) {
@@ -145,7 +145,7 @@ export class PresentPlanTool extends BaseDeclarativeTool<
 > {
   static readonly Name = PRESENT_PLAN_TOOL_NAME;
 
-  constructor(messageBus?: MessageBus) {
+  constructor(messageBus: MessageBus) {
     super(
       PresentPlanTool.Name,
       'PresentPlan',
@@ -178,9 +178,9 @@ export class PresentPlanTool extends BaseDeclarativeTool<
         required: ['title', 'content'],
         additionalProperties: false,
       },
-      false, // requiresConfirmation
-      false, // isOutputMarkdown
       messageBus,
+      false, // isOutputMarkdown
+      false, // canUpdateOutput
     );
   }
 
@@ -198,13 +198,13 @@ export class PresentPlanTool extends BaseDeclarativeTool<
 
   protected createInvocation(
     params: PresentPlanParams,
-    messageBus?: MessageBus,
+    messageBus: MessageBus,
     toolName?: string,
     displayName?: string,
   ) {
     return new PresentPlanToolInvocation(
       params,
-      messageBus ?? this.messageBus,
+      messageBus,
       toolName ?? this.name,
       displayName ?? this.displayName,
     );

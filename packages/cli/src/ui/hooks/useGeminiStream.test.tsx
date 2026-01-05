@@ -34,7 +34,7 @@ import {
   ToolConfirmationOutcome,
   tokenLimit,
   debugLogger,
-  PLAN_MODE_REMINDER, // Added PLAN_MODE_REMINDER
+  PLAN_MODE_REMINDER,
 } from '@google/gemini-cli-core';
 import type { Part, PartListUnion } from '@google/genai';
 import type { UseHistoryManagerReturn } from './useHistoryManager.js';
@@ -2806,11 +2806,11 @@ describe('useGeminiStream', () => {
     });
   });
 
-  it('should inject plan mode reminder into user query when in PLAN_MODE', async () => {
+  it('should inject plan mode reminder into user query when in PLAN mode', async () => {
     // 1. Setup
     const testQuery = 'My plan request.';
     const mockGeminiClient = new MockedGeminiClientClass(mockConfig);
-    mockGetApprovalMode.mockReturnValue(ApprovalMode.PLAN_MODE);
+    mockGetApprovalMode.mockReturnValue(ApprovalMode.PLAN);
 
     let capturedQuery: PartListUnion | undefined;
     mockSendMessageStream.mockImplementation(async (query: PartListUnion) => {

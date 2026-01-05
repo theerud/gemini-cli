@@ -22,10 +22,7 @@ import { logToolCall, logToolOutputTruncated } from '../telemetry/loggers.js';
 import { ToolErrorType } from '../tools/tool-error.js';
 import { ToolCallEvent, ToolOutputTruncatedEvent } from '../telemetry/types.js';
 import { runInDevTraceSpan } from '../telemetry/trace.js';
-import {
-  EXIT_PLAN_MODE_TOOL_NAME,
-  SHELL_TOOL_NAME,
-} from '../tools/tool-names.js';
+import { SHELL_TOOL_NAME } from '../tools/tool-names.js';
 import type { ModifyContext } from '../tools/modifiable-tool.js';
 import {
   isModifiableDeclarativeTool,
@@ -498,67 +495,6 @@ export class CoreToolScheduler {
       }
       const requestsToProcess = Array.isArray(request) ? request : [request];
       this.completedToolCallsForBatch = [];
-
-      // --- Plan Mode Pre-check ---
-      if (this.config.getApprovalMode() === ApprovalMode.PLAN_MODE) {
-        const exitPlanModeCalls = requestsToProcess.filter(
-          (r) => r.name === EXIT_PLAN_MODE_TOOL_NAME,
-        );
-        const otherCalls = requestsToProcess.filter(
-          (r) => r.name !== EXIT_PLAN_MODE_TOOL_NAME,
-        );
-
-        let errorMessage: string | undefined;
-
-        if (exitPlanModeCalls.length > 0) {
-          if (requestsToProcess.length > 1) {
-            errorMessage = `You are in plan mode. The '${EXIT_PLAN_MODE_TOOL_NAME}' tool must be called by itself after the user has explicitly approved the plan. You cannot call other tools in the same turn.`;
-          }
-        } else if (otherCalls.length > 0) {
-          const PROHIBITED_PLAN_MODE_TOOLS = [
-            'replace',
-            'write_file',
-            'write_todos',
-            'edit', // SmartEditTool also uses 'edit' as its base name
-          ];
-          const prohibitedToolAttempts = otherCalls.filter((call) =>
-            PROHIBITED_PLAN_MODE_TOOLS.includes(call.name),
-          );
-
-          if (prohibitedToolAttempts.length > 0) {
-            const toolNames = [
-              ...new Set(prohibitedToolAttempts.map((call) => call.name)),
-            ]
-              .sort()
-              .join(', ');
-            errorMessage = `You are in plan mode. You cannot use tools that modify the system like ${toolNames}. Present your plan via chat and await user approval. Only then call the '${EXIT_PLAN_MODE_TOOL_NAME}' tool alone.`;
-          }
-        }
-
-        // If there are any errors, convert them all to ErroredToolCall and return immediately.
-        if (errorMessage) {
-          // If any request in the batch is prohibited, then all requests in the batch should
-          // be converted to ErroredToolCall instances.
-          this.completedToolCallsForBatch = requestsToProcess.map((reqInfo) => {
-            const error = new Error(errorMessage);
-            return {
-              status: 'error',
-              request: reqInfo,
-              response: createErrorResponse(
-                reqInfo,
-                error,
-                ToolErrorType.POLICY_VIOLATION,
-              ),
-              durationMs: 0,
-            };
-          });
-          // Finalize immediately as we are rejecting the whole batch
-          await this.checkAndNotifyCompletion(signal);
-          this.isScheduling = false;
-          return;
-        }
-      }
-      // --- End Plan Mode Pre-check ---
 
       const newToolCalls: ToolCall[] = requestsToProcess.map(
         (reqInfo): ToolCall => {

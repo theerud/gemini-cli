@@ -523,7 +523,7 @@ export const useGeminiStream = (
       }
 
       if (
-        config.getApprovalMode() === ApprovalMode.PLAN_MODE &&
+        config.getApprovalMode() === ApprovalMode.PLAN &&
         typeof localQueryToSendToGemini === 'string'
       ) {
         localQueryToSendToGemini += `\n\n<system_reminder>\n${PLAN_MODE_REMINDER}\n</system_reminder>`;
@@ -1106,7 +1106,7 @@ export const useGeminiStream = (
               }
 
               // Clean up Plan Mode injection from history to prevent context pollution
-              if (config.getApprovalMode() === ApprovalMode.PLAN_MODE) {
+              if (config.getApprovalMode() === ApprovalMode.PLAN) {
                 const chatHistory = geminiClient.getHistory();
 
                 if (chatHistory.length > 0) {
@@ -1295,7 +1295,7 @@ export const useGeminiStream = (
 
                   if (choice === 'execute') {
                     // Switch to AUTO_EDIT mode
-                    await config.setApprovalMode(ApprovalMode.AUTO_EDIT);
+                    config.setApprovalMode(ApprovalMode.AUTO_EDIT);
                     await planService.updatePlanStatus(planId, 'executed');
                     addItem(
                       {
@@ -1379,7 +1379,7 @@ Create an updated implementation plan addressing the feedback. Use present_plan 
                 onChoice: async (choice, feedback) => {
                   setPlanCompletionRequest(null);
                   if (choice === 'execute') {
-                    await config.setApprovalMode(ApprovalMode.AUTO_EDIT);
+                    config.setApprovalMode(ApprovalMode.AUTO_EDIT);
                     addItem(
                       {
                         type: MessageType.INFO,

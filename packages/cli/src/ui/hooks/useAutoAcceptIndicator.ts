@@ -67,7 +67,7 @@ export function useAutoAcceptIndicator({
 
       if (nextApprovalMode) {
         try {
-          await config.setApprovalMode(nextApprovalMode);
+          config.setApprovalMode(nextApprovalMode);
           // Update local state immediately for responsiveness
           setShowAutoAcceptIndicator(nextApprovalMode);
 
