@@ -38,37 +38,37 @@ const TabBar: React.FC<{
   activeIndex: number;
   isReviewing: boolean;
 }> = ({ questions, activeIndex, isReviewing }) => (
-    <Box
-      flexDirection="row"
-      marginBottom={1}
-      borderStyle="single"
-      borderColor={theme.border.default}
-    >
-      {questions.map((q, i) => {
-        const isActive = !isReviewing && i === activeIndex;
-        return (
-          <Box key={i} marginRight={2}>
-            <Text
-              color={isActive ? theme.status.success : theme.text.secondary}
-              bold={isActive}
-              underline={isActive}
-            >
-              {q.header || `Q${i + 1}`}
-            </Text>
-          </Box>
-        );
-      })}
-      <Box>
-        <Text
-          color={isReviewing ? theme.status.success : theme.text.secondary}
-          bold={isReviewing}
-          underline={isReviewing}
-        >
-          Review
-        </Text>
-      </Box>
+  <Box
+    flexDirection="row"
+    marginBottom={1}
+    borderStyle="single"
+    borderColor={theme.border.default}
+  >
+    {questions.map((q, i) => {
+      const isActive = !isReviewing && i === activeIndex;
+      return (
+        <Box key={i} marginRight={2}>
+          <Text
+            color={isActive ? theme.status.success : theme.text.secondary}
+            bold={isActive}
+            underline={isActive}
+          >
+            {q.header || `Q${i + 1}`}
+          </Text>
+        </Box>
+      );
+    })}
+    <Box>
+      <Text
+        color={isReviewing ? theme.status.success : theme.text.secondary}
+        bold={isReviewing}
+        underline={isReviewing}
+      >
+        Review
+      </Text>
     </Box>
-  );
+  </Box>
+);
 
 export const AskUserForm: React.FC<AskUserFormProps> = ({
   questions,
@@ -297,7 +297,7 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
               Enter
             </Text>{' '}
             to submit,{' '}
-            <Text bold color={theme.text.warning}>
+            <Text bold color={theme.status.warning}>
               Esc
             </Text>{' '}
             to edit.
@@ -407,7 +407,11 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
         </Box>
       )}
 
-      <Box marginTop={1} borderStyle="single" borderColor={theme.border.subtle}>
+      <Box
+        marginTop={1}
+        borderStyle="single"
+        borderColor={theme.border.default}
+      >
         <Text dimColor>
           PageUp/Down to navigate questions | Enter to select/next | Esc to
           cancel
