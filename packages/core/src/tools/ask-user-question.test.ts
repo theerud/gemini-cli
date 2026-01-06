@@ -111,5 +111,6 @@ describe('AskUserQuestionInvocation', () => {
     const result = await invocation.execute(new AbortController().signal);
     const expectedJson = JSON.stringify({ answers });
     expect(result.llmContent).toBe(expectedJson);
+    expect(result.returnDisplay).toBe('● Q1?\n  → 1');
   });
 });

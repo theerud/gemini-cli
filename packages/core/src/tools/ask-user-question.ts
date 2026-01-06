@@ -66,19 +66,16 @@ export class AskUserQuestionInvocation extends BaseToolInvocation<
     _signal: AbortSignal,
     _updateOutput?: (output: string) => void,
   ): Promise<ToolResult> {
-    // If we have answers (populated via onConfirm), return them.
-    // If not, it means the interaction was cancelled or failed.
-
-    // Note: If the user cancels in the UI, the `onConfirm` with `Cancel` is called.
-    // The framework might throw an error or handle cancellation before calling execute.
-    // If execute IS called but we have no answers, we should return an empty or error result.
-    // However, usually if shouldConfirmExecute returns details, and the user cancels,
-    // the framework (ToolBuilder/Executor) throws a cancellation error and execute is NOT called.
-    // So we can assume if we are here, we might have answers or it's an auto-allow case (which shouldn't happen for this tool).
+    const returnDisplay = this.params.questions
+      .map((q) => {
+        const answer = this.answers[q.question];
+        return `● ${q.question}\n  → ${answer || '(No answer)'}`;
+      })
+      .join('\n\n');
 
     return {
       llmContent: safeJsonStringify({ answers: this.answers }),
-      returnDisplay: safeJsonStringify({ answers: this.answers }),
+      returnDisplay,
     };
   }
 }
@@ -105,7 +102,7 @@ export class AskUserQuestionTool extends BaseDeclarativeTool<
             maxItems: 4,
             items: {
               type: 'object',
-              required: ['question', 'header', 'multiSelect'],
+              required: ['question', 'header', 'multiSelect', 'options'],
               additionalProperties: false,
               properties: {
                 question: {
@@ -126,7 +123,7 @@ export class AskUserQuestionTool extends BaseDeclarativeTool<
                 options: {
                   type: 'array',
                   description:
-                    'The available choices for this question. If provided, must have 2-4 options. If omitted or empty, the user will be asked to provide free-form text input.',
+                    'The available choices for this question. Must have 2-4 options.',
                   minItems: 2,
                   maxItems: 4,
                   items: {
