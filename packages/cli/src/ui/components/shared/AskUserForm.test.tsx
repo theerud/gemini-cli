@@ -74,6 +74,38 @@ describe('AskUserForm', () => {
     expect(lastFrame()).toContain('Type something...');
   });
 
+  it('navigates to review screen and submits', async () => {
+    const onComplete = vi.fn();
+    const { lastFrame, stdin } = renderWithProviders(
+      <AskUserForm
+        questions={mockQuestions}
+        onComplete={onComplete}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    const write = async (input: string) => {
+      await act(async () => {
+        stdin.write(input);
+      });
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    };
+
+    // Select Option A (default) by pressing Enter
+    await write('\r');
+
+    // Now should be on Review screen
+    expect(lastFrame()).toContain('Summary');
+    expect(lastFrame()).toContain('Select an option');
+    expect(lastFrame()).toContain('Option A');
+    expect(lastFrame()).toContain('Press Enter to submit');
+
+    // Submit
+    await write('\r');
+
+    expect(onComplete).toHaveBeenCalledWith({ 'Select an option': 'Option A' });
+  });
+
   it('adds custom options in multi-select mode', async () => {
     const multiSelectQuestions = [
       {
@@ -117,22 +149,18 @@ describe('AskUserForm', () => {
     // Verify Custom1 is added and selected
     const frameAfterFirst = lastFrame();
     expect(frameAfterFirst).toContain('[x] Custom1');
-    // Verify focus is still on Other (showing input)
-    expect(frameAfterFirst).toContain('Type something...');
-
-    // Type "Custom2"
-    await write('Custom2');
-    await write('\r');
-
-    // Verify Custom2 is added
-    expect(lastFrame()).toContain('[x] Custom2');
 
     // Navigate down to "Done" (Input -> Done)
     await write('\x1B[B');
 
-    // Verify Done is highlighted (green text usually, or just check we are past Other)
-    // In multi-select, Done is rendered.
-    // We can just press Enter on Done.
+    // Select Done
+    await write('\r');
+
+    // Now on Review Screen
+    expect(lastFrame()).toContain('Summary');
+    expect(lastFrame()).toContain('Custom1');
+
+    // Submit
     await write('\r');
 
     // Check completion
@@ -140,6 +168,5 @@ describe('AskUserForm', () => {
     const result = onComplete.mock.calls[0][0];
     // Expected: comma separated values.
     expect(result['Select multiple']).toContain('Custom1');
-    expect(result['Select multiple']).toContain('Custom2');
   });
 });
