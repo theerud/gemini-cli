@@ -41,38 +41,38 @@ const TabBar: React.FC<{
   answers: Record<string, string>;
   activeTabIndex: number;
 }> = ({ questions, answers, activeTabIndex }) => (
-    <Box flexDirection="row" marginBottom={1} alignItems="center">
-      <Text dimColor>← </Text>
-      {questions.map((q, i) => {
-        const isAnswered = !!answers[q.question];
-        const isActive = activeTabIndex === i;
-        const icon = isAnswered ? '☒' : '☐';
-        return (
-          <Box key={i} marginRight={2}>
-            <Text
-              color={isActive ? theme.status.success : theme.text.secondary}
-              bold={isActive}
-            >
-              {icon} {q.header || `Q${i + 1}`}
-            </Text>
-          </Box>
-        );
-      })}
-      <Box>
-        <Text
-          color={
-            activeTabIndex === questions.length
-              ? theme.status.success
-              : theme.text.secondary
-          }
-          bold={activeTabIndex === questions.length}
-        >
-          ✔ Submit
-        </Text>
-      </Box>
-      <Text dimColor> →</Text>
+  <Box flexDirection="row" marginBottom={1} alignItems="center">
+    <Text dimColor>← </Text>
+    {questions.map((q, i) => {
+      const isAnswered = !!answers[q.question];
+      const isActive = activeTabIndex === i;
+      const icon = isAnswered ? '☒' : '☐';
+      return (
+        <Box key={i} marginRight={2}>
+          <Text
+            color={isActive ? theme.status.success : theme.text.secondary}
+            bold={isActive}
+          >
+            {icon} {q.header || `Q${i + 1}`}
+          </Text>
+        </Box>
+      );
+    })}
+    <Box>
+      <Text
+        color={
+          activeTabIndex === questions.length
+            ? theme.status.success
+            : theme.text.secondary
+        }
+        bold={activeTabIndex === questions.length}
+      >
+        ✔ Submit
+      </Text>
     </Box>
-  );
+    <Text dimColor> →</Text>
+  </Box>
+);
 
 export const AskUserForm: React.FC<AskUserFormProps> = ({
   questions,
@@ -254,7 +254,6 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
         key: DONE_VALUE,
         value: DONE_VALUE,
         label: 'Done',
-        description: 'Finish selection',
         isDone: true,
       });
     }
@@ -263,7 +262,8 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
   }, [currentQuestion, customOptions]);
 
   // --- Submit List Items ---
-  const submitItems: FormItem[] = useMemo(() => [
+  const submitItems: FormItem[] = useMemo(
+    () => [
       {
         key: SUBMIT_ACTION,
         value: SUBMIT_ACTION,
@@ -274,7 +274,9 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
         value: CANCEL_ACTION,
         label: 'Cancel',
       },
-    ], []);
+    ],
+    [],
+  );
 
   const activeItems = isReviewing ? submitItems : questionItems;
   const isListFocused = !isFinished && !isTextEditing && activeItems.length > 0;
@@ -366,7 +368,7 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
           </Text>
 
           {!allAnswered && (
-            <Box marginTop={1} marginBottom={1}>
+            <Box marginTop={1}>
               <Text color={theme.status.warning}>
                 ⚠ You have not answered all questions
               </Text>
@@ -374,19 +376,21 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
           )}
 
           <Box flexDirection="column" marginTop={1}>
-            {questions.map((q, i) => (
-              <Box key={i} flexDirection="column" marginBottom={1}>
-                <Box flexDirection="row">
-                  <Text color={theme.status.success}> ● </Text>
-                  <Text bold color={theme.text.secondary}>
-                    {q.question}
+            {questions
+              .filter((q) => !!answers[q.question])
+              .map((q, i) => (
+                <Box key={i} flexDirection="column" marginBottom={0}>
+                  <Box flexDirection="row">
+                    <Text color={theme.status.success}> ● </Text>
+                    <Text bold color={theme.text.secondary}>
+                      {q.question}
+                    </Text>
+                  </Box>
+                  <Text color={theme.text.primary}>
+                    {'   '}→ {answers[q.question]}
                   </Text>
                 </Box>
-                <Text color={theme.text.primary}>
-                  {'   '}→ {answers[q.question] || '(No answer)'}
-                </Text>
-              </Box>
-            ))}
+              ))}
           </Box>
         </Box>
 
@@ -465,6 +469,11 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
               ? multiSelection.has(item.value)
               : false;
 
+            const savedAnswer = answers[currentQuestion.question];
+            const isPicked = currentQuestion.multiSelect
+              ? isSelected
+              : savedAnswer === item.value;
+
             let checkboxPrefix = '';
             if (currentQuestion.multiSelect) {
               if (item.isDone) {
@@ -509,13 +518,14 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
                     {item.isDone ? '   ' : `${index + 1}. `}
                     {checkboxPrefix}
                     {item.label}
+                    {isPicked && !item.isDone && (
+                      <Text color={theme.status.success}> ✔</Text>
+                    )}
                   </Text>
                 </Box>
                 {item.description && (
                   <Box marginLeft={checkboxPrefix ? 9 : 5}>
-                    <Text color={theme.text.secondary} dimColor>
-                      {item.description}
-                    </Text>
+                    <Text color={theme.text.secondary}>{item.description}</Text>
                   </Box>
                 )}
               </Box>
