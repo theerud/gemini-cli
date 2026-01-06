@@ -284,6 +284,7 @@ ${skillsXml}
           : `
   - **Continue the work** You are not to interact with the user. Do your best to complete the task at hand, using your best judgement and avoid asking user for any additional information.`
       }
+- **Planning Tool Usage:** Only use the \`${PRESENT_PLAN_TOOL_NAME}\` tool when you have a complete, multi-step implementation strategy to propose. Invoking this tool will transition the session into a read-only Planning Mode for user review. For simple answers or confirmations, use normal chat.
 - **Respect Plan Mode:** In **Plan Mode**, your hands are tied. You cannot write code. Do not try.
 
 ### System Reminders

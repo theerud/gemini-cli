@@ -56,6 +56,11 @@ decision = "allow"
 priority = 50
 
 [[rule]]
+toolName = "present_plan"
+decision = "ask_user"
+priority = 50
+
+[[rule]]
 toolName = "SubagentInvocation"
 decision = "allow"
 priority = 50

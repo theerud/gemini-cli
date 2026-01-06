@@ -1252,158 +1252,93 @@ export const useGeminiStream = (
         const planTool = newSuccessfulPlanPresentations[0];
         processedPlanToolsRef.current.add(planTool.request.callId);
 
-        // Only show plan completion dialog if we're in Plan Mode
-        // After executing a plan (AUTO_EDIT mode), ignore any subsequent present_plan calls
+        // If we are not in Plan Mode, switch to it automatically to ensure the plan is reviewed.
         if (config.getApprovalMode() !== ApprovalMode.PLAN) {
-          debugLogger.log(
-            'Ignoring present_plan result - not in Plan Mode',
-            config.getApprovalMode(),
+          config.setApprovalMode(ApprovalMode.PLAN);
+          addItem(
+            {
+              type: MessageType.INFO,
+              text: 'Plan presented. Session switched to Planning Mode for your review.',
+            },
+            Date.now(),
           );
-          // Continue processing other tools
-        } else {
-          // Extract plan data from tool arguments
-          const args = planTool.request.args as {
-            title?: string;
-            content?: string;
-            affected_files?: string[];
-            dependencies?: string[];
-          };
+        }
 
-          if (args.title && args.content) {
-            // Auto-save as draft
-            const projectRoot = config.getProjectRoot();
-            const planService = new PlanService(projectRoot);
-            const originalPrompt = lastOriginalPromptRef.current || '';
+        // Extract plan data from tool arguments
+        const args = planTool.request.args as {
+          title?: string;
+          content?: string;
+          affected_files?: string[];
+          dependencies?: string[];
+        };
 
-            try {
-              const planId = await planService.savePlan(
-                args.content,
-                args.title,
-                originalPrompt,
-              );
+        if (args.title && args.content) {
+          // Auto-save as draft
+          const projectRoot = config.getProjectRoot();
+          const planService = new PlanService(projectRoot);
+          const originalPrompt = lastOriginalPromptRef.current || '';
 
-              // Show plan completion dialog
-              setPlanCompletionRequest({
-                title: args.title,
-                content: args.content,
-                affectedFiles: args.affected_files || [],
-                dependencies: args.dependencies || [],
-                originalPrompt,
-                planId,
-                onChoice: async (choice, feedback) => {
-                  setPlanCompletionRequest(null);
+          try {
+            const planId = await planService.savePlan(
+              args.content,
+              args.title,
+              originalPrompt,
+            );
 
-                  if (choice === 'execute') {
-                    // Switch to AUTO_EDIT mode
-                    config.setApprovalMode(ApprovalMode.AUTO_EDIT);
-                    await planService.updatePlanStatus(planId, 'executed');
-                    addItem(
-                      {
-                        type: MessageType.INFO,
-                        text: `Executing plan "${args.title}"... Mode switched to Auto Edit.`,
-                      },
-                      Date.now(),
-                    );
-                    // Use isContinuation: true to bypass the streamingState check
-                    // This is necessary because onChoice callback has a stale closure
-                    // that captures the old submitQuery with old streamingState
-                    const executeInstruction = `Please implement the plan above. Start with the first step and work through each step systematically.`;
-                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                    submitQuery([{ text: executeInstruction }], {
-                      isContinuation: true,
-                    });
-                  } else if (choice === 'save') {
-                    // Plan is already saved as draft, update status to 'saved'
-                    await planService.updatePlanStatus(planId, 'saved');
-                    addItem(
-                      {
-                        type: MessageType.INFO,
-                        text: `Plan "${args.title}" saved. Use /plan resume "${args.title}" to execute later.`,
-                      },
-                      Date.now(),
-                    );
-                    setIsResponding(false);
-                  } else if (choice === 'refine' && feedback) {
-                    // Refine the plan with user feedback - stay in Plan Mode
-                    // Delete the current draft since we're replacing it with a refined version
-                    await planService.deletePlan(planId);
-                    addItem(
-                      {
-                        type: MessageType.INFO,
-                        text: `Refining plan with feedback: "${feedback}"`,
-                      },
-                      Date.now(),
-                    );
-                    // Construct refinement prompt with context
-                    const refinePrompt = `I previously asked you to plan: "${originalPrompt}"
+            // Show plan completion dialog
+            setPlanCompletionRequest({
+              title: args.title,
+              content: args.content,
+              affectedFiles: args.affected_files || [],
+              dependencies: args.dependencies || [],
+              originalPrompt,
+              planId,
+              onChoice: async (choice, feedback) => {
+                setPlanCompletionRequest(null);
 
-You created this plan titled "${args.title}":
-
-${args.content}
-
-Please revise the plan based on this feedback:
-${feedback}
-
-Create an updated implementation plan addressing the feedback. Use present_plan to show me the revised plan.`;
-                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                    submitQuery([{ text: refinePrompt }], {
-                      isContinuation: true,
-                    });
-                  } else {
-                    // Cancel - delete the draft plan
-                    await planService.deletePlan(planId);
-                    addItem(
-                      {
-                        type: MessageType.INFO,
-                        text: 'Plan discarded.',
-                      },
-                      Date.now(),
-                    );
-                    setIsResponding(false);
-                  }
-                },
-              });
-
-              // Don't continue the turn until user makes a choice
-              return;
-            } catch (error) {
-              debugLogger.warn('Error saving plan as draft:', error);
-              // Even if saving fails, still show the dialog with a temporary ID
-              setPlanCompletionRequest({
-                title: args.title,
-                content: args.content,
-                affectedFiles: args.affected_files || [],
-                dependencies: args.dependencies || [],
-                originalPrompt,
-                planId: `temp-${Date.now()}`,
-                onChoice: async (choice, feedback) => {
-                  setPlanCompletionRequest(null);
-                  if (choice === 'execute') {
-                    config.setApprovalMode(ApprovalMode.AUTO_EDIT);
-                    addItem(
-                      {
-                        type: MessageType.INFO,
-                        text: `Executing plan "${args.title}"... Mode switched to Auto Edit.`,
-                      },
-                      Date.now(),
-                    );
-                    // Use isContinuation: true to bypass the streamingState check
-                    const executeInstruction = `Please implement the plan above. Start with the first step and work through each step systematically.`;
-                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                    submitQuery([{ text: executeInstruction }], {
-                      isContinuation: true,
-                    });
-                  } else if (choice === 'refine' && feedback) {
-                    // Refine the plan with user feedback - stay in Plan Mode
-                    addItem(
-                      {
-                        type: MessageType.INFO,
-                        text: `Refining plan with feedback: "${feedback}"`,
-                      },
-                      Date.now(),
-                    );
-                    // Construct refinement prompt with context
-                    const refinePrompt = `I previously asked you to plan: "${originalPrompt}"
+                if (choice === 'execute') {
+                  // Switch to AUTO_EDIT mode
+                  config.setApprovalMode(ApprovalMode.AUTO_EDIT);
+                  await planService.updatePlanStatus(planId, 'executed');
+                  addItem(
+                    {
+                      type: MessageType.INFO,
+                      text: `Executing plan "${args.title}"... Mode switched to Auto Edit.`,
+                    },
+                    Date.now(),
+                  );
+                  // Use isContinuation: true to bypass the streamingState check
+                  // This is necessary because onChoice callback has a stale closure
+                  // that captures the old submitQuery with old streamingState
+                  const executeInstruction = `Please implement the plan above. Start with the first step and work through each step systematically.`;
+                  // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                  submitQuery([{ text: executeInstruction }], {
+                    isContinuation: true,
+                  });
+                } else if (choice === 'save') {
+                  // Plan is already saved as draft, update status to 'saved'
+                  await planService.updatePlanStatus(planId, 'saved');
+                  addItem(
+                    {
+                      type: MessageType.INFO,
+                      text: `Plan "${args.title}" saved. Use /plan resume "${args.title}" to execute later.`,
+                    },
+                    Date.now(),
+                  );
+                  setIsResponding(false);
+                } else if (choice === 'refine' && feedback) {
+                  // Refine the plan with user feedback - stay in Plan Mode
+                  // Delete the current draft since we're replacing it with a refined version
+                  await planService.deletePlan(planId);
+                  addItem(
+                    {
+                      type: MessageType.INFO,
+                      text: `Refining plan with feedback: "${feedback}"`,
+                    },
+                    Date.now(),
+                  );
+                  // Construct refinement prompt with context
+                  const refinePrompt = `I previously asked you to plan: "${originalPrompt}"
 
 You created this plan titled "${args.title}":
 
@@ -1413,27 +1348,94 @@ Please revise the plan based on this feedback:
 ${feedback}
 
 Create an updated implementation plan addressing the feedback. Use present_plan to show me the revised plan.`;
-                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                    submitQuery([{ text: refinePrompt }], {
-                      isContinuation: true,
-                    });
-                  } else {
-                    addItem(
-                      {
-                        type: MessageType.INFO,
-                        text: 'Plan discarded.',
-                      },
-                      Date.now(),
-                    );
-                    setIsResponding(false);
-                  }
-                },
-              });
-              // Don't continue even if save failed
-              return;
-            }
+                  // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                  submitQuery([{ text: refinePrompt }], {
+                    isContinuation: true,
+                  });
+                } else {
+                  // Cancel - delete the draft plan
+                  await planService.deletePlan(planId);
+                  addItem(
+                    {
+                      type: MessageType.INFO,
+                      text: 'Plan discarded.',
+                    },
+                    Date.now(),
+                  );
+                  setIsResponding(false);
+                }
+              },
+            });
+
+            // Don't continue the turn until user makes a choice
+            return;
+          } catch (error) {
+            debugLogger.warn('Error saving plan as draft:', error);
+            // Even if saving fails, still show the dialog with a temporary ID
+            setPlanCompletionRequest({
+              title: args.title,
+              content: args.content,
+              affectedFiles: args.affected_files || [],
+              dependencies: args.dependencies || [],
+              originalPrompt,
+              planId: `temp-${Date.now()}`,
+              onChoice: async (choice, feedback) => {
+                setPlanCompletionRequest(null);
+                if (choice === 'execute') {
+                  config.setApprovalMode(ApprovalMode.AUTO_EDIT);
+                  addItem(
+                    {
+                      type: MessageType.INFO,
+                      text: `Executing plan "${args.title}"... Mode switched to Auto Edit.`,
+                    },
+                    Date.now(),
+                  );
+                  // Use isContinuation: true to bypass the streamingState check
+                  const executeInstruction = `Please implement the plan above. Start with the first step and work through each step systematically.`;
+                  // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                  submitQuery([{ text: executeInstruction }], {
+                    isContinuation: true,
+                  });
+                } else if (choice === 'refine' && feedback) {
+                  // Refine the plan with user feedback - stay in Plan Mode
+                  addItem(
+                    {
+                      type: MessageType.INFO,
+                      text: `Refining plan with feedback: "${feedback}"`,
+                    },
+                    Date.now(),
+                  );
+                  // Construct refinement prompt with context
+                  const refinePrompt = `I previously asked you to plan: "${originalPrompt}"
+
+You created this plan titled "${args.title}":
+
+${args.content}
+
+Please revise the plan based on this feedback:
+${feedback}
+
+Create an updated implementation plan addressing the feedback. Use present_plan to show me the revised plan.`;
+                  // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                  submitQuery([{ text: refinePrompt }], {
+                    isContinuation: true,
+                  });
+                } else {
+                  addItem(
+                    {
+                      type: MessageType.INFO,
+                      text: 'Plan discarded.',
+                    },
+                    Date.now(),
+                  );
+                  setIsResponding(false);
+                }
+              },
+            });
+            // Don't continue even if save failed
+            return;
           }
-        } // end of else block for Plan Mode check
+        }
       }
 
       const geminiTools = completedAndReadyToSubmitTools.filter(
