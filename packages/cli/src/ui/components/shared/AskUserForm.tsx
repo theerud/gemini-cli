@@ -5,8 +5,8 @@
  */
 
 import type React from 'react';
-import { useState, useMemo, useEffect } from 'react';
-import { Box, Text, useInput } from 'ink';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { Box, Text } from 'ink';
 import { theme } from '../../semantic-colors.js';
 import { TextInput } from './TextInput.js';
 import { useTextBuffer } from './text-buffer.js';
@@ -15,6 +15,7 @@ import {
   useSelectionList,
   type SelectionListItem,
 } from '../../hooks/useSelectionList.js';
+import { useKeypress } from '../../hooks/useKeypress.js';
 import type { Question } from '@google/gemini-cli-core';
 
 interface AskUserFormProps {
@@ -80,6 +81,7 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
 }) => {
   const [tabIndex, setTabIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [isFinished, setIsFinished] = useState(false);
 
   // State for the current active question interaction
   const [multiSelection, setMultiSelection] = useState<Set<string>>(new Set());
@@ -100,13 +102,14 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
 
   // Helper to determine if we are in a mode where text input captures keys
   const isTextEditing =
+    !isFinished &&
     !isReviewing &&
     currentQuestion &&
     ((currentQuestion.options?.length ?? 0) === 0 || isOtherActive);
 
   // Initialize state when switching tabs
   useEffect(() => {
-    if (isReviewing) {
+    if (isFinished || isReviewing || !currentQuestion) {
       setIsOtherActive(false);
       return;
     }
@@ -139,65 +142,81 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
     setIsOtherActive(false);
   }, [
     tabIndex,
+    isFinished,
     answers,
     bufferSetText,
-    currentQuestion.multiSelect,
-    currentQuestion.options,
-    currentQuestion.question,
+    currentQuestion,
     isReviewing,
   ]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
+    if (isFinished) return;
     if (tabIndex < questions.length) {
       setTabIndex((i) => i + 1);
     }
-  };
+  }, [isFinished, tabIndex, questions.length]);
 
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
+    if (isFinished) return;
     if (tabIndex > 0) {
       setTabIndex((i) => i - 1);
     }
-  };
+  }, [isFinished, tabIndex]);
+
+  const handleFinalComplete = useCallback(() => {
+    if (isFinished) return;
+    setIsFinished(true);
+    onComplete(answers);
+  }, [isFinished, onComplete, answers]);
+
+  const handleFinalCancel = useCallback(() => {
+    if (isFinished) return;
+    setIsFinished(true);
+    onCancel();
+  }, [isFinished, onCancel]);
 
   // Global navigation handler
-  useInput((input, key) => {
-    // Universal Navigation Keys (Always work)
-    if (key.pageDown || (key.ctrl && key.rightArrow)) {
-      handleNext();
-      return;
-    }
-    if (key.pageUp || (key.ctrl && key.leftArrow)) {
-      handlePrev();
-      return;
-    }
-    if (key.tab) {
-      if (key.shift) handlePrev();
-      else handleNext();
-      return;
-    }
+  useKeypress(
+    (key) => {
+      // Context-aware Navigation
+      if (!isTextEditing) {
+        if (key.name === 'right') {
+          handleNext();
+          return;
+        }
+        if (key.name === 'left') {
+          handlePrev();
+          return;
+        }
+      }
 
-    // Context-aware Navigation (only when NOT editing text)
-    if (!isTextEditing) {
-      if (key.rightArrow) {
+      if (key.name === 'pagedown' || (key.ctrl && key.name === 'right')) {
         handleNext();
         return;
       }
-      if (key.leftArrow) {
+      if (key.name === 'pageup' || (key.ctrl && key.name === 'left')) {
         handlePrev();
         return;
       }
-    }
-
-    if (key.escape) {
-      if (isReviewing || tabIndex > 0) {
-        handlePrev();
-      } else {
-        onCancel();
+      if (key.name === 'tab') {
+        if (key.shift) handlePrev();
+        else handleNext();
+        return;
       }
-    }
-  });
+
+      if (key.name === 'escape') {
+        if (isReviewing || tabIndex > 0) {
+          handlePrev();
+        } else {
+          handleFinalCancel();
+        }
+      }
+    },
+    { isActive: !isFinished },
+  );
 
   const saveCurrentAnswer = (ans: string) => {
+    if (isFinished) return;
     setAnswers((prev) => ({ ...prev, [currentQuestion.question]: ans }));
     handleNext();
   };
@@ -258,18 +277,20 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
     ], []);
 
   const activeItems = isReviewing ? submitItems : questionItems;
-  const isListFocused = !isTextEditing && activeItems.length > 0;
+  const isListFocused = !isFinished && !isTextEditing && activeItems.length > 0;
 
   const { activeIndex, setActiveIndex } = useSelectionList({
     items: activeItems,
     isFocused: isListFocused,
     showNumbers: true,
     onSelect: (value) => {
+      if (isFinished) return;
+
       if (isReviewing) {
         if (value === SUBMIT_ACTION) {
-          onComplete(answers);
+          handleFinalComplete();
         } else if (value === CANCEL_ACTION) {
-          onCancel();
+          handleFinalCancel();
         }
         return;
       }
@@ -293,14 +314,15 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
 
   // Effect to toggle input mode for "Other" (Question Mode only)
   useEffect(() => {
-    if (isReviewing) return;
+    if (isFinished || isReviewing) return;
     const isOther = activeItems[activeIndex]?.isOther ?? false;
     if (isOther !== isOtherActive) {
       setIsOtherActive(isOther);
     }
-  }, [activeIndex, activeItems, isOtherActive, isReviewing]);
+  }, [activeIndex, activeItems, isOtherActive, isReviewing, isFinished]);
 
   const handleInputSubmit = (value: string) => {
+    if (isFinished) return;
     const trimmed = value.trim();
     if (!trimmed) return;
 
@@ -318,6 +340,7 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
   };
 
   const handleInputCancel = () => {
+    if (isFinished) return;
     bufferSetText('');
     if (activeIndex > 0) setActiveIndex(activeIndex - 1);
   };
@@ -325,6 +348,8 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
   const allAnswered = questions.every((q) => !!answers[q.question]);
 
   // --- RENDER ---
+
+  if (isFinished) return null;
 
   if (isReviewing) {
     return (
