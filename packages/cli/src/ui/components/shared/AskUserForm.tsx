@@ -112,7 +112,7 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
     return opts;
   }, [currentQuestion, customOptions]);
 
-  const isTextOnlyQuestion = currentQuestion?.options.length === 0;
+  const isTextOnlyQuestion = (currentQuestion?.options?.length ?? 0) === 0;
 
   // We determine if we are "typing in Other" based on whether the active item is the Other item.
 
