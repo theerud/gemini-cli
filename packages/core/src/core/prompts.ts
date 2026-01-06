@@ -111,6 +111,7 @@ You **CAN**:
 - Read files using '${READ_FILE_TOOL_NAME}'
 - Search the codebase using '${GREP_TOOL_NAME}' and '${GLOB_TOOL_NAME}'
 - Fetch web content for research
+- Ask clarifying questions using '${ASK_USER_QUESTION_TOOL_NAME}'
 ${enableCodebaseInvestigator ? `- Delegate to the '${CodebaseInvestigatorAgent.name}' agent for complex exploration` : ''}
 
 ## YOUR WORKFLOW

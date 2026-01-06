@@ -111,6 +111,12 @@ priority = 900
 modes = ["plan"]
 
 [[rule]]
+toolName = "ask_user_question"
+decision = "allow"
+priority = 900
+modes = ["plan"]
+
+[[rule]]
 toolName = "write_todos"
 decision = "allow"
 priority = 900
