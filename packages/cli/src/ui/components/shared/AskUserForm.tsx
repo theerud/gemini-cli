@@ -42,7 +42,7 @@ const TabBar: React.FC<{
   activeTabIndex: number;
 }> = ({ questions, answers, activeTabIndex }) => (
   <Box flexDirection="row" marginBottom={1} alignItems="center">
-    <Text dimColor>← </Text>
+    <Text>← </Text>
     {questions.map((q, i) => {
       const isAnswered = !!answers[q.question];
       const isActive = activeTabIndex === i;
@@ -70,7 +70,7 @@ const TabBar: React.FC<{
         ✔ Submit
       </Text>
     </Box>
-    <Text dimColor> →</Text>
+    <Text> →</Text>
   </Box>
 );
 
@@ -411,6 +411,7 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
                   </Text>
                   <Text
                     color={isActive ? theme.status.success : theme.text.primary}
+                    bold={isActive}
                   >
                     {item.label}
                   </Text>
@@ -477,7 +478,7 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
             let checkboxPrefix = '';
             if (currentQuestion.multiSelect) {
               if (item.isDone) {
-                checkboxPrefix = '    ';
+                checkboxPrefix = '';
               } else {
                 checkboxPrefix = isSelected ? '[x] ' : '[ ] ';
               }
@@ -517,15 +518,28 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
                     {isActive ? '❯ ' : '  '}
                     {item.isDone ? '   ' : `${index + 1}. `}
                     {checkboxPrefix}
-                    {item.label}
-                    {isPicked && !item.isDone && (
-                      <Text color={theme.status.success}> ✔</Text>
-                    )}
+                    <Text
+                      color={
+                        isActive || isPicked
+                          ? theme.status.success
+                          : theme.text.primary
+                      }
+                      bold
+                    >
+                      {item.label}
+                    </Text>
+                    {isPicked &&
+                      !currentQuestion.multiSelect &&
+                      !item.isDone && (
+                        <Text color={theme.status.success}> ✔</Text>
+                      )}
                   </Text>
                 </Box>
                 {item.description && (
                   <Box marginLeft={checkboxPrefix ? 9 : 5}>
-                    <Text color={theme.text.secondary}>{item.description}</Text>
+                    <Text color={theme.text.secondary} italic>
+                      {item.description}
+                    </Text>
                   </Box>
                 )}
               </Box>
