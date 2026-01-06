@@ -41,6 +41,8 @@ describe('AskUserForm', () => {
     expect(frame).toContain('Option A');
     expect(frame).toContain('Option B');
     expect(frame).toContain('Other...');
+    expect(frame).toContain('☐ Test');
+    expect(frame).toContain('✔ Submit');
   });
 
   it('activates input when navigating to Other', async () => {
@@ -56,21 +58,21 @@ describe('AskUserForm', () => {
       await act(async () => {
         stdin.write(input);
       });
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 50));
     };
 
     // Initial state: Option A selected
-    expect(lastFrame()).toContain('● Option A');
+    expect(lastFrame()).toContain('1. Option A');
 
     // Move down to Option B
     await write('\x1B[B');
-    expect(lastFrame()).toContain('● Option B');
+    expect(lastFrame()).toContain('2. Option B');
 
     // Move down to Other
     await write('\x1B[B');
 
     // Should show active input indicator/placeholder
-    expect(lastFrame()).toContain('●');
+    expect(lastFrame()).toContain('3.');
     expect(lastFrame()).toContain('Type something...');
   });
 
@@ -88,17 +90,18 @@ describe('AskUserForm', () => {
       await act(async () => {
         stdin.write(input);
       });
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 50));
     };
 
     // Select Option A (default) by pressing Enter
     await write('\r');
 
     // Now should be on Review screen
-    expect(lastFrame()).toContain('Summary');
-    expect(lastFrame()).toContain('Select an option');
-    expect(lastFrame()).toContain('Option A');
-    expect(lastFrame()).toContain('Press Enter to submit');
+    const frame = lastFrame();
+    expect(frame).toContain('Review your answers');
+    expect(frame).toContain('Select an option');
+    expect(frame).toContain('→ Option A');
+    expect(frame).toContain('Submit answers');
 
     // Submit
     await write('\r');
@@ -132,7 +135,7 @@ describe('AskUserForm', () => {
       await act(async () => {
         stdin.write(input);
       });
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 50));
     };
 
     // Move to Other (Opt 1 -> Opt 2 -> Other)
@@ -157,7 +160,7 @@ describe('AskUserForm', () => {
     await write('\r');
 
     // Now on Review Screen
-    expect(lastFrame()).toContain('Summary');
+    expect(lastFrame()).toContain('Review your answers');
     expect(lastFrame()).toContain('Custom1');
 
     // Submit
@@ -166,7 +169,61 @@ describe('AskUserForm', () => {
     // Check completion
     expect(onComplete).toHaveBeenCalled();
     const result = onComplete.mock.calls[0][0];
-    // Expected: comma separated values.
     expect(result['Select multiple']).toContain('Custom1');
+  });
+
+  it('allows navigating back to previous questions', async () => {
+    const twoQuestions = [
+      {
+        question: 'Q1',
+        header: 'H1',
+        multiSelect: false,
+        options: [
+          { label: 'A', description: '' },
+          { label: 'B', description: '' },
+        ],
+      },
+      {
+        question: 'Q2',
+        header: 'H2',
+        multiSelect: false,
+        options: [
+          { label: 'C', description: '' },
+          { label: 'D', description: '' },
+        ],
+      },
+    ];
+
+    const { lastFrame, stdin } = renderWithProviders(
+      <AskUserForm
+        questions={twoQuestions}
+        onComplete={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    const write = async (input: string) => {
+      await act(async () => {
+        stdin.write(input);
+      });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    };
+
+    // Answer Q1
+    await write('\r');
+    expect(lastFrame()).toContain('Q2');
+
+    // Go back to Q1 using Left Arrow
+    await write('\x1B[D');
+    expect(lastFrame()).toContain('Q1');
+    expect(lastFrame()).toContain('☒ H1');
+
+    // Go to Q2 using Right Arrow
+    await write('\x1B[C');
+    expect(lastFrame()).toContain('Q2');
+
+    // Go to Review using Right Arrow
+    await write('\x1B[C');
+    expect(lastFrame()).toContain('Review your answers');
   });
 });

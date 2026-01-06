@@ -127,7 +127,7 @@ export class AskUserQuestionTool extends BaseDeclarativeTool<
                   type: 'array',
                   description:
                     'The available choices for this question. If provided, must have 2-4 options. If omitted or empty, the user will be asked to provide free-form text input.',
-                  minItems: 0,
+                  minItems: 2,
                   maxItems: 4,
                   items: {
                     type: 'object',

@@ -5,7 +5,7 @@
  */
 
 import type React from 'react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { theme } from '../../semantic-colors.js';
 import { TextInput } from './TextInput.js';
@@ -25,6 +25,8 @@ interface AskUserFormProps {
 
 const OTHER_VALUE = '__OTHER__';
 const DONE_VALUE = '__DONE__';
+const SUBMIT_ACTION = 'submit';
+const CANCEL_ACTION = 'cancel';
 
 interface FormItem extends SelectionListItem<string> {
   label: string;
@@ -35,48 +37,48 @@ interface FormItem extends SelectionListItem<string> {
 
 const TabBar: React.FC<{
   questions: Question[];
-  activeIndex: number;
-  isReviewing: boolean;
-}> = ({ questions, activeIndex, isReviewing }) => (
-  <Box
-    flexDirection="row"
-    marginBottom={1}
-    borderStyle="single"
-    borderColor={theme.border.default}
-  >
-    {questions.map((q, i) => {
-      const isActive = !isReviewing && i === activeIndex;
-      return (
-        <Box key={i} marginRight={2}>
-          <Text
-            color={isActive ? theme.status.success : theme.text.secondary}
-            bold={isActive}
-            underline={isActive}
-          >
-            {q.header || `Q${i + 1}`}
-          </Text>
-        </Box>
-      );
-    })}
-    <Box>
-      <Text
-        color={isReviewing ? theme.status.success : theme.text.secondary}
-        bold={isReviewing}
-        underline={isReviewing}
-      >
-        Review
-      </Text>
+  answers: Record<string, string>;
+  activeTabIndex: number;
+}> = ({ questions, answers, activeTabIndex }) => (
+    <Box flexDirection="row" marginBottom={1} alignItems="center">
+      <Text dimColor>← </Text>
+      {questions.map((q, i) => {
+        const isAnswered = !!answers[q.question];
+        const isActive = activeTabIndex === i;
+        const icon = isAnswered ? '☒' : '☐';
+        return (
+          <Box key={i} marginRight={2}>
+            <Text
+              color={isActive ? theme.status.success : theme.text.secondary}
+              bold={isActive}
+            >
+              {icon} {q.header || `Q${i + 1}`}
+            </Text>
+          </Box>
+        );
+      })}
+      <Box>
+        <Text
+          color={
+            activeTabIndex === questions.length
+              ? theme.status.success
+              : theme.text.secondary
+          }
+          bold={activeTabIndex === questions.length}
+        >
+          ✔ Submit
+        </Text>
+      </Box>
+      <Text dimColor> →</Text>
     </Box>
-  </Box>
-);
+  );
 
 export const AskUserForm: React.FC<AskUserFormProps> = ({
   questions,
   onComplete,
   onCancel,
 }) => {
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [isReviewing, setIsReviewing] = useState(false);
+  const [tabIndex, setTabIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
   // State for the current active question interaction
@@ -84,7 +86,8 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
   const [customOptions, setCustomOptions] = useState<string[]>([]);
   const [isOtherActive, setIsOtherActive] = useState(false);
 
-  const currentQuestion = questions[questionIndex];
+  const isReviewing = tabIndex === questions.length;
+  const currentQuestion = questions[tabIndex];
   const { columns, rows } = useTerminalSize();
 
   const buffer = useTextBuffer({
@@ -95,12 +98,22 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
   });
   const { setText: bufferSetText } = buffer;
 
-  // Initialize state when switching questions
-  useMemo(() => {
-    // Determine initial values based on saved answers if revisiting
-    const savedAnswer = answers[currentQuestion?.question];
+  // Helper to determine if we are in a mode where text input captures keys
+  const isTextEditing =
+    !isReviewing &&
+    currentQuestion &&
+    ((currentQuestion.options?.length ?? 0) === 0 || isOtherActive);
 
-    if (currentQuestion?.multiSelect) {
+  // Initialize state when switching tabs
+  useEffect(() => {
+    if (isReviewing) {
+      setIsOtherActive(false);
+      return;
+    }
+
+    const savedAnswer = answers[currentQuestion.question];
+
+    if (currentQuestion.multiSelect) {
       const initialSet = new Set<string>();
       const initialCustom: string[] = [];
 
@@ -118,65 +131,79 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
       setMultiSelection(initialSet);
       setCustomOptions(initialCustom);
     } else {
-      // For single select, we don't need complex state initialization here
-      // as it's handled by finding the option or using custom input
       setMultiSelection(new Set());
       setCustomOptions([]);
     }
 
     bufferSetText('');
     setIsOtherActive(false);
-  }, [currentQuestion, answers, bufferSetText]);
-
-  // Global navigation handler
-  useInput((input, key) => {
-    if (isReviewing) {
-      if (key.return) {
-        onComplete(answers);
-      } else if (key.escape) {
-        setIsReviewing(false);
-        setQuestionIndex(questions.length - 1);
-      }
-      // TODO: Add support for navigating back to specific questions from review
-      return;
-    }
-
-    // Allow Tab to cycle through questions?
-    // Maybe Ctrl+Left/Right?
-    if (key.pageDown) {
-      // Next question
-      handleNext();
-    }
-    if (key.pageUp) {
-      // Prev question
-      handlePrev();
-    }
-    if (key.escape) {
-      onCancel();
-    }
-  });
+  }, [
+    tabIndex,
+    answers,
+    bufferSetText,
+    currentQuestion.multiSelect,
+    currentQuestion.options,
+    currentQuestion.question,
+    isReviewing,
+  ]);
 
   const handleNext = () => {
-    // Validation?
-    if (questionIndex < questions.length - 1) {
-      setQuestionIndex((i) => i + 1);
-    } else {
-      setIsReviewing(true);
+    if (tabIndex < questions.length) {
+      setTabIndex((i) => i + 1);
     }
   };
 
   const handlePrev = () => {
-    if (questionIndex > 0) {
-      setQuestionIndex((i) => i - 1);
+    if (tabIndex > 0) {
+      setTabIndex((i) => i - 1);
     }
   };
+
+  // Global navigation handler
+  useInput((input, key) => {
+    // Universal Navigation Keys (Always work)
+    if (key.pageDown || (key.ctrl && key.rightArrow)) {
+      handleNext();
+      return;
+    }
+    if (key.pageUp || (key.ctrl && key.leftArrow)) {
+      handlePrev();
+      return;
+    }
+    if (key.tab) {
+      if (key.shift) handlePrev();
+      else handleNext();
+      return;
+    }
+
+    // Context-aware Navigation (only when NOT editing text)
+    if (!isTextEditing) {
+      if (key.rightArrow) {
+        handleNext();
+        return;
+      }
+      if (key.leftArrow) {
+        handlePrev();
+        return;
+      }
+    }
+
+    if (key.escape) {
+      if (isReviewing || tabIndex > 0) {
+        handlePrev();
+      } else {
+        onCancel();
+      }
+    }
+  });
 
   const saveCurrentAnswer = (ans: string) => {
     setAnswers((prev) => ({ ...prev, [currentQuestion.question]: ans }));
     handleNext();
   };
 
-  const items: FormItem[] = useMemo(() => {
+  // --- Question List Items ---
+  const questionItems: FormItem[] = useMemo(() => {
     if (!currentQuestion?.options) return [];
     if (currentQuestion.options.length === 0) return [];
 
@@ -216,17 +243,40 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
     return opts;
   }, [currentQuestion, customOptions]);
 
-  // Hook for the list logic
+  // --- Submit List Items ---
+  const submitItems: FormItem[] = useMemo(() => [
+      {
+        key: SUBMIT_ACTION,
+        value: SUBMIT_ACTION,
+        label: 'Submit answers',
+      },
+      {
+        key: CANCEL_ACTION,
+        value: CANCEL_ACTION,
+        label: 'Cancel',
+      },
+    ], []);
+
+  const activeItems = isReviewing ? submitItems : questionItems;
+  const isListFocused = !isTextEditing && activeItems.length > 0;
+
   const { activeIndex, setActiveIndex } = useSelectionList({
-    items,
-    isFocused:
-      !isOtherActive &&
-      !isReviewing &&
-      (currentQuestion?.options?.length ?? 0) > 0,
+    items: activeItems,
+    isFocused: isListFocused,
     showNumbers: true,
     onSelect: (value) => {
+      if (isReviewing) {
+        if (value === SUBMIT_ACTION) {
+          onComplete(answers);
+        } else if (value === CANCEL_ACTION) {
+          onCancel();
+        }
+        return;
+      }
+
+      // Question Mode
       if (value === DONE_VALUE) {
-        const ans = Array.from(multiSelection).join(', ');
+        const ans = Array.from(multiSelection).sort().join(', ');
         saveCurrentAnswer(ans);
       } else if (value === OTHER_VALUE) {
         // Handled by effect
@@ -241,13 +291,14 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
     },
   });
 
-  // Effect to toggle input mode for "Other"
-  useMemo(() => {
-    const isOther = items[activeIndex]?.isOther ?? false;
+  // Effect to toggle input mode for "Other" (Question Mode only)
+  useEffect(() => {
+    if (isReviewing) return;
+    const isOther = activeItems[activeIndex]?.isOther ?? false;
     if (isOther !== isOtherActive) {
       setIsOtherActive(isOther);
     }
-  }, [activeIndex, items, isOtherActive]);
+  }, [activeIndex, activeItems, isOtherActive, isReviewing]);
 
   const handleInputSubmit = (value: string) => {
     const trimmed = value.trim();
@@ -255,11 +306,12 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
 
     if (currentQuestion.multiSelect) {
       setCustomOptions((prev) => [...prev, trimmed]);
-      setMultiSelection((prev) => new Set(prev).add(trimmed));
+      setMultiSelection((prev) => {
+        const next = new Set(prev);
+        next.add(trimmed);
+        return next;
+      });
       bufferSetText('');
-      // Focus remains on "Other" (which shifts index due to new item insertion, handled by hook usually?)
-      // Actually, since we modify items array, hook might reset or shift.
-      // Ideally we want to stay on "Other".
     } else {
       saveCurrentAnswer(trimmed);
     }
@@ -270,37 +322,78 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
     if (activeIndex > 0) setActiveIndex(activeIndex - 1);
   };
 
+  const allAnswered = questions.every((q) => !!answers[q.question]);
+
+  // --- RENDER ---
+
   if (isReviewing) {
     return (
       <Box flexDirection="column">
-        <TabBar questions={questions} activeIndex={-1} isReviewing={true} />
+        <TabBar
+          questions={questions}
+          answers={answers}
+          activeTabIndex={tabIndex}
+        />
+
         <Box flexDirection="column" marginBottom={1}>
           <Text bold underline>
-            Summary
+            Review your answers
           </Text>
-          {questions.map((q, i) => (
-            <Box key={i} flexDirection="column" marginTop={1}>
-              <Text bold color={theme.text.secondary}>
-                {q.question}
-              </Text>
-              <Text color={theme.text.primary}>
-                {' '}
-                {answers[q.question] || '(No answer)'}
+
+          {!allAnswered && (
+            <Box marginTop={1} marginBottom={1}>
+              <Text color={theme.status.warning}>
+                ⚠ You have not answered all questions
               </Text>
             </Box>
-          ))}
+          )}
+
+          <Box flexDirection="column" marginTop={1}>
+            {questions.map((q, i) => (
+              <Box key={i} flexDirection="column" marginBottom={1}>
+                <Box flexDirection="row">
+                  <Text color={theme.status.success}> ● </Text>
+                  <Text bold color={theme.text.secondary}>
+                    {q.question}
+                  </Text>
+                </Box>
+                <Text color={theme.text.primary}>
+                  {'   '}→ {answers[q.question] || '(No answer)'}
+                </Text>
+              </Box>
+            ))}
+          </Box>
         </Box>
+
+        <Box flexDirection="column">
+          <Text bold>Ready to submit your answers?</Text>
+          <Box flexDirection="column" marginTop={1}>
+            {submitItems.map((item, index) => {
+              const isActive = index === activeIndex;
+              return (
+                <Box key={item.key} flexDirection="row">
+                  <Text
+                    color={
+                      isActive ? theme.status.success : theme.text.secondary
+                    }
+                  >
+                    {isActive ? '❯ ' : '  '}
+                    {index + 1}.{' '}
+                  </Text>
+                  <Text
+                    color={isActive ? theme.status.success : theme.text.primary}
+                  >
+                    {item.label}
+                  </Text>
+                </Box>
+              );
+            })}
+          </Box>
+        </Box>
+
         <Box marginTop={1}>
-          <Text>
-            Press{' '}
-            <Text bold color={theme.status.success}>
-              Enter
-            </Text>{' '}
-            to submit,{' '}
-            <Text bold color={theme.status.warning}>
-              Esc
-            </Text>{' '}
-            to edit.
+          <Text dimColor>
+            Enter to select · Tab/Arrow keys to navigate · Esc to back
           </Text>
         </Box>
       </Box>
@@ -315,8 +408,8 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
     <Box flexDirection="column">
       <TabBar
         questions={questions}
-        activeIndex={questionIndex}
-        isReviewing={false}
+        answers={answers}
+        activeTabIndex={tabIndex}
       />
 
       <Box marginBottom={1}>
@@ -341,17 +434,27 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
         </Box>
       ) : (
         <Box flexDirection="column">
-          {items.map((item, index) => {
+          {activeItems.map((item, index) => {
             const isActive = index === activeIndex;
             const isSelected = currentQuestion.multiSelect
               ? multiSelection.has(item.value)
               : false;
 
+            let checkboxPrefix = '';
+            if (currentQuestion.multiSelect) {
+              if (item.isDone) {
+                checkboxPrefix = '    ';
+              } else {
+                checkboxPrefix = isSelected ? '[x] ' : '[ ] ';
+              }
+            }
+
             if (item.isOther && isActive) {
               return (
                 <Box key={item.key} flexDirection="row">
                   <Text color={theme.status.success}>
-                    {currentQuestion.multiSelect ? '(+)' : '●'}{' '}
+                    {isActive ? '❯ ' : '  '}
+                    {index + 1}. {checkboxPrefix}
                   </Text>
                   <TextInput
                     buffer={buffer}
@@ -360,7 +463,8 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
                     onCancel={handleInputCancel}
                     onArrowUp={() => index > 0 && setActiveIndex(index - 1)}
                     onArrowDown={() =>
-                      index < items.length - 1 && setActiveIndex(index + 1)
+                      index < activeItems.length - 1 &&
+                      setActiveIndex(index + 1)
                     }
                     focus={true}
                   />
@@ -368,53 +472,36 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
               );
             }
 
-            let symbol = isActive ? '●' : '○';
-            if (currentQuestion.multiSelect) {
-              symbol = isSelected ? '[x]' : '[ ]';
-              if (item.isDone) symbol = '   ';
-              if (item.isOther) symbol = '( )';
-            } else if (item.isOther) {
-              symbol = '○';
-            }
-
             return (
-              <Box key={item.key} flexDirection="row">
-                <Text
-                  color={isActive ? theme.status.success : theme.text.secondary}
-                >
-                  {symbol}{' '}
-                </Text>
-                <Box flexDirection="column">
+              <Box key={item.key} flexDirection="column" marginBottom={0}>
+                <Box flexDirection="row">
                   <Text
                     color={
-                      isActive || (item.isDone && isActive)
-                        ? theme.status.success
-                        : theme.text.primary
+                      isActive ? theme.status.success : theme.text.secondary
                     }
                   >
+                    {isActive ? '❯ ' : '  '}
+                    {item.isDone ? '   ' : `${index + 1}. `}
+                    {checkboxPrefix}
                     {item.label}
                   </Text>
-                  {item.description && (
+                </Box>
+                {item.description && (
+                  <Box marginLeft={checkboxPrefix ? 9 : 5}>
                     <Text color={theme.text.secondary} dimColor>
-                      {' '}
                       {item.description}
                     </Text>
-                  )}
-                </Box>
+                  </Box>
+                )}
               </Box>
             );
           })}
         </Box>
       )}
 
-      <Box
-        marginTop={1}
-        borderStyle="single"
-        borderColor={theme.border.default}
-      >
+      <Box marginTop={1}>
         <Text dimColor>
-          PageUp/Down to navigate questions | Enter to select/next | Esc to
-          cancel
+          Enter to select · Tab/Arrow keys to navigate · Esc to back
         </Text>
       </Box>
     </Box>
