@@ -124,9 +124,11 @@ import { useSettings } from './contexts/SettingsContext.js';
 import { terminalCapabilityManager } from './utils/terminalCapabilityManager.js';
 import { useInputHistoryStore } from './hooks/useInputHistoryStore.js';
 import { useBanner } from './hooks/useBanner.js';
-
-const WARNING_PROMPT_DURATION_MS = 1000;
-const QUEUE_ERROR_DISPLAY_DURATION_MS = 3000;
+import { useHookDisplayState } from './hooks/useHookDisplayState.js';
+import {
+  WARNING_PROMPT_DURATION_MS,
+  QUEUE_ERROR_DISPLAY_DURATION_MS,
+} from './constants.js';
 
 function isToolExecuting(pendingHistoryItems: HistoryItemWithoutId[]) {
   return pendingHistoryItems.some((item) => {
@@ -190,6 +192,7 @@ export const AppContainer = (props: AppContainerProps) => {
     useState<boolean>(false);
   const [historyRemountKey, setHistoryRemountKey] = useState(0);
   const [settingsNonce, setSettingsNonce] = useState(0);
+  const activeHooks = useHookDisplayState();
   const [updateInfo, setUpdateInfo] = useState<UpdateObject | null>(null);
   const [isTrustedFolder, setIsTrustedFolder] = useState<boolean | undefined>(
     isWorkspaceTrusted(settings.merged).isTrusted,
@@ -1536,6 +1539,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       elapsedTime,
       currentLoadingPhrase,
       historyRemountKey,
+      activeHooks,
       messageQueue,
       queueErrorMessage,
       showAutoAcceptIndicator,
@@ -1627,6 +1631,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       elapsedTime,
       currentLoadingPhrase,
       historyRemountKey,
+      activeHooks,
       messageQueue,
       queueErrorMessage,
       showAutoAcceptIndicator,

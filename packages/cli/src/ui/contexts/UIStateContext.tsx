@@ -15,6 +15,7 @@ import type {
   PlanCompletionRequest,
   HistoryItemWithoutId,
   StreamingState,
+  ActiveHook,
 } from '../types.js';
 import type { CommandContext, SlashCommand } from '../commands/types.js';
 import type { TextBuffer } from '../components/shared/text-buffer.js';
@@ -98,6 +99,7 @@ export interface UIState {
   elapsedTime: number;
   currentLoadingPhrase: string;
   historyRemountKey: number;
+  activeHooks: ActiveHook[];
   messageQueue: string[];
   queueErrorMessage: string | null;
   showAutoAcceptIndicator: ApprovalMode;

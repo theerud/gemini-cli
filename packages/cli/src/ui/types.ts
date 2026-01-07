@@ -456,3 +456,10 @@ export interface PlanCompletionRequest {
     feedback?: string,
   ) => void;
 }
+
+export interface ActiveHook {
+  name: string;
+  eventName: string;
+  index?: number;
+  total?: number;
+}
