@@ -76,9 +76,6 @@ export enum ToolErrorType {
   // WebSearch-specific Errors
   WEB_SEARCH_FAILED = 'web_search_failed',
 
-  // Policy-specific Errors
-  POLICY_VIOLATION = 'policy_violation',
-
   // Hook-specific Errors
   STOP_EXECUTION = 'stop_execution',
 }
