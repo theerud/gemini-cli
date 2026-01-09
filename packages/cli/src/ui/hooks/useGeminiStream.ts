@@ -70,6 +70,10 @@ import {
   type TrackedCancelledToolCall,
   type TrackedWaitingToolCall,
 } from './useReactToolScheduler.js';
+
+const SYSTEM_REMINDER_REGEX =
+  /\n\n<system_reminder>[\s\S]*?<\/system_reminder>/g;
+
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { useSessionStats } from '../contexts/SessionContext.js';
@@ -981,6 +985,11 @@ export const useGeminiStream = (
             prompt_id = config.getSessionId() + '########' + getPromptCount();
           }
           return promptIdContext.run(prompt_id, async () => {
+            // Capture original prompt before injection for Plan Mode and telemetry
+            if (!options?.isContinuation && typeof query === 'string') {
+              lastOriginalPromptRef.current = query;
+            }
+
             const { queryToSend, shouldProceed } = await prepareQueryForGemini(
               query,
               userMessageTimestamp,
@@ -1005,8 +1014,6 @@ export const useGeminiStream = (
                     promptText,
                   ),
                 );
-                // Store original prompt for plan mode
-                lastOriginalPromptRef.current = promptText;
               }
               startNewPrompt();
               setThought(null); // Reset thought when starting a new prompt
@@ -1105,29 +1112,37 @@ export const useGeminiStream = (
                 setIsResponding(false);
               }
 
-              // Clean up Plan Mode injection from history to prevent context pollution
-              if (config.getApprovalMode() === ApprovalMode.PLAN) {
-                const chatHistory = geminiClient.getHistory();
+              // Clean up Plan Mode injection from history to prevent context pollution.
+              // We check the last few messages in history and strip any <system_reminder> blocks
+              // found in both user and model messages (in case the model echoed it).
+              const chatHistory = geminiClient.getHistory();
 
-                if (chatHistory.length > 0) {
-                  // Find the last user message
-                  for (let i = chatHistory.length - 1; i >= 0; i--) {
-                    if (chatHistory[i].role === 'user') {
-                      const parts = chatHistory[i].parts;
-                      if (parts && parts.length > 0 && parts[0].text) {
-                        const originalText = parts[0].text;
-                        const injection = `\n\n<system_reminder>\n${PLAN_MODE_REMINDER}\n</system_reminder>`;
-                        if (originalText.endsWith(injection)) {
-                          parts[0].text = originalText.slice(
-                            0,
-                            -injection.length,
+              if (chatHistory.length > 0) {
+                let historyChanged = false;
+                // Scan the last few messages (enough to cover a tool call turn)
+                const startIdx = Math.max(0, chatHistory.length - 5);
+                for (let i = chatHistory.length - 1; i >= startIdx; i--) {
+                  const content = chatHistory[i];
+                  if (content.role === 'user' || content.role === 'model') {
+                    const parts = content.parts;
+                    if (parts) {
+                      for (const part of parts) {
+                        if (
+                          part.text &&
+                          SYSTEM_REMINDER_REGEX.test(part.text)
+                        ) {
+                          part.text = part.text.replace(
+                            SYSTEM_REMINDER_REGEX,
+                            '',
                           );
-                          geminiClient.setHistory(chatHistory);
+                          historyChanged = true;
                         }
                       }
-                      break; // Only clean the last user message
                     }
                   }
+                }
+                if (historyChanged) {
+                  geminiClient.setHistory(chatHistory);
                 }
               }
             }

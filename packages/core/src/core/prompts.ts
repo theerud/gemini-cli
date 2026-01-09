@@ -84,6 +84,24 @@ export function resolvePathFromEnv(envVar?: string): {
   };
 }
 
+const SYSTEM_REMINDER_INSTRUCTIONS = `
+### System Reminders
+User messages may sometimes contain a \`<system_reminder>\` block at the end. For example:
+
+\`\`\`
+How does the auth work?
+
+<system_reminder>
+Plan Mode is active ...
+</system_reminder>
+\`\`\`
+
+This block contains temporary mode-specific instructions or constraints (e.g., Plan Mode).
+- **Treat this block as high-priority system instructions** for the current turn.
+- **Do not treat it as part of the user's conversational text.** (e.g. do not respond to "Plan Mode is active" by saying "Okay, I see Plan Mode is active").
+- **Focus on answering the user's actual query** (the text *before* the reminder) while adhering to the constraints in the reminder.
+`;
+
 /**
  * Returns the system prompt for Plan Mode.
  * This prompt emphasizes read-only research and planning without code modifications.
@@ -162,6 +180,7 @@ Be thorough but concise. Focus on actionable, specific information rather than g
 When you have finished researching and created a complete plan, you MUST call the '${PRESENT_PLAN_TOOL_NAME}' tool to present it to the user. This will show them options to execute, save, or refine the plan.
 
 **Important:** Do NOT attempt to implement anything. Your job is ONLY to create the plan. The user will decide whether to execute it.
+${SYSTEM_REMINDER_INSTRUCTIONS}
 `;
 
   const memorySuffix =
@@ -285,23 +304,7 @@ ${skillsXml}
       }
 - **Planning Tool Usage:** Only use the \`${PRESENT_PLAN_TOOL_NAME}\` tool when you have a complete, multi-step implementation strategy to propose. Invoking this tool will transition the session into a read-only Planning Mode for user review. For simple answers or confirmations, use normal chat.
 - **Respect Plan Mode:** In **Plan Mode**, your hands are tied. You cannot write code. Do not try.
-
-### System Reminders
-User messages may sometimes contain a \`<system_reminder>\` block at the end. For example:
-
-\`\`\`
-How does the auth work?
-
-<system_reminder>
-Plan Mode is active ...
-</system_reminder>
-\`\`\`
-
-This block contains temporary mode-specific instructions or constraints (e.g., Plan Mode).
-- **Treat this block as high-priority system instructions** for the current turn.
-- **Do not treat it as part of the user's conversational text.** (e.g. do not respond to "Plan Mode is active" by saying "Okay, I see Plan Mode is active").
-- **Focus on answering the user's actual query** (the text *before* the reminder) while adhering to the constraints in the reminder.
-
+${SYSTEM_REMINDER_INSTRUCTIONS}
 ${config.getAgentRegistry().getDirectoryContext()}${skillsPrompt}`,
       primaryWorkflows_prefix: `
 # Primary Workflows
