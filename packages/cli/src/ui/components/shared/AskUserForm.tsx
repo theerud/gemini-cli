@@ -150,24 +150,27 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
   ]);
 
   const handleNext = useCallback(() => {
-    if (isFinished) return;
+    if (isFinished || questions.length === 1) return;
     if (tabIndex < questions.length) {
       setTabIndex((i) => i + 1);
     }
   }, [isFinished, tabIndex, questions.length]);
 
   const handlePrev = useCallback(() => {
-    if (isFinished) return;
+    if (isFinished || questions.length === 1) return;
     if (tabIndex > 0) {
       setTabIndex((i) => i - 1);
     }
-  }, [isFinished, tabIndex]);
+  }, [isFinished, tabIndex, questions.length]);
 
-  const handleFinalComplete = useCallback(() => {
-    if (isFinished) return;
-    setIsFinished(true);
-    onComplete(answers);
-  }, [isFinished, onComplete, answers]);
+  const handleFinalComplete = useCallback(
+    (finalAnswers?: Record<string, string>) => {
+      if (isFinished) return;
+      setIsFinished(true);
+      onComplete(finalAnswers || answers);
+    },
+    [isFinished, onComplete, answers],
+  );
 
   const handleFinalCancel = useCallback(() => {
     if (isFinished) return;
@@ -217,8 +220,13 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
 
   const saveCurrentAnswer = (ans: string) => {
     if (isFinished) return;
-    setAnswers((prev) => ({ ...prev, [currentQuestion.question]: ans }));
-    handleNext();
+    const newAnswers = { ...answers, [currentQuestion.question]: ans };
+    setAnswers(newAnswers);
+    if (questions.length === 1) {
+      handleFinalComplete(newAnswers);
+    } else {
+      handleNext();
+    }
   };
 
   // --- Question List Items ---
@@ -356,11 +364,13 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
   if (isReviewing) {
     return (
       <Box flexDirection="column">
-        <TabBar
-          questions={questions}
-          answers={answers}
-          activeTabIndex={tabIndex}
-        />
+        {questions.length > 1 && (
+          <TabBar
+            questions={questions}
+            answers={answers}
+            activeTabIndex={tabIndex}
+          />
+        )}
 
         <Box flexDirection="column" marginBottom={1}>
           <Text bold underline>
@@ -436,11 +446,13 @@ export const AskUserForm: React.FC<AskUserFormProps> = ({
 
   return (
     <Box flexDirection="column">
-      <TabBar
-        questions={questions}
-        answers={answers}
-        activeTabIndex={tabIndex}
-      />
+      {questions.length > 1 && (
+        <TabBar
+          questions={questions}
+          answers={answers}
+          activeTabIndex={tabIndex}
+        />
+      )}
 
       <Box marginBottom={1}>
         <Text bold>{currentQuestion.question}</Text>
