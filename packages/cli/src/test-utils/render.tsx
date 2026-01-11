@@ -173,6 +173,7 @@ const mockUIActions: UIActions = {
   setEmbeddedShellFocused: vi.fn(),
   setApprovalMode: vi.fn(),
   setAuthContext: vi.fn(),
+  handleAskUserQuestionSubmit: vi.fn(),
 };
 
 export const renderWithProviders = (

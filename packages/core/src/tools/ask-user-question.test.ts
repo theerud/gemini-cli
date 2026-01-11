@@ -4,113 +4,122 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { describe, it, expect } from 'vitest';
-import {
-  AskUserQuestionTool,
-  AskUserQuestionInvocation,
-} from './ask-user-question.js';
-import { ToolConfirmationOutcome } from './tools.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { AskUserQuestionTool } from './ask-user-question.js';
+import { MessageBusType } from '../confirmation-bus/types.js';
 import type { MessageBus } from '../confirmation-bus/message-bus.js';
 
-const mockMessageBus = {} as MessageBus;
-
 describe('AskUserQuestionTool', () => {
-  it('should instantiate correctly', () => {
+  let mockMessageBus: MessageBus;
+
+  beforeEach(() => {
+    mockMessageBus = {
+      publish: vi.fn().mockResolvedValue(undefined),
+      subscribe: vi.fn(),
+      unsubscribe: vi.fn(),
+    } as unknown as MessageBus;
+  });
+
+  it('should have correct metadata', () => {
     const tool = new AskUserQuestionTool(mockMessageBus);
     expect(tool.name).toBe('ask_user_question');
+    expect(tool.displayName).toBe('Ask User Question');
   });
 
-  it('should validate valid parameters', () => {
+  it('should publish ASK_USER_QUESTION_REQUEST and wait for response', async () => {
     const tool = new AskUserQuestionTool(mockMessageBus);
-    const params = {
-      questions: [
-        {
-          question: 'Test question?',
-          header: 'Test',
-          multiSelect: false,
-          options: [
-            { label: 'A', description: 'Option A' },
-            { label: 'B', description: 'Option B' },
-          ],
-        },
-      ],
-    };
-    const invocation = tool.build(params);
-    expect(invocation).toBeInstanceOf(AskUserQuestionInvocation);
-  });
+    const questions = [
+      {
+        question: 'How should we proceed with this task?',
+        header: 'Approach',
+        options: [
+          {
+            label: 'Quick fix (Recommended)',
+            description:
+              'Apply the most direct solution to resolve the immediate issue.',
+          },
+          {
+            label: 'Comprehensive refactor',
+            description:
+              'Restructure the affected code for better long-term maintainability.',
+          },
+        ],
+        multiSelect: false,
+      },
+    ];
 
-  it('should throw on invalid parameters (missing options)', () => {
-    const tool = new AskUserQuestionTool(mockMessageBus);
-    const params = {
-      questions: [
-        {
-          question: 'Test question?',
-          header: 'Test',
-          multiSelect: false,
-          options: [], // Invalid: minItems 2
-        },
-      ],
-    };
-    expect(() => tool.build(params)).toThrow();
-  });
-});
+    const invocation = tool.build({ questions });
+    const executePromise = invocation.execute(new AbortController().signal);
 
-describe('AskUserQuestionInvocation', () => {
-  it('should require confirmation and provide details', async () => {
-    const params = {
-      questions: [
-        {
-          question: 'Q1?',
-          header: 'H1',
-          multiSelect: false,
-          options: [
-            { label: '1', description: 'd1' },
-            { label: '2', description: 'd2' },
-          ],
-        },
-      ],
-    };
-    const invocation = new AskUserQuestionInvocation(params, mockMessageBus);
-    const details = await invocation.shouldConfirmExecute(
-      new AbortController().signal,
+    // Verify publish called
+    expect(mockMessageBus.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: MessageBusType.ASK_USER_QUESTION_REQUEST,
+        questions,
+      }),
     );
 
-    expect(details).not.toBe(false);
-    if (details === false) return; // TS guard
-    if (details.type !== 'ask_user') throw new Error('Wrong confirmation type');
-
-    expect(details.questions).toEqual(params.questions);
-  });
-
-  it('should store answers from confirmation payload and return them in execute', async () => {
-    const params = {
-      questions: [
-        {
-          question: 'Q1?',
-          header: 'H1',
-          multiSelect: false,
-          options: [
-            { label: '1', description: 'd1' },
-            { label: '2', description: 'd2' },
-          ],
-        },
-      ],
+    // Get the correlation ID from the published message
+    const publishCall = vi.mocked(mockMessageBus.publish).mock.calls[0][0] as {
+      correlationId: string;
     };
-    const invocation = new AskUserQuestionInvocation(params, mockMessageBus);
-    const details = await invocation.shouldConfirmExecute(
-      new AbortController().signal,
+    const correlationId = publishCall.correlationId;
+    expect(correlationId).toBeDefined();
+
+    // Verify subscribe called
+    expect(mockMessageBus.subscribe).toHaveBeenCalledWith(
+      MessageBusType.ASK_USER_QUESTION_RESPONSE,
+      expect.any(Function),
     );
 
-    if (details === false) throw new Error('Should require confirmation');
-    if (details.type !== 'ask_user') throw new Error('Wrong confirmation type');
+    // Simulate response
+    const subscribeCall = vi
+      .mocked(mockMessageBus.subscribe)
+      .mock.calls.find(
+        (call) => call[0] === MessageBusType.ASK_USER_QUESTION_RESPONSE,
+      );
+    const handler = subscribeCall![1];
 
-    const answers = { 'Q1?': '1' };
-    // Simulate UI calling onConfirm with payload
-    await details.onConfirm(ToolConfirmationOutcome.ProceedOnce, { answers });
+    const answers = { '0': 'Quick fix (Recommended)' };
+    handler({
+      type: MessageBusType.ASK_USER_QUESTION_RESPONSE,
+      correlationId,
+      answers,
+    });
 
-    const result = await invocation.execute(new AbortController().signal);
-    const expectedJson = JSON.stringify({ answers });
-    expect(result.llmContent).toBe(expectedJson);
-    expect(result.returnDisplay).toBe('● Q1?\n  → 1');
+    const result = await executePromise;
+    expect(result.returnDisplay).toContain('User answered');
+    expect(JSON.parse(result.llmContent as string)).toEqual({ answers });
+  });
+
+  it('should handle cancellation', async () => {
+    const tool = new AskUserQuestionTool(mockMessageBus);
+    const invocation = tool.build({
+      questions: [
+        {
+          question: 'Which sections of the documentation should be updated?',
+          header: 'Docs',
+          options: [
+            {
+              label: 'User Guide',
+              description: 'Update the main user-facing documentation.',
+            },
+            {
+              label: 'API Reference',
+              description: 'Update the detailed API documentation.',
+            },
+          ],
+          multiSelect: true,
+        },
+      ],
+    });
+
+    const controller = new AbortController();
+    const executePromise = invocation.execute(controller.signal);
+
+    controller.abort();
+
+    const result = await executePromise;
+    expect(result.error?.message).toBe('Cancelled');
   });
 });

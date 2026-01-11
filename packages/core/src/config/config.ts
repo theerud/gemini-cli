@@ -1778,7 +1778,7 @@ export class Config {
     registerCoreTool(MemoryTool);
     registerCoreTool(PresentPlanTool);
     registerCoreTool(WebSearchTool, this);
-    registerCoreTool(AskUserQuestionTool, this);
+    registerCoreTool(AskUserQuestionTool);
     if (this.getUseWriteTodos()) {
       registerCoreTool(WriteTodosTool);
     }

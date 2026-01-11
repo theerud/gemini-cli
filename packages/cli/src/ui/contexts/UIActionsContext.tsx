@@ -62,6 +62,9 @@ export interface UIActions {
   setEmbeddedShellFocused: (value: boolean) => void;
   setApprovalMode: (mode: ApprovalMode) => Promise<void>;
   setAuthContext: (context: { requiresRestart?: boolean }) => void;
+  handleAskUserQuestionSubmit: (answers: {
+    [questionIndex: string]: string;
+  }) => Promise<void>;
 }
 
 export const UIActionsContext = createContext<UIActions | null>(null);

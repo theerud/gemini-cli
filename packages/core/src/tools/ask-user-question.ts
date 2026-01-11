@@ -4,80 +4,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ASK_USER_QUESTION_TOOL_NAME } from './tool-names.js';
 import {
   BaseDeclarativeTool,
   BaseToolInvocation,
-  Kind,
-  ToolConfirmationOutcome,
   type ToolResult,
-  type ToolInvocation,
-  type ToolAskUserQuestionDetails,
-  type ToolAskUserQuestionPayload,
-  type Question,
+  Kind,
+  type ToolCallConfirmationDetails,
 } from './tools.js';
 import type { MessageBus } from '../confirmation-bus/message-bus.js';
-import { safeJsonStringify } from '../utils/safeJsonStringify.js';
+import {
+  MessageBusType,
+  type Question,
+  type AskUserQuestionRequest,
+  type AskUserQuestionResponse,
+} from '../confirmation-bus/types.js';
+import { randomUUID } from 'node:crypto';
+import { ASK_USER_QUESTION_TOOL_NAME } from './tool-names.js';
 
 export interface AskUserQuestionParams {
   questions: Question[];
-  // answers may be present if the model tries to hallucinate them or if we use this type for result too,
-  // but we primarily care about questions here.
-  answers?: Record<string, string>;
-}
-
-export class AskUserQuestionInvocation extends BaseToolInvocation<
-  AskUserQuestionParams,
-  ToolResult
-> {
-  private answers: Record<string, string> = {};
-
-  getDescription(): string {
-    if (this.params.questions.length > 0 && this.params.questions[0].header) {
-      return this.params.questions[0].header;
-    }
-    return 'Question(s)';
-  }
-
-  override async shouldConfirmExecute(
-    _abortSignal: AbortSignal,
-  ): Promise<ToolAskUserQuestionDetails | false> {
-    // We ALWAYS require "confirmation" because that's how we present the UI for this tool.
-    // The "confirmation" here is actually the interaction itself.
-
-    return {
-      type: 'ask_user',
-      title: 'Ask User Question',
-      questions: this.params.questions,
-      onConfirm: async (
-        outcome: ToolConfirmationOutcome,
-        payload?: ToolAskUserQuestionPayload,
-      ) => {
-        if (outcome === ToolConfirmationOutcome.ProceedOnce && payload) {
-          this.answers = payload.answers;
-        } else if (outcome === ToolConfirmationOutcome.Cancel) {
-          // If cancelled, we don't set answers. execute() will handle the cancellation (error or empty).
-        }
-      },
-    };
-  }
-
-  async execute(
-    _signal: AbortSignal,
-    _updateOutput?: (output: string) => void,
-  ): Promise<ToolResult> {
-    const returnDisplay = this.params.questions
-      .map((q) => {
-        const answer = this.answers[q.question];
-        return `● ${q.question}\n  → ${answer || '(No answer)'}`;
-      })
-      .join('\n\n');
-
-    return {
-      llmContent: safeJsonStringify({ answers: this.answers }),
-      returnDisplay,
-    };
-  }
 }
 
 export class AskUserQuestionTool extends BaseDeclarativeTool<
@@ -87,23 +32,20 @@ export class AskUserQuestionTool extends BaseDeclarativeTool<
   constructor(messageBus: MessageBus) {
     super(
       ASK_USER_QUESTION_TOOL_NAME,
-      'Ask User',
-      'Use this tool when you need to ask the user questions during execution. This allows you to: 1. Gather user preferences or requirements, 2. Clarify ambiguous instructions, 3. Get decisions on implementation choices as you work, 4. Offer choices to the user about what direction to take. Users will always be able to select "Other" to provide custom text input. Use multiSelect: true to allow multiple answers to be selected for a question.',
+      'Ask User Question',
+      'Ask the user one or more questions to gather preferences, clarify requirements, or make decisions.',
       Kind.Other,
       {
         type: 'object',
         required: ['questions'],
-        additionalProperties: false,
         properties: {
           questions: {
             type: 'array',
-            description: 'Questions to ask the user (1-4 questions)',
             minItems: 1,
             maxItems: 4,
             items: {
               type: 'object',
-              required: ['question', 'header', 'multiSelect', 'options'],
-              additionalProperties: false,
+              required: ['question', 'header', 'options', 'multiSelect'],
               properties: {
                 question: {
                   type: 'string',
@@ -115,21 +57,15 @@ export class AskUserQuestionTool extends BaseDeclarativeTool<
                   description:
                     'Very short label displayed as a chip/tag (max 12 chars). Examples: "Auth method", "Library", "Approach".',
                 },
-                multiSelect: {
-                  type: 'boolean',
-                  description:
-                    'Set to true to allow the user to select multiple options instead of just one. Use when choices are not mutually exclusive.',
-                },
                 options: {
                   type: 'array',
                   description:
-                    'The available choices for this question. Must have 2-4 options.',
+                    'The available choices for this question. MUST have exactly 2-4 options (no more, no less). If you have more than 4 choices, consolidate them or split into multiple questions. Do NOT include an "Other" option - one is automatically added by the UI.',
                   minItems: 2,
                   maxItems: 4,
                   items: {
                     type: 'object',
                     required: ['label', 'description'],
-                    additionalProperties: false,
                     properties: {
                       label: {
                         type: 'string',
@@ -144,35 +80,106 @@ export class AskUserQuestionTool extends BaseDeclarativeTool<
                     },
                   },
                 },
+                multiSelect: {
+                  type: 'boolean',
+                  description:
+                    'Set to true to allow the user to select multiple options instead of just one. Use when choices are not mutually exclusive.',
+                },
               },
             },
-          },
-          answers: {
-            type: 'object',
-            description: 'User answers collected',
-            additionalProperties: { type: 'string' },
           },
         },
       },
       messageBus,
-      // isOutputMarkdown
-      false,
-      // canUpdateOutput
-      false,
     );
   }
 
   protected createInvocation(
     params: AskUserQuestionParams,
     messageBus: MessageBus,
-    toolName?: string,
-    displayName?: string,
-  ): ToolInvocation<AskUserQuestionParams, ToolResult> {
+    toolName: string,
+    toolDisplayName: string,
+  ): AskUserQuestionInvocation {
     return new AskUserQuestionInvocation(
       params,
       messageBus,
       toolName,
-      displayName,
+      toolDisplayName,
     );
+  }
+}
+
+export class AskUserQuestionInvocation extends BaseToolInvocation<
+  AskUserQuestionParams,
+  ToolResult
+> {
+  override async shouldConfirmExecute(
+    _abortSignal: AbortSignal,
+  ): Promise<ToolCallConfirmationDetails | false> {
+    return false;
+  }
+
+  getDescription(): string {
+    return `Asking user: ${this.params.questions.map((q) => q.question).join(', ')}`;
+  }
+
+  async execute(signal: AbortSignal): Promise<ToolResult> {
+    const correlationId = randomUUID();
+
+    const request: AskUserQuestionRequest = {
+      type: MessageBusType.ASK_USER_QUESTION_REQUEST,
+      questions: this.params.questions,
+      correlationId,
+    };
+
+    return new Promise<ToolResult>((resolve, reject) => {
+      const responseHandler = (response: AskUserQuestionResponse): void => {
+        if (response.correlationId === correlationId) {
+          cleanup();
+          resolve({
+            llmContent: JSON.stringify({ answers: response.answers }),
+            returnDisplay: `User answered: ${JSON.stringify(response.answers)}`,
+          });
+        }
+      };
+
+      const cleanup = () => {
+        if (responseHandler) {
+          this.messageBus.unsubscribe(
+            MessageBusType.ASK_USER_QUESTION_RESPONSE,
+            responseHandler,
+          );
+        }
+        signal.removeEventListener('abort', abortHandler);
+      };
+
+      const abortHandler = () => {
+        cleanup();
+        resolve({
+          llmContent: 'Tool execution cancelled by user.',
+          returnDisplay: 'Cancelled',
+          error: {
+            message: 'Cancelled',
+          },
+        });
+      };
+
+      if (signal.aborted) {
+        abortHandler();
+        return;
+      }
+
+      signal.addEventListener('abort', abortHandler);
+      this.messageBus.subscribe(
+        MessageBusType.ASK_USER_QUESTION_RESPONSE,
+        responseHandler,
+      );
+
+      // Publish request
+      this.messageBus.publish(request).catch((err) => {
+        cleanup();
+        reject(err);
+      });
+    });
   }
 }
