@@ -61,6 +61,7 @@ import {
   SessionStartSource,
   SessionEndReason,
   generateSummary,
+  ASK_USER_QUESTION_TOOL_NAME,
 } from '@google/gemini-cli-core';
 import { validateAuthMethod } from '../config/auth.js';
 import process from 'node:process';
@@ -221,6 +222,7 @@ export const AppContainer = (props: AppContainerProps) => {
   const {
     request: askUserQuestionRequest,
     handleSubmit: handleAskUserQuestionSubmit,
+    clearRequest: clearAskUserQuestionRequest,
   } = useAskUserQuestion(config);
 
   const extensionManager = config.getExtensionLoader() as ExtensionManager;
@@ -1485,10 +1487,39 @@ Logging in with Google... Restarting Gemini CLI to continue.
     isAuthDialogOpen ||
     authState === AuthState.AwaitingApiKeyInput;
 
-  const pendingHistoryItems = useMemo(
-    () => [...pendingSlashCommandHistoryItems, ...pendingGeminiHistoryItems],
-    [pendingSlashCommandHistoryItems, pendingGeminiHistoryItems],
-  );
+  const pendingHistoryItems = useMemo(() => {
+    const items = [
+      ...pendingSlashCommandHistoryItems,
+      ...pendingGeminiHistoryItems,
+    ];
+
+    // Hide ask_user_question tool display when the dialog is shown
+    if (askUserQuestionRequest) {
+      return items
+        .map((item) => {
+          if (item.type === 'tool_group') {
+            // Filter out ask_user_question tool but keep others
+            const filteredTools = item.tools.filter(
+              (tool) => tool.toolName !== ASK_USER_QUESTION_TOOL_NAME,
+            );
+            // If no tools left, exclude the entire group
+            if (filteredTools.length === 0) {
+              return null;
+            }
+            // Return group with filtered tools
+            return { ...item, tools: filteredTools };
+          }
+          return item;
+        })
+        .filter((item): item is HistoryItemWithoutId => item !== null);
+    }
+
+    return items;
+  }, [
+    pendingSlashCommandHistoryItems,
+    pendingGeminiHistoryItems,
+    askUserQuestionRequest,
+  ]);
 
   const [geminiMdFileCount, setGeminiMdFileCount] = useState<number>(
     config.getGeminiMdFileCount(),
@@ -1774,6 +1805,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       setApprovalMode: handleApprovalModeChange,
       setAuthContext,
       handleAskUserQuestionSubmit,
+      clearAskUserQuestionRequest,
     }),
     [
       handleThemeSelect,
@@ -1812,6 +1844,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       handleApprovalModeChange,
       setAuthContext,
       handleAskUserQuestionSubmit,
+      clearAskUserQuestionRequest,
     ],
   );
 

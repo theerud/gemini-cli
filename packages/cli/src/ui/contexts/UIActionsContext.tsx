@@ -65,6 +65,7 @@ export interface UIActions {
   handleAskUserQuestionSubmit: (answers: {
     [questionIndex: string]: string;
   }) => Promise<void>;
+  clearAskUserQuestionRequest: () => void;
 }
 
 export const UIActionsContext = createContext<UIActions | null>(null);
