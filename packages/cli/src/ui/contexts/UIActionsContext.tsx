@@ -61,6 +61,7 @@ export interface UIActions {
   setBannerVisible: (visible: boolean) => void;
   setEmbeddedShellFocused: (value: boolean) => void;
   setApprovalMode: (mode: ApprovalMode) => Promise<void>;
+  setAuthContext: (context: { requiresRestart?: boolean }) => void;
 }
 
 export const UIActionsContext = createContext<UIActions | null>(null);

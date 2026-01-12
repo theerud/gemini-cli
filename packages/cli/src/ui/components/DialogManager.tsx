@@ -187,6 +187,7 @@ export const DialogManager = ({
           setAuthState={uiActions.setAuthState}
           authError={uiState.authError}
           onAuthError={uiActions.onAuthError}
+          setAuthContext={uiActions.setAuthContext}
         />
       </Box>
     );
