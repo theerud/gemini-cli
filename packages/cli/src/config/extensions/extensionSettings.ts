@@ -167,9 +167,15 @@ export async function getScopedEnvContents(
   if (extensionConfig.settings) {
     for (const setting of extensionConfig.settings) {
       if (setting.sensitive) {
-        const secret = await keychain.getSecret(setting.envVar);
-        if (secret) {
-          customEnv[setting.envVar] = secret;
+        try {
+          const secret = await keychain.getSecret(setting.envVar);
+          if (secret) {
+            customEnv[setting.envVar] = secret;
+          }
+        } catch (error) {
+          debugLogger.debug(
+            `Failed to retrieve sensitive setting ${setting.envVar} from keychain: ${error}`,
+          );
         }
       }
     }
