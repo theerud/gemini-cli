@@ -134,6 +134,8 @@ export class AskUserQuestionInvocation extends BaseToolInvocation<
     };
 
     return new Promise<ToolResult>((resolve, reject) => {
+      let timeoutId: NodeJS.Timeout | undefined;
+
       const responseHandler = (response: AskUserQuestionResponse): void => {
         if (response.correlationId === correlationId) {
           cleanup();
@@ -157,6 +159,10 @@ export class AskUserQuestionInvocation extends BaseToolInvocation<
       };
 
       const cleanup = () => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = undefined;
+        }
         if (responseHandler) {
           this.messageBus.unsubscribe(
             MessageBusType.ASK_USER_QUESTION_RESPONSE,
@@ -186,6 +192,21 @@ export class AskUserQuestionInvocation extends BaseToolInvocation<
       this.messageBus.subscribe(
         MessageBusType.ASK_USER_QUESTION_RESPONSE,
         responseHandler,
+      );
+
+      // 5 minute timeout
+      timeoutId = setTimeout(
+        () => {
+          cleanup();
+          resolve({
+            llmContent: 'Tool execution timed out waiting for user input.',
+            returnDisplay: 'Timed out',
+            error: {
+              message: 'Timed out waiting for user input',
+            },
+          });
+        },
+        5 * 60 * 1000,
       );
 
       // Publish request

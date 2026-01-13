@@ -135,6 +135,9 @@ describe('AskUserQuestionDialog', () => {
     // Should show the typed text
     expect(lastFrame()).toContain('Custom Value');
 
+    // Wait for state to settle
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     // Press Enter to submit the custom value
     await writeKey(stdin, '\r', 100);
 
@@ -241,7 +244,17 @@ describe('AskUserQuestionDialog', () => {
 
     expect(lastFrame()).toContain('Q2?');
 
-    // Navigate back with left arrow
+    // Navigate to Submit tab with right arrow
+    await writeKey(stdin, '\x1b[C'); // Right arrow escape sequence
+
+    expect(lastFrame()).toContain('Review your answers');
+
+    // Navigate back to Q2 with left arrow
+    await writeKey(stdin, '\x1b[D'); // Left arrow escape sequence
+
+    expect(lastFrame()).toContain('Q2?');
+
+    // Navigate back to Q1 with left arrow
     await writeKey(stdin, '\x1b[D'); // Left arrow escape sequence
 
     expect(lastFrame()).toContain('Q1?');
@@ -288,6 +301,16 @@ describe('AskUserQuestionDialog', () => {
     await writeKey(stdin, '\x1b[C'); // Right arrow
 
     // Answer second question
+    await writeKey(stdin, '\r', 100);
+
+    // Should show Review Screen (Submit tab)
+    expect(lastFrame()).toContain('Review your answers');
+
+    // Move down to "Submit answers" (Q1, Q2, Submit -> 2 downs)
+    await writeKey(stdin, '\x1b[B');
+    await writeKey(stdin, '\x1b[B');
+
+    // Press Enter to submit
     await writeKey(stdin, '\r', 100);
 
     // Both answers should be submitted

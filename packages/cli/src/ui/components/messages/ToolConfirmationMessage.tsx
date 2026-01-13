@@ -19,7 +19,6 @@ import { RadioButtonSelect } from '../shared/RadioButtonSelect.js';
 import { MaxSizedBox } from '../shared/MaxSizedBox.js';
 import { useKeypress } from '../../hooks/useKeypress.js';
 import { theme } from '../../semantic-colors.js';
-import { AskUserForm } from '../shared/AskUserForm.js';
 import { useAlternateBuffer } from '../../hooks/useAlternateBuffer.js';
 import { useSettings } from '../../contexts/SettingsContext.js';
 
@@ -88,8 +87,6 @@ export const ToolConfirmationMessage: React.FC<
   useKeypress(
     (key) => {
       if (!isFocused) return;
-      // We don't handle escape here for ask_user because AskUserForm handles it internally
-      if (confirmationDetails.type === 'ask_user') return;
 
       if (key.name === 'escape' || (key.ctrl && key.name === 'c')) {
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -196,9 +193,6 @@ export const ToolConfirmationMessage: React.FC<
         value: ToolConfirmationOutcome.Cancel,
         key: 'No, suggest changes (esc)',
       });
-    } else if (confirmationDetails.type === 'ask_user') {
-      // Logic handled in AskUserForm
-      return { question: '', bodyContent: null, options: [] };
     } else {
       // mcp tool confirmation
       const mcpProps = confirmationDetails;
@@ -325,10 +319,6 @@ export const ToolConfirmationMessage: React.FC<
           )}
         </Box>
       );
-    } else if (
-      (confirmationDetails as unknown as { type: string }).type === 'ask_user'
-    ) {
-      // Handled below
     } else {
       // mcp tool confirmation
       const mcpProps = confirmationDetails;
@@ -352,22 +342,6 @@ export const ToolConfirmationMessage: React.FC<
     isAlternateBuffer,
     allowPermanentApproval,
   ]);
-
-  if (confirmationDetails.type === 'ask_user') {
-    return (
-      <AskUserForm
-        questions={confirmationDetails.questions}
-        onComplete={(answers) =>
-          confirmationDetails.onConfirm(ToolConfirmationOutcome.ProceedOnce, {
-            answers,
-          })
-        }
-        onCancel={() =>
-          confirmationDetails.onConfirm(ToolConfirmationOutcome.Cancel)
-        }
-      />
-    );
-  }
 
   if (confirmationDetails.type === 'edit') {
     if (confirmationDetails.isModifying) {

@@ -26,7 +26,6 @@ export const ACTIVATE_SKILL_TOOL_NAME = 'activate_skill';
 export const PRESENT_PLAN_TOOL_NAME = 'present_plan';
 export const EDIT_TOOL_NAMES = new Set([EDIT_TOOL_NAME, WRITE_FILE_TOOL_NAME]);
 export const DELEGATE_TO_AGENT_TOOL_NAME = 'delegate_to_agent';
-export const ASK_USER_QUESTION_TOOL_NAME = 'ask_user_question';
 
 /** Prefix used for tools discovered via the toolDiscoveryCommand. */
 export const DISCOVERED_TOOL_PREFIX = 'discovered_tool_';

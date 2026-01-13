@@ -975,8 +975,6 @@ function toPermissionOptions(
         },
         ...basicPermissionOptions,
       ];
-    case 'ask_user':
-      return [...basicPermissionOptions];
     default: {
       const unreachable: never = confirmation;
       throw new Error(`Unexpected: ${unreachable}`);

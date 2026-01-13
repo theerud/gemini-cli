@@ -27,43 +27,6 @@ interface QuestionViewProps {
   keyboardHints?: React.ReactNode;
 }
 
-interface QuestionProgressHeaderProps {
-  questions: Question[];
-  currentIndex: number;
-  answeredIndices: Set<number>;
-}
-
-const QuestionProgressHeader: React.FC<QuestionProgressHeaderProps> = ({
-  questions,
-  currentIndex,
-  answeredIndices,
-}) => {
-  if (questions.length <= 1) return null;
-
-  return (
-    <Box flexDirection="row" marginBottom={1}>
-      <Text color={theme.text.secondary}>{'← '}</Text>
-      {questions.map((q, i) => (
-        <React.Fragment key={i}>
-          {i > 0 && <Text color={theme.text.secondary}>{' │ '}</Text>}
-          <Text color={theme.text.secondary}>
-            {answeredIndices.has(i) ? '✓' : '□'}{' '}
-          </Text>
-          <Text
-            color={
-              i === currentIndex ? theme.text.accent : theme.text.secondary
-            }
-            bold={i === currentIndex}
-          >
-            {q.header}
-          </Text>
-        </React.Fragment>
-      ))}
-      <Text color={theme.text.secondary}>{' →'}</Text>
-    </Box>
-  );
-};
-
 interface OptionItem {
   key: string;
   label: string;
@@ -217,6 +180,7 @@ const QuestionView: React.FC<QuestionViewProps> = ({
 
   const handleSelect = useCallback(
     (itemValue: OptionItem) => {
+      // console.log('handleSelect called with:', itemValue);
       if (question.multiSelect) {
         if (itemValue.type === 'option') {
           setSelectedIndices((prev) => {
@@ -250,8 +214,8 @@ const QuestionView: React.FC<QuestionViewProps> = ({
           onAnswer(itemValue.label);
         } else if (itemValue.type === 'other') {
           // Submit the other text if it has content
-          if (otherText.trim()) {
-            onAnswer(otherText.trim());
+          if (itemValue.label.trim()) {
+            onAnswer(itemValue.label.trim());
           }
         }
       }
@@ -382,6 +346,120 @@ const QuestionView: React.FC<QuestionViewProps> = ({
   );
 };
 
+interface SubmitViewProps {
+  questions: Question[];
+  answers: { [key: string]: string };
+  onSubmit: () => void;
+  onCancel: () => void;
+  progressHeader: React.ReactNode;
+  keyboardHints: React.ReactNode;
+}
+
+const SubmitView: React.FC<SubmitViewProps> = ({
+  questions,
+  answers,
+  onSubmit,
+  onCancel,
+  progressHeader,
+  keyboardHints,
+}) => {
+  const allAnswered = questions.every(
+    (_, i) => answers[i] && answers[i].trim() !== '',
+  );
+
+  interface SubmitOption {
+    label: string;
+    action: 'submit' | 'cancel';
+  }
+
+  const options: Array<SelectionListItem<SubmitOption>> = [
+    {
+      key: 'submit',
+      value: { label: 'Submit answers', action: 'submit' },
+    },
+    {
+      key: 'cancel',
+      value: { label: 'Cancel', action: 'cancel' },
+    },
+  ];
+
+  const handleSelect = (option: SubmitOption) => {
+    if (option.action === 'submit') {
+      if (allAnswered) {
+        onSubmit();
+      }
+    } else {
+      onCancel();
+    }
+  };
+
+  return (
+    <Box
+      flexDirection="column"
+      borderStyle="round"
+      paddingX={1}
+      borderColor={theme.border.default}
+    >
+      {progressHeader}
+      <Box marginBottom={1}>
+        <Text bold color={theme.text.primary}>
+          Review your answers
+        </Text>
+      </Box>
+
+      {!allAnswered && (
+        <Box marginBottom={1}>
+          <Text color={theme.status.warning}>
+            ⚠ You have not answered all questions
+          </Text>
+        </Box>
+      )}
+
+      <Box flexDirection="column" marginBottom={1}>
+        {questions.map((q, i) => {
+          const answer = answers[i];
+          if (!answer || answer.trim() === '') return null;
+          return (
+            <Box key={i} flexDirection="column" marginBottom={0}>
+              <Text color={theme.text.primary}>● {q.question}</Text>
+              <Text color={theme.text.secondary}>
+                {'   → '}
+                {answer}
+              </Text>
+            </Box>
+          );
+        })}
+      </Box>
+
+      <Box marginBottom={1}>
+        <Text color={theme.text.primary}>Ready to submit your answers?</Text>
+      </Box>
+
+      <BaseSelectionList
+        items={options}
+        onSelect={handleSelect}
+        selectedColor={theme.text.accent}
+        renderItem={(item, context) => (
+          <Text
+            color={
+              item.value.action === 'submit' &&
+              !allAnswered &&
+              context.isSelected
+                ? theme.status.warning
+                : context.isSelected
+                  ? theme.text.accent
+                  : theme.text.primary
+            }
+          >
+            {item.value.label}
+          </Text>
+        )}
+      />
+      {keyboardHints}
+    </Box>
+  );
+};
+
 export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
   questions,
   onSubmit,
@@ -414,8 +492,10 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
     (key: Key) => {
       if (editingOther || submittedRef.current) return;
 
+      const maxIndex = questions.length > 1 ? questions.length : 0;
+
       if (key.name === 'tab' || key.name === 'right') {
-        if (currentQuestionIndex < questions.length - 1) {
+        if (currentQuestionIndex < maxIndex) {
           setCurrentQuestionIndex((prev) => prev + 1);
         }
       } else if (key.name === 'left') {
@@ -428,7 +508,7 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
   );
 
   useKeypress(handleNavigation, {
-    isActive: questions.length > 1 && !submitted,
+    isActive: !submitted,
   });
 
   const handleAnswer = useCallback(
@@ -437,10 +517,13 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
 
       const newAnswers = { ...answers, [currentQuestionIndex]: answer };
       setAnswers(newAnswers);
-      if (currentQuestionIndex < questions.length - 1) {
+
+      const maxIndex = questions.length > 1 ? questions.length : 0;
+
+      if (currentQuestionIndex < maxIndex) {
         setCurrentQuestionIndex((prev) => prev + 1);
-      } else {
-        // Set ref first (synchronous) to prevent any further input handling
+      } else if (currentQuestionIndex === 0 && questions.length === 1) {
+        // Single question case - direct submit
         submittedRef.current = true;
         setSubmitted(true);
         onSubmit(newAnswers);
@@ -449,33 +532,83 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
     [currentQuestionIndex, questions.length, answers, onSubmit],
   );
 
+  const handleSubmit = useCallback(() => {
+    submittedRef.current = true;
+    setSubmitted(true);
+    onSubmit(answers);
+  }, [answers, onSubmit]);
+
   const answeredIndices = useMemo(
     () => new Set(Object.keys(answers).map(Number)),
     [answers],
   );
 
-  const currentQuestion = questions[currentQuestionIndex];
-
-  if (!currentQuestion) return null;
-
-  const progressHeader =
-    questions.length > 1 ? (
-      <QuestionProgressHeader
-        questions={questions}
-        currentIndex={currentQuestionIndex}
-        answeredIndices={answeredIndices}
-      />
-    ) : null;
+  const isSubmitTab = currentQuestionIndex === questions.length;
 
   const keyboardHints = (
     <Box marginTop={1}>
       <Text color={theme.text.secondary}>
         {questions.length > 1
-          ? 'Enter to select · ←/→ to switch questions · Esc to cancel'
+          ? 'Enter to select · ←/→ to navigate · Esc to cancel'
           : 'Enter to select · ↑/↓ to navigate · Esc to cancel'}
       </Text>
     </Box>
   );
+
+  // Progress header including Submit tab
+  const progressHeader =
+    questions.length > 1 ? (
+      <Box flexDirection="row" marginBottom={1}>
+        <Text color={theme.text.secondary}>{'← '}</Text>
+        {questions.map((q, i) => (
+          <React.Fragment key={i}>
+            {i > 0 && <Text color={theme.text.secondary}>{' │ '}</Text>}
+            <Text color={theme.text.secondary}>
+              {answeredIndices.has(i) ? '☒' : '☐'}{' '}
+            </Text>
+            <Text
+              color={
+                i === currentQuestionIndex
+                  ? theme.text.accent
+                  : theme.text.secondary
+              }
+              bold={i === currentQuestionIndex}
+            >
+              {q.header}
+            </Text>
+          </React.Fragment>
+        ))}
+        <Text color={theme.text.secondary}>{' │ '}</Text>
+        <Text color={theme.text.secondary}>{'✔ '}</Text>
+        <Text
+          color={
+            currentQuestionIndex === questions.length
+              ? theme.text.accent
+              : theme.text.secondary
+          }
+          bold={currentQuestionIndex === questions.length}
+        >
+          Submit
+        </Text>
+        <Text color={theme.text.secondary}>{' →'}</Text>
+      </Box>
+    ) : null;
+
+  if (isSubmitTab && questions.length > 1) {
+    return (
+      <SubmitView
+        questions={questions}
+        answers={answers}
+        onSubmit={handleSubmit}
+        onCancel={onCancel}
+        progressHeader={progressHeader}
+        keyboardHints={keyboardHints}
+      />
+    );
+  }
+
+  const currentQuestion = questions[currentQuestionIndex];
+  if (!currentQuestion) return null;
 
   return (
     <QuestionView

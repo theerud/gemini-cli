@@ -35,7 +35,7 @@ import { DiscoveredMCPToolInvocation } from '../tools/mcp-tool.js';
  * Excludes function properties like onConfirm that can't be serialized.
  */
 interface SerializableConfirmationDetails {
-  type: 'edit' | 'exec' | 'mcp' | 'info' | 'ask_user';
+  type: 'edit' | 'exec' | 'mcp' | 'info';
   title: string;
   // Edit-specific fields
   fileName?: string;
@@ -54,8 +54,6 @@ interface SerializableConfirmationDetails {
   // Info-specific fields
   prompt?: string;
   urls?: string[];
-  // AskUser-specific fields
-  questions?: unknown[];
 }
 
 /**
@@ -100,11 +98,6 @@ function toSerializableDetails(
         prompt: details.prompt,
         urls: details.urls,
       };
-    case 'ask_user':
-      return {
-        ...base,
-        questions: details.questions,
-      };
     default:
       return base;
   }
@@ -125,8 +118,6 @@ function getNotificationMessage(
       return `Tool ${confirmationDetails.title} requires MCP`;
     case 'info':
       return `Tool ${confirmationDetails.title} requires information`;
-    case 'ask_user':
-      return `Tool ${confirmationDetails.title} requires user input`;
     default:
       return `Tool requires confirmation`;
   }
