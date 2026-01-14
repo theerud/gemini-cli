@@ -77,6 +77,7 @@ export enum Command {
   QUIT = 'quit',
   EXIT = 'exit',
   SHOW_MORE_LINES = 'showMoreLines',
+  REWIND = 'rewind',
 
   // Shell commands
   REVERSE_SEARCH = 'reverseSearch',
@@ -266,6 +267,7 @@ export const defaultKeyBindings: KeyBindingConfig = {
   // Suggestion expansion
   [Command.EXPAND_SUGGESTION]: [{ key: 'right' }],
   [Command.COLLAPSE_SUGGESTION]: [{ key: 'left' }],
+  [Command.REWIND]: [{ key: 'Esc (×2)' }],
 };
 
 interface CommandCategory {
@@ -329,6 +331,7 @@ export const commandCategories: readonly CommandCategory[] = [
       Command.REVERSE_SEARCH,
       Command.SUBMIT_REVERSE_SEARCH,
       Command.ACCEPT_SUGGESTION_REVERSE_SEARCH,
+      Command.REWIND,
     ],
   },
   {
@@ -444,4 +447,5 @@ export const commandDescriptions: Readonly<Record<Command, string>> = {
   [Command.UNFOCUS_SHELL_INPUT]: 'Focus the Gemini input from the shell input.',
   [Command.EXPAND_SUGGESTION]: 'Expand an inline suggestion.',
   [Command.COLLAPSE_SUGGESTION]: 'Collapse an inline suggestion.',
+  [Command.REWIND]: 'Browse and rewind previous interactions.',
 };
