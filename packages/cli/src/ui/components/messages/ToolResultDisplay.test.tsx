@@ -162,6 +162,24 @@ describe('ToolResultDisplay', () => {
     expect(output).toMatchSnapshot();
   });
 
+  it('renders presentedPlan result', () => {
+    const planResult = {
+      presentedPlan: {
+        displayText: 'Plan content',
+      },
+    };
+    const { lastFrame } = render(
+      <ToolResultDisplay
+        resultDisplay={planResult}
+        terminalWidth={80}
+        availableTerminalHeight={20}
+      />,
+    );
+    const output = lastFrame();
+
+    expect(output).toMatchSnapshot();
+  });
+
   it('does not fall back to plain text if availableHeight is set and not in alternate buffer', () => {
     mockUseAlternateBuffer.mockReturnValue(false);
     // availableHeight calculation: 20 - 1 - 5 = 14 > 3
