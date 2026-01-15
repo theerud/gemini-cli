@@ -23,74 +23,59 @@ const __dirname = path.dirname(__filename);
 interface SandboxCliArgs {
   sandbox?: boolean | string | null;
 }
-const VALID_SANDBOX_COMMANDS: ReadonlyArray<SandboxConfig['command']> = [
+export const VALID_SANDBOX_COMMANDS: ReadonlyArray<SandboxConfig['command']> = [
   'docker',
   'podman',
   'sandbox-exec',
+  'bwrap',
 ];
 
-function isSandboxCommand(value: string): value is SandboxConfig['command'] {
+export function isSandboxCommand(
+  value: string,
+): value is SandboxConfig['command'] {
   return (VALID_SANDBOX_COMMANDS as readonly string[]).includes(value);
 }
 
 function getSandboxCommand(
   sandbox?: boolean | string | null,
 ): SandboxConfig['command'] | '' {
-  // If the SANDBOX env var is set, we're already inside the sandbox.
-  if (process.env['SANDBOX']) {
-    return '';
-  }
+  if (process.env['SANDBOX']) return '';
 
-  // note environment variable takes precedence over argument (from command line or settings)
-  const environmentConfiguredSandbox =
-    process.env['GEMINI_SANDBOX']?.toLowerCase().trim() ?? '';
-  sandbox =
-    environmentConfiguredSandbox?.length > 0
-      ? environmentConfiguredSandbox
-      : sandbox;
-  if (sandbox === '1' || sandbox === 'true') sandbox = true;
-  else if (sandbox === '0' || sandbox === 'false' || !sandbox) sandbox = false;
+  // Priority: Env Var > CLI Arg / Settings
+  const env = process.env['GEMINI_SANDBOX']?.toLowerCase().trim();
+  let val: string | boolean = (env || sandbox) ?? false;
 
-  if (sandbox === false) {
-    return '';
-  }
+  // Canonicalize boolean-like strings
+  if (val === 'true' || val === '1') val = true;
+  if (val === 'false' || val === '0') val = false;
 
-  if (typeof sandbox === 'string' && sandbox) {
-    if (!isSandboxCommand(sandbox)) {
+  if (val === false) return '';
+
+  // Explicit engine request
+  if (typeof val === 'string') {
+    if (!isSandboxCommand(val)) {
       throw new FatalSandboxError(
-        `Invalid sandbox command '${sandbox}'. Must be one of ${VALID_SANDBOX_COMMANDS.join(
-          ', ',
-        )}`,
+        `Invalid sandbox engine '${val}'. Must be one of: ${VALID_SANDBOX_COMMANDS.join(', ')}`,
       );
     }
-    // confirm that specified command exists
-    if (commandExists.sync(sandbox)) {
-      return sandbox;
-    }
+    if (commandExists.sync(val)) return val;
     throw new FatalSandboxError(
-      `Missing sandbox command '${sandbox}' (from GEMINI_SANDBOX)`,
+      `Sandbox engine '${val}' requested but not found in PATH.`,
     );
   }
 
-  // look for seatbelt, docker, or podman, in that order
-  // for container-based sandboxing, require sandbox to be enabled explicitly
+  // Auto-discovery (val === true)
   if (os.platform() === 'darwin' && commandExists.sync('sandbox-exec')) {
     return 'sandbox-exec';
-  } else if (commandExists.sync('docker') && sandbox === true) {
-    return 'docker';
-  } else if (commandExists.sync('podman') && sandbox === true) {
-    return 'podman';
   }
 
-  // throw an error if user requested sandbox but no command was found
-  if (sandbox === true) {
-    throw new FatalSandboxError(
-      'GEMINI_SANDBOX is true but failed to determine command for sandbox; ' +
-        'install docker or podman or specify command in GEMINI_SANDBOX',
-    );
+  for (const cmd of ['docker', 'podman', 'bwrap'] as const) {
+    if (commandExists.sync(cmd)) return cmd;
   }
 
-  return '';
+  throw new FatalSandboxError(
+    'Sandbox is enabled but no supported engine (bwrap, docker, podman) was found in PATH.',
+  );
 }
 
 export async function loadSandboxConfig(
@@ -103,6 +88,10 @@ export async function loadSandboxConfig(
   const packageJson = await getPackageJson(__dirname);
   const image =
     process.env['GEMINI_SANDBOX_IMAGE'] ?? packageJson?.config?.sandboxImageUri;
+
+  if (command === 'bwrap') {
+    return { command, image: image ?? 'host' };
+  }
 
   return command && image ? { command, image } : undefined;
 }

@@ -200,6 +200,157 @@ export async function start_sandbox(
       });
     }
 
+    if (config.command === 'bwrap') {
+      debugLogger.log('using bubblewrap (bwrap) ...');
+      const workdir = path.resolve(process.cwd());
+      const realWorkdir = fs.realpathSync(workdir);
+      const userHomeDirOnHost = homedir();
+      const userSettingsPath = path.join(userHomeDirOnHost, GEMINI_DIR);
+      if (!fs.existsSync(userSettingsPath)) {
+        fs.mkdirSync(userSettingsPath, { recursive: true });
+      }
+      const userSettingsDirOnHost = fs.realpathSync(userSettingsPath);
+
+      const uid = process.getuid?.() ?? 1000;
+      const gid = process.getgid?.() ?? 1000;
+
+      const args = [
+        '--unshare-all',
+        '--share-net',
+        '--die-with-parent',
+        '--new-session',
+        '--cap-drop',
+        'ALL',
+        '--uid',
+        uid.toString(),
+        '--gid',
+        gid.toString(),
+        '--proc',
+        '/proc',
+        '--dev',
+        '/dev',
+        '--tmpfs',
+        '/tmp',
+        '--tmpfs',
+        '/run',
+        '--dir',
+        '/dev/shm',
+        '--tmpfs',
+        '/dev/shm',
+        '--bind',
+        realWorkdir,
+        realWorkdir,
+        '--bind',
+        userSettingsDirOnHost,
+        userSettingsDirOnHost,
+        '--chdir',
+        realWorkdir,
+      ];
+
+      // Adaptive bindings (Read-Only)
+      const roBinds = [
+        '/usr',
+        '/bin',
+        '/lib',
+        '/lib64',
+        '/sbin',
+        '/etc/alternatives',
+        '/etc/nsswitch.conf',
+        '/etc/passwd',
+        '/etc/group',
+        '/etc/resolv.conf',
+        '/etc/hosts',
+        '/etc/ssl',
+        '/etc/pki',
+        '/etc/ca-certificates',
+        '/etc/ld.so.cache',
+        '/etc/ld.so.conf',
+        '/etc/ld.so.conf.d',
+        '/etc/localtime',
+        '/etc/timezone',
+        '/run/systemd/resolve', // Fix DNS on systemd-resolved distros
+      ];
+
+      // Add multi-arch paths
+      if (process.arch === 'x64') {
+        roBinds.push('/lib/x86_64-linux-gnu', '/usr/lib/x86_64-linux-gnu');
+      } else if (process.arch === 'arm64') {
+        roBinds.push('/lib/aarch64-linux-gnu', '/usr/lib/aarch64-linux-gnu');
+      }
+
+      // NixOS support
+      if (fs.existsSync('/nix/store')) {
+        roBinds.push('/nix');
+      }
+
+      for (const p of roBinds) {
+        if (fs.existsSync(p)) {
+          args.push('--ro-bind-try', p, p);
+        }
+      }
+      // Map environment variables
+      const finalEntrypoint = entrypoint(workdir, cliArgs);
+
+      const envVarsToCopy = [
+        'GEMINI_API_KEY',
+        'GOOGLE_API_KEY',
+        'GOOGLE_GENAI_USE_VERTEXAI',
+        'GOOGLE_GENAI_USE_GCA',
+        'GOOGLE_CLOUD_PROJECT',
+        'GOOGLE_CLOUD_LOCATION',
+        'GEMINI_MODEL',
+        'TERM',
+        'COLORTERM',
+        'GEMINI_CLI_IDE_SERVER_PORT',
+        'GEMINI_CLI_IDE_WORKSPACE_PATH',
+        'TERM_PROGRAM',
+        'GEMINI_CLI_TEST_VAR',
+        'GOOGLE_APPLICATION_CREDENTIALS',
+      ];
+
+      for (const envVar of envVarsToCopy) {
+        if (process.env[envVar]) {
+          args.push('--setenv', envVar, process.env[envVar]);
+        }
+      }
+
+      // Handle SANDBOX_ENV
+      if (process.env['SANDBOX_ENV']) {
+        for (let env of process.env['SANDBOX_ENV'].split(',')) {
+          if ((env = env.trim()) && env.includes('=')) {
+            const [key, ...valueParts] = env.split('=');
+            args.push('--setenv', key, valueParts.join('='));
+          }
+        }
+      }
+
+      // Handle NODE_OPTIONS
+      const nodeOptions = [
+        ...(process.env['NODE_OPTIONS'] ? [process.env['NODE_OPTIONS']] : []),
+        ...nodeArgs,
+      ].join(' ');
+      if (nodeOptions) {
+        args.push('--setenv', 'NODE_OPTIONS', nodeOptions);
+      }
+
+      args.push('--setenv', 'SANDBOX', 'bwrap');
+      // Add the entrypoint
+      args.push(...finalEntrypoint);
+      // spawn child and let it inherit stdio
+      process.stdin.pause();
+      const sandboxProcess = spawn(config.command, args, {
+        stdio: 'inherit',
+      });
+
+      return await new Promise((resolve, reject) => {
+        sandboxProcess.on('error', reject);
+        sandboxProcess.on('close', (code) => {
+          process.stdin.resume();
+          resolve(code ?? 1);
+        });
+      });
+    }
+
     debugLogger.log(`hopping into sandbox (command: ${config.command}) ...`);
 
     // determine full path for gemini-cli to distinguish linked vs installed setting
