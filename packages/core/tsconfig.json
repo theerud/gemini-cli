@@ -7,9 +7,5 @@
     "types": ["node", "vitest/globals"]
   },
   "include": ["index.ts", "src/**/*.ts", "src/**/*.json"],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "src/skills/builtin/customization-creator/assets"
-  ]
+  "exclude": ["node_modules", "dist"]
 }
