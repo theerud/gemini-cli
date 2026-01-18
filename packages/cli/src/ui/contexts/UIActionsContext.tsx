@@ -66,6 +66,7 @@ export interface UIActions {
     [questionIndex: string]: string;
   }) => Promise<void>;
   clearAskUserQuestionRequest: () => void;
+  handleRestart: () => void;
 }
 
 export const UIActionsContext = createContext<UIActions | null>(null);

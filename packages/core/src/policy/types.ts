@@ -45,8 +45,8 @@ export function getHookSource(input: Record<string, unknown>): HookSource {
 export enum ApprovalMode {
   DEFAULT = 'default',
   AUTO_EDIT = 'autoEdit',
-  PLAN = 'plan',
   YOLO = 'yolo',
+  PLAN = 'plan',
 }
 
 /**
@@ -136,6 +136,12 @@ export interface PolicyRule {
    * Only applies when decision is ALLOW.
    */
   allowRedirection?: boolean;
+
+  /**
+   * Effect of the rule's source.
+   * e.g. "my-policies.toml", "Settings (MCP Trusted)", etc.
+   */
+  source?: string;
 }
 
 export interface SafetyCheckerRule {

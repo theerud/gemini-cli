@@ -727,6 +727,7 @@ export interface ToolExecuteConfirmationDetails {
   command: string;
   rootCommand: string;
   rootCommands: string[];
+  commands?: string[];
 }
 
 export interface ToolMcpConfirmationDetails {

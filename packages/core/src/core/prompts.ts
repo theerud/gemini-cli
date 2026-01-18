@@ -194,6 +194,7 @@ ${SYSTEM_REMINDER_INSTRUCTIONS}
 export function getCoreSystemPrompt(
   config: Config,
   userMemory?: string,
+  interactiveOverride?: boolean,
 ): string {
   // Check if we're in Plan Mode and return the planning prompt
   if (config.getApprovalMode() === ApprovalMode.PLAN) {
@@ -247,7 +248,7 @@ export function getCoreSystemPrompt(
     .getAllToolNames()
     .includes(WriteTodosTool.Name);
 
-  const interactiveMode = config.isInteractive();
+  const interactiveMode = interactiveOverride ?? config.isInteractive();
 
   const skills = config.getSkillManager().getSkills();
   let skillsPrompt = '';
@@ -460,6 +461,7 @@ ${(function () {
     return `
 # Git Repository
 - The current working (project) directory is being managed by a git repository.
+- NEVER stage or commit changes, unless explicitly instructed to.
 - When asked to commit changes or prepare a commit, always start by gathering information using shell commands:
   - \`git status\` to ensure that all relevant files are tracked and staged, using \`git add ...\` as needed.
   - \`git diff HEAD\` to review all changes (including unstaged changes) to tracked files in work tree since last commit.

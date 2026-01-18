@@ -33,6 +33,7 @@ import {
   PlanService,
   coreEvents,
   CoreEvent,
+  MCPDiscoveryState,
 } from '@google/gemini-cli-core';
 import type {
   Config,
@@ -91,7 +92,7 @@ enum StreamProcessingStatus {
 }
 
 function showCitations(settings: LoadedSettings): boolean {
-  const enabled = settings?.merged?.ui?.showCitations;
+  const enabled = settings.merged.ui.showCitations;
   if (enabled !== undefined) {
     return enabled;
   }
@@ -471,7 +472,7 @@ export const useGeminiStream = (
                   isClientInitiated: true,
                   prompt_id,
                 };
-                scheduleToolCalls([toolCallRequest], abortSignal);
+                await scheduleToolCalls([toolCallRequest], abortSignal);
                 return { queryToSend: null, shouldProceed: false };
               }
               case 'submit_prompt': {
@@ -802,7 +803,7 @@ export const useGeminiStream = (
 
   const handleChatModelEvent = useCallback(
     (eventValue: string, userMessageTimestamp: number) => {
-      if (!settings?.merged?.ui?.showModelInfoInChat) {
+      if (!settings.merged.ui.showModelInfoInChat) {
         return;
       }
       if (pendingHistoryItemRef.current) {
@@ -942,7 +943,7 @@ export const useGeminiStream = (
         }
       }
       if (toolCallRequests.length > 0) {
-        scheduleToolCalls(toolCallRequests, signal);
+        await scheduleToolCalls(toolCallRequests, signal);
       }
       return StreamProcessingStatus.Completed;
     },
@@ -971,6 +972,26 @@ export const useGeminiStream = (
         { name: 'submitQuery' },
         async ({ metadata: spanMetadata }) => {
           spanMetadata.input = query;
+
+          const discoveryState = config
+            .getMcpClientManager()
+            ?.getDiscoveryState();
+          const mcpServerCount =
+            config.getMcpClientManager()?.getMcpServerCount() ?? 0;
+          if (
+            !options?.isContinuation &&
+            typeof query === 'string' &&
+            !isSlashCommand(query.trim()) &&
+            mcpServerCount > 0 &&
+            discoveryState !== MCPDiscoveryState.COMPLETED
+          ) {
+            coreEvents.emitFeedback(
+              'info',
+              'Waiting for MCP servers to initialize... Slash commands are still available.',
+            );
+            return;
+          }
+
           const queryId = `${Date.now()}-${Math.random()}`;
           activeQueryIdRef.current = queryId;
           if (
