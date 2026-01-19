@@ -59,7 +59,7 @@ import { shouldAttemptBrowserLaunch } from '../utils/browser.js';
 import type { MCPOAuthConfig } from '../mcp/oauth-provider.js';
 import { ideContextStore } from '../ide/ideContext.js';
 import { WriteTodosTool } from '../tools/write-todos.js';
-import { AskUserQuestionTool } from '../tools/ask-user-question.js';
+import { AskUserTool } from '../tools/ask-user.js';
 import type { FileSystemService } from '../services/fileSystemService.js';
 import { StandardFileSystemService } from '../services/fileSystemService.js';
 import { logRipgrepFallback, logFlashFallback } from '../telemetry/loggers.js';
@@ -1882,7 +1882,7 @@ export class Config {
     registerCoreTool(MemoryTool);
     registerCoreTool(PresentPlanTool);
     registerCoreTool(WebSearchTool, this);
-    registerCoreTool(AskUserQuestionTool);
+    registerCoreTool(AskUserTool);
     if (this.getUseWriteTodos()) {
       registerCoreTool(WriteTodosTool);
     }

@@ -71,7 +71,7 @@ priority = 50
 modes = ["plan"]
 
 [[rule]]
-toolName = "ask_user_question"
+toolName = "ask_user"
 decision = "allow"
 priority = 50
 modes = ["plan"]

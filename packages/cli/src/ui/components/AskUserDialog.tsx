@@ -12,7 +12,7 @@ import { BaseSelectionList } from './shared/BaseSelectionList.js';
 import type { SelectionListItem } from '../hooks/useSelectionList.js';
 import { useKeypress, type Key } from '../hooks/useKeypress.js';
 
-interface AskUserQuestionDialogProps {
+interface AskUserDialogProps {
   questions: Question[];
   onSubmit: (answers: { [questionIndex: string]: string }) => void;
   onCancel: () => void;
@@ -460,7 +460,7 @@ const SubmitView: React.FC<SubmitViewProps> = ({
   );
 };
 
-export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
+export const AskUserDialog: React.FC<AskUserDialogProps> = ({
   questions,
   onSubmit,
   onCancel,

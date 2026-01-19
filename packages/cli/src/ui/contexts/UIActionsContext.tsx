@@ -62,10 +62,10 @@ export interface UIActions {
   setEmbeddedShellFocused: (value: boolean) => void;
   setApprovalMode: (mode: ApprovalMode) => Promise<void>;
   setAuthContext: (context: { requiresRestart?: boolean }) => void;
-  handleAskUserQuestionSubmit: (answers: {
+  handleAskUserSubmit: (answers: {
     [questionIndex: string]: string;
   }) => Promise<void>;
-  clearAskUserQuestionRequest: () => void;
+  clearAskUserRequest: () => void;
   handleRestart: () => void;
 }
 

@@ -86,8 +86,8 @@ Gemini CLI's built-in tools can be broadly categorized as follows:
   information across sessions.
 - **[Todo Tool](./todos.md) (`write_todos`):** For managing subtasks of complex
   requests.
-- **[Ask User Tool](./ask-user.md) (`ask_user_question`):** For asking
-  structured questions to the user.
+- **[Ask User Tool](./ask-user.md) (`ask_user`):** For asking structured
+  questions to the user.
 
 Additionally, these tools incorporate:
 

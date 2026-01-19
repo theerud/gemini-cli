@@ -1,16 +1,16 @@
-# Ask User tool (`ask_user_question`)
+# Ask User tool (`ask_user`)
 
-This document describes the `ask_user_question` tool for the Gemini CLI.
+This document describes the `ask_user` tool for the Gemini CLI.
 
 ## Description
 
-The `ask_user_question` tool allows the Gemini agent to ask you structured
-questions during execution. This enables the agent to pause its workflow and
-gather your input, preferences, or decisions before proceeding.
+The `ask_user` tool allows the Gemini agent to ask you structured questions
+during execution. This enables the agent to pause its workflow and gather your
+input, preferences, or decisions before proceeding.
 
 ### Arguments
 
-`ask_user_question` takes one argument:
+`ask_user` takes one argument:
 
 - `questions` (array of objects, required): A list of 1-4 questions to ask. Each
   question object includes:
@@ -45,7 +45,7 @@ custom text response.
 Usage example (internal representation):
 
 ```javascript
-ask_user_question({
+ask_user({
   questions: [
     {
       question: 'Which library should we use for date formatting?',

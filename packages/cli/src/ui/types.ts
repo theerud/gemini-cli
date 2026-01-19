@@ -70,7 +70,7 @@ export interface IndividualToolCallDisplay {
   callId: string;
   /** Display name (e.g., "Ask User Question") */
   name: string;
-  /** Internal tool name (e.g., "ask_user_question") */
+  /** Internal tool name (e.g., "ask_user") */
   toolName: string;
   description: string;
   resultDisplay: ToolResultDisplay | undefined;

@@ -29,7 +29,7 @@ import type { DOMElement } from 'ink';
 import type { SessionStatsState } from '../contexts/SessionContext.js';
 import type { ExtensionUpdateState } from '../state/extensions.js';
 import type { UpdateObject } from '../utils/updateCheck.js';
-import { type AskUserQuestionState } from '../hooks/useAskUserQuestion.js';
+import { type AskUserState } from '../hooks/useAskUser.js';
 
 export interface ProQuotaDialogRequest {
   failedModel: string;
@@ -73,7 +73,7 @@ export interface UIState {
   confirmUpdateExtensionRequests: ConfirmationRequest[];
   loopDetectionConfirmationRequest: LoopDetectionConfirmationRequest | null;
   planCompletionRequest: PlanCompletionRequest | null;
-  askUserQuestionRequest: AskUserQuestionState | null;
+  askUserRequest: AskUserState | null;
   geminiMdFileCount: number;
   streamingState: StreamingState;
   initError: string | null;

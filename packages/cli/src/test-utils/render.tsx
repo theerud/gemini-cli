@@ -174,8 +174,8 @@ const mockUIActions: UIActions = {
   setEmbeddedShellFocused: vi.fn(),
   setApprovalMode: vi.fn(),
   setAuthContext: vi.fn(),
-  handleAskUserQuestionSubmit: vi.fn(),
-  clearAskUserQuestionRequest: vi.fn(),
+  handleAskUserSubmit: vi.fn(),
+  clearAskUserRequest: vi.fn(),
   handleRestart: vi.fn(),
 };
 

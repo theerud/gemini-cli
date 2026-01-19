@@ -143,9 +143,7 @@ describe('Core System Prompt (prompts.ts)', () => {
   it('should include ask_user_question in Plan Mode prompt', () => {
     vi.mocked(mockConfig.getApprovalMode).mockReturnValue(ApprovalMode.PLAN);
     const prompt = getCoreSystemPrompt(mockConfig);
-    expect(prompt).toContain(
-      "Ask clarifying questions using 'ask_user_question'",
-    );
+    expect(prompt).toContain("Ask clarifying questions using 'ask_user'");
     expect(prompt).toMatchSnapshot();
   });
 
