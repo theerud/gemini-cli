@@ -33,7 +33,6 @@ import {
   addMCPStatusChangeListener,
   removeMCPStatusChangeListener,
   MCPDiscoveryState,
-  SHELL_TOOL_NAME,
 } from '@google/gemini-cli-core';
 import { useSessionStats } from '../contexts/SessionContext.js';
 import type {
@@ -509,7 +508,7 @@ export const useSlashCommandProcessor = (
                     const toolDisplay: IndividualToolCallDisplay = {
                       callId,
                       name: 'Expansion',
-                      toolName: SHELL_TOOL_NAME,
+                      toolName: 'expansion',
                       description: 'Command expansion needs shell access',
                       status: ToolCallStatus.Confirming,
                       resultDisplay: undefined,
