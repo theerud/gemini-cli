@@ -492,6 +492,7 @@ export class Config {
   private readonly enablePromptCompletion: boolean = false;
   private readonly truncateToolOutputThreshold: number;
   private readonly truncateToolOutputLines: number;
+  private compressionTruncationCounter = 0;
   private readonly enableToolOutputTruncation: boolean;
   private initialized: boolean = false;
   readonly storage: Storage;
@@ -1594,6 +1595,8 @@ export class Config {
       return this.compressionThreshold;
     }
 
+    await this.ensureExperimentsLoaded();
+
     const remoteThreshold =
       this.experiments?.flags[ExperimentFlags.CONTEXT_COMPRESSION_THRESHOLD]
         ?.floatValue;
@@ -1773,6 +1776,10 @@ export class Config {
 
   getTruncateToolOutputLines(): number {
     return this.truncateToolOutputLines;
+  }
+
+  getNextCompressionTruncationId(): number {
+    return ++this.compressionTruncationCounter;
   }
 
   getUseWriteTodos(): boolean {
