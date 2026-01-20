@@ -288,6 +288,19 @@ export async function start_sandbox(
           args.push('--ro-bind-try', p, p);
         }
       }
+
+      // Bind ADC file if present
+      const adcFile = process.env['GOOGLE_APPLICATION_CREDENTIALS'];
+      if (adcFile && fs.existsSync(adcFile)) {
+        args.push('--ro-bind-try', adcFile, adcFile);
+      }
+
+      // Bind gcloud config if present
+      const gcloudDir = path.join(userHomeDirOnHost, '.config', 'gcloud');
+      if (fs.existsSync(gcloudDir)) {
+        args.push('--ro-bind-try', gcloudDir, gcloudDir);
+      }
+
       // Map environment variables
       const finalEntrypoint = entrypoint(workdir, cliArgs);
 
