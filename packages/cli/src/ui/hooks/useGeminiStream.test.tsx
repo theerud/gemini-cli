@@ -19,8 +19,8 @@ import type {
   TrackedExecutingToolCall,
   TrackedCancelledToolCall,
   TrackedWaitingToolCall,
-} from './useReactToolScheduler.js';
-import { useReactToolScheduler } from './useReactToolScheduler.js';
+} from './useToolScheduler.js';
+import { useToolScheduler } from './useToolScheduler.js';
 import type {
   Config,
   EditorType,
@@ -91,12 +91,12 @@ vi.mock('@google/gemini-cli-core', async (importOriginal) => {
   };
 });
 
-const mockUseReactToolScheduler = useReactToolScheduler as Mock;
-vi.mock('./useReactToolScheduler.js', async (importOriginal) => {
+const mockUseToolScheduler = useToolScheduler as Mock;
+vi.mock('./useToolScheduler.js', async (importOriginal) => {
   const actualSchedulerModule = (await importOriginal()) as any;
   return {
     ...(actualSchedulerModule || {}),
-    useReactToolScheduler: vi.fn(),
+    useToolScheduler: vi.fn(),
   };
 });
 
@@ -248,7 +248,7 @@ describe('useGeminiStream', () => {
     mockMarkToolsAsSubmitted = vi.fn();
 
     // Default mock for useReactToolScheduler to prevent toolCalls being undefined initially
-    mockUseReactToolScheduler.mockReturnValue([
+    mockUseToolScheduler.mockReturnValue([
       [], // Default to empty array for toolCalls
       mockScheduleToolCalls,
       mockMarkToolsAsSubmitted,
@@ -339,7 +339,7 @@ describe('useGeminiStream', () => {
           rerender({ ...props, toolCalls: newToolCalls });
         });
 
-        mockUseReactToolScheduler.mockImplementation(() => [
+        mockUseToolScheduler.mockImplementation(() => [
           props.toolCalls,
           mockScheduleToolCalls,
           mockMarkToolsAsSubmitted,
@@ -586,7 +586,7 @@ describe('useGeminiStream', () => {
       | ((completedTools: TrackedToolCall[]) => Promise<void>)
       | null = null;
 
-    mockUseReactToolScheduler.mockImplementation((onComplete) => {
+    mockUseToolScheduler.mockImplementation((onComplete) => {
       capturedOnComplete = onComplete;
       return [[], mockScheduleToolCalls, mockMarkToolsAsSubmitted, vi.fn()];
     });
@@ -668,7 +668,7 @@ describe('useGeminiStream', () => {
       | ((completedTools: TrackedToolCall[]) => Promise<void>)
       | null = null;
 
-    mockUseReactToolScheduler.mockImplementation((onComplete) => {
+    mockUseToolScheduler.mockImplementation((onComplete) => {
       capturedOnComplete = onComplete;
       return [[], mockScheduleToolCalls, mockMarkToolsAsSubmitted, vi.fn()];
     });
@@ -747,7 +747,7 @@ describe('useGeminiStream', () => {
       | ((completedTools: TrackedToolCall[]) => Promise<void>)
       | null = null;
 
-    mockUseReactToolScheduler.mockImplementation((onComplete) => {
+    mockUseToolScheduler.mockImplementation((onComplete) => {
       capturedOnComplete = onComplete;
       return [
         [],
@@ -871,7 +871,7 @@ describe('useGeminiStream', () => {
       | ((completedTools: TrackedToolCall[]) => Promise<void>)
       | null = null;
 
-    mockUseReactToolScheduler.mockImplementation((onComplete) => {
+    mockUseToolScheduler.mockImplementation((onComplete) => {
       capturedOnComplete = onComplete;
       return [[], mockScheduleToolCalls, mockMarkToolsAsSubmitted, vi.fn()];
     });
@@ -979,7 +979,7 @@ describe('useGeminiStream', () => {
       | null = null;
     let currentToolCalls = initialToolCalls;
 
-    mockUseReactToolScheduler.mockImplementation((onComplete) => {
+    mockUseToolScheduler.mockImplementation((onComplete) => {
       capturedOnComplete = onComplete;
       return [
         currentToolCalls,
@@ -1016,7 +1016,7 @@ describe('useGeminiStream', () => {
 
     // 2. Update the tool calls to completed state and rerender
     currentToolCalls = completedToolCalls;
-    mockUseReactToolScheduler.mockImplementation((onComplete) => {
+    mockUseToolScheduler.mockImplementation((onComplete) => {
       capturedOnComplete = onComplete;
       return [
         completedToolCalls,
@@ -1623,7 +1623,7 @@ describe('useGeminiStream', () => {
         | ((completedTools: TrackedToolCall[]) => Promise<void>)
         | null = null;
 
-      mockUseReactToolScheduler.mockImplementation((onComplete) => {
+      mockUseToolScheduler.mockImplementation((onComplete) => {
         capturedOnComplete = onComplete;
         return [[], mockScheduleToolCalls, mockMarkToolsAsSubmitted, vi.fn()];
       });
@@ -2313,9 +2313,8 @@ describe('useGeminiStream', () => {
       addItemOrder.push(`addItem:${item.type}`);
     });
 
-    // We need to capture the onComplete callback from useReactToolScheduler
-    const mockUseReactToolScheduler = useReactToolScheduler as Mock;
-    mockUseReactToolScheduler.mockImplementation((onComplete) => {
+    // We need to capture the onComplete callback from useToolScheduler
+    mockUseToolScheduler.mockImplementation((onComplete) => {
       capturedOnComplete = onComplete;
       return [
         [], // toolCalls
@@ -2536,7 +2535,7 @@ describe('useGeminiStream', () => {
     });
 
     it('should memoize pendingHistoryItems', () => {
-      mockUseReactToolScheduler.mockReturnValue([
+      mockUseToolScheduler.mockReturnValue([
         [],
         mockScheduleToolCalls,
         mockCancelAllToolCalls,
@@ -2587,7 +2586,7 @@ describe('useGeminiStream', () => {
         } as unknown as TrackedExecutingToolCall,
       ];
 
-      mockUseReactToolScheduler.mockReturnValue([
+      mockUseToolScheduler.mockReturnValue([
         newToolCalls,
         mockScheduleToolCalls,
         mockCancelAllToolCalls,
