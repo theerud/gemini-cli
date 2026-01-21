@@ -31,6 +31,7 @@ import {
   ToolErrorType,
   PRESENT_PLAN_TOOL_NAME,
   PlanService,
+  ValidationRequiredError,
   coreEvents,
   CoreEvent,
   MCPDiscoveryState,
@@ -1125,6 +1126,12 @@ export const useGeminiStream = (
               spanMetadata.error = error;
               if (error instanceof UnauthorizedError) {
                 onAuthError('Session expired or is unauthorized.');
+              } else if (
+                // Suppress ValidationRequiredError if it was marked as handled (e.g. user clicked change_auth or cancelled)
+                error instanceof ValidationRequiredError &&
+                error.userHandled
+              ) {
+                // Error was handled by validation dialog, don't display again
               } else if (!isNodeError(error) || error.name !== 'AbortError') {
                 addItem(
                   {
