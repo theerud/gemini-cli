@@ -78,7 +78,7 @@ const TextQuestionView: React.FC<TextQuestionViewProps> = ({
         key.sequence &&
         key.sequence.length === 1 &&
         !key.ctrl &&
-        !key.meta &&
+        !key.cmd &&
         key.sequence.charCodeAt(0) >= 32
       ) {
         const newText = textValue + key.sequence;
@@ -285,7 +285,7 @@ const ChoiceQuestionView: React.FC<ChoiceQuestionViewProps> = ({
         key.sequence &&
         key.sequence.length === 1 &&
         !key.ctrl &&
-        !key.meta &&
+        !key.cmd &&
         key.sequence.charCodeAt(0) >= 32
       ) {
         const newText = customOptionText + key.sequence;

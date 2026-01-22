@@ -44,6 +44,7 @@ describe('ToolActionsContext', () => {
       callId: 'modern-call',
       correlationId: 'corr-123',
       name: 'test-tool',
+      toolName: 'test_tool',
       description: 'desc',
       status: ToolCallStatus.Confirming,
       resultDisplay: undefined,
@@ -52,6 +53,7 @@ describe('ToolActionsContext', () => {
     {
       callId: 'legacy-call',
       name: 'legacy-tool',
+      toolName: 'legacy_tool',
       description: 'desc',
       status: ToolCallStatus.Confirming,
       resultDisplay: undefined,
@@ -65,6 +67,7 @@ describe('ToolActionsContext', () => {
     {
       callId: 'edit-call',
       name: 'edit-tool',
+      toolName: 'edit_tool',
       description: 'desc',
       status: ToolCallStatus.Confirming,
       resultDisplay: undefined,
