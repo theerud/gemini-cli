@@ -77,6 +77,7 @@ export type SerializableConfirmationDetails =
       fileDiff: string;
       originalContent: string | null;
       newContent: string;
+      isModifying?: boolean;
     }
   | {
       type: 'exec';
@@ -84,6 +85,7 @@ export type SerializableConfirmationDetails =
       command: string;
       rootCommand: string;
       rootCommands: string[];
+      commands?: string[];
     }
   | {
       type: 'mcp';

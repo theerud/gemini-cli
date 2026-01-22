@@ -155,18 +155,20 @@ describe('TextInput', () => {
 
     keypressHandler({
       name: 'a',
-      sequence: 'a',
-      ctrl: false,
-      meta: false,
       shift: false,
+      alt: false,
+      ctrl: false,
+      cmd: false,
+      sequence: 'a',
     });
 
     expect(mockBuffer.handleInput).toHaveBeenCalledWith({
       name: 'a',
-      sequence: 'a',
-      ctrl: false,
-      meta: false,
       shift: false,
+      alt: false,
+      ctrl: false,
+      cmd: false,
+      sequence: 'a',
     });
     expect(mockBuffer.text).toBe('a');
   });
@@ -180,18 +182,20 @@ describe('TextInput', () => {
 
     keypressHandler({
       name: 'backspace',
-      sequence: '',
-      ctrl: false,
-      meta: false,
       shift: false,
+      alt: false,
+      ctrl: false,
+      cmd: false,
+      sequence: '',
     });
 
     expect(mockBuffer.handleInput).toHaveBeenCalledWith({
       name: 'backspace',
-      sequence: '',
-      ctrl: false,
-      meta: false,
       shift: false,
+      alt: false,
+      ctrl: false,
+      cmd: false,
+      sequence: '',
     });
     expect(mockBuffer.text).toBe('tes');
   });
@@ -205,10 +209,11 @@ describe('TextInput', () => {
 
     keypressHandler({
       name: 'left',
-      sequence: '',
-      ctrl: false,
-      meta: false,
       shift: false,
+      alt: false,
+      ctrl: false,
+      cmd: false,
+      sequence: '',
     });
 
     // Cursor moves from end to before 't'
@@ -225,10 +230,11 @@ describe('TextInput', () => {
 
     keypressHandler({
       name: 'right',
-      sequence: '',
-      ctrl: false,
-      meta: false,
       shift: false,
+      alt: false,
+      ctrl: false,
+      cmd: false,
+      sequence: '',
     });
 
     expect(mockBuffer.visualCursor[1]).toBe(3);
@@ -243,10 +249,11 @@ describe('TextInput', () => {
 
     keypressHandler({
       name: 'return',
-      sequence: '',
-      ctrl: false,
-      meta: false,
       shift: false,
+      alt: false,
+      ctrl: false,
+      cmd: false,
+      sequence: '',
     });
 
     expect(onSubmit).toHaveBeenCalledWith('test');
@@ -261,10 +268,11 @@ describe('TextInput', () => {
 
     keypressHandler({
       name: 'escape',
-      sequence: '',
-      ctrl: false,
-      meta: false,
       shift: false,
+      alt: false,
+      ctrl: false,
+      cmd: false,
+      sequence: '',
     });
     await vi.runAllTimersAsync();
 

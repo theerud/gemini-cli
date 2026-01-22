@@ -188,6 +188,7 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
                 isConfirming &&
                 tool.confirmationDetails && (
                   <ToolConfirmationMessage
+                    callId={tool.callId}
                     confirmationDetails={tool.confirmationDetails}
                     config={config}
                     isFocused={isFocused}

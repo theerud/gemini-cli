@@ -11,25 +11,24 @@ import { keyMatchers, Command } from '../keyMatchers.js';
 import type { HistoryItemWithoutId } from '../types.js';
 import { MessageType } from '../types.js';
 
-export interface UseAutoAcceptIndicatorArgs {
+export interface UseApprovalModeIndicatorArgs {
   config: Config;
   addItem?: (item: HistoryItemWithoutId, timestamp: number) => void;
   onApprovalModeChange?: (mode: ApprovalMode) => void;
   isActive?: boolean;
 }
 
-export function useAutoAcceptIndicator({
+export function useApprovalModeIndicator({
   config,
   addItem,
   onApprovalModeChange,
   isActive = true,
-}: UseAutoAcceptIndicatorArgs): ApprovalMode {
+}: UseApprovalModeIndicatorArgs): ApprovalMode {
   const currentConfigValue = config.getApprovalMode();
-  const [showAutoAcceptIndicator, setShowAutoAcceptIndicator] =
-    useState(currentConfigValue);
+  const [showApprovalMode, setApprovalMode] = useState(currentConfigValue);
 
   useEffect(() => {
-    setShowAutoAcceptIndicator(currentConfigValue);
+    setApprovalMode(currentConfigValue);
   }, [currentConfigValue]);
 
   useKeypress(
@@ -56,15 +55,24 @@ export function useAutoAcceptIndicator({
           config.getApprovalMode() === ApprovalMode.YOLO
             ? ApprovalMode.DEFAULT
             : ApprovalMode.YOLO;
-      } else if (keyMatchers[Command.TOGGLE_AUTO_EDIT](key)) {
-        // Cycle through: DEFAULT -> AUTO_EDIT -> PLAN -> DEFAULT
-        const current = config.getApprovalMode();
-        if (current === ApprovalMode.DEFAULT) {
-          nextApprovalMode = ApprovalMode.AUTO_EDIT;
-        } else if (current === ApprovalMode.AUTO_EDIT) {
-          nextApprovalMode = ApprovalMode.PLAN;
-        } else if (current === ApprovalMode.PLAN) {
-          nextApprovalMode = ApprovalMode.DEFAULT;
+      } else if (keyMatchers[Command.CYCLE_APPROVAL_MODE](key)) {
+        const currentMode = config.getApprovalMode();
+        switch (currentMode) {
+          case ApprovalMode.DEFAULT:
+            nextApprovalMode = config.isPlanEnabled()
+              ? ApprovalMode.PLAN
+              : ApprovalMode.AUTO_EDIT;
+            break;
+          case ApprovalMode.PLAN:
+            nextApprovalMode = ApprovalMode.AUTO_EDIT;
+            break;
+          case ApprovalMode.AUTO_EDIT:
+            nextApprovalMode = ApprovalMode.DEFAULT;
+            break;
+          case ApprovalMode.YOLO:
+            nextApprovalMode = ApprovalMode.AUTO_EDIT;
+            break;
+          default:
         }
       }
 
@@ -72,7 +80,7 @@ export function useAutoAcceptIndicator({
         try {
           config.setApprovalMode(nextApprovalMode);
           // Update local state immediately for responsiveness
-          setShowAutoAcceptIndicator(nextApprovalMode);
+          setApprovalMode(nextApprovalMode);
 
           // Notify the central handler about the approval mode change
           onApprovalModeChange?.(nextApprovalMode);
@@ -92,5 +100,5 @@ export function useAutoAcceptIndicator({
     { isActive },
   );
 
-  return showAutoAcceptIndicator;
+  return showApprovalMode;
 }

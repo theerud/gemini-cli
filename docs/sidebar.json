@@ -206,7 +206,7 @@
     ]
   },
   {
-    "label": "Hooks",
+    "label": "Hooks (experimental)",
     "items": [
       {
         "label": "Introduction",
@@ -274,10 +274,6 @@
       {
         "label": "Preview release",
         "slug": "docs/changelogs/preview"
-      },
-      {
-        "label": "Changelog",
-        "slug": "docs/changelogs/releases"
       }
     ]
   },

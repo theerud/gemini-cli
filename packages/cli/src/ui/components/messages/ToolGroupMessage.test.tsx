@@ -40,6 +40,11 @@ describe('<ToolGroupMessage />', () => {
       const toolCalls = [createToolCall()];
       const { lastFrame, unmount } = renderWithProviders(
         <ToolGroupMessage {...baseProps} toolCalls={toolCalls} />,
+        {
+          uiState: {
+            pendingHistoryItems: [{ type: 'tool_group', tools: toolCalls }],
+          },
+        },
       );
       expect(lastFrame()).toMatchSnapshot();
       unmount();
@@ -68,6 +73,11 @@ describe('<ToolGroupMessage />', () => {
       ];
       const { lastFrame, unmount } = renderWithProviders(
         <ToolGroupMessage {...baseProps} toolCalls={toolCalls} />,
+        {
+          uiState: {
+            pendingHistoryItems: [{ type: 'tool_group', tools: toolCalls }],
+          },
+        },
       );
       expect(lastFrame()).toMatchSnapshot();
       unmount();
@@ -90,6 +100,11 @@ describe('<ToolGroupMessage />', () => {
       ];
       const { lastFrame, unmount } = renderWithProviders(
         <ToolGroupMessage {...baseProps} toolCalls={toolCalls} />,
+        {
+          uiState: {
+            pendingHistoryItems: [{ type: 'tool_group', tools: toolCalls }],
+          },
+        },
       );
       expect(lastFrame()).toMatchSnapshot();
       unmount();
@@ -106,6 +121,11 @@ describe('<ToolGroupMessage />', () => {
       ];
       const { lastFrame, unmount } = renderWithProviders(
         <ToolGroupMessage {...baseProps} toolCalls={toolCalls} />,
+        {
+          uiState: {
+            pendingHistoryItems: [{ type: 'tool_group', tools: toolCalls }],
+          },
+        },
       );
       expect(lastFrame()).toMatchSnapshot();
       unmount();
@@ -134,6 +154,11 @@ describe('<ToolGroupMessage />', () => {
       ];
       const { lastFrame, unmount } = renderWithProviders(
         <ToolGroupMessage {...baseProps} toolCalls={toolCalls} />,
+        {
+          uiState: {
+            pendingHistoryItems: [{ type: 'tool_group', tools: toolCalls }],
+          },
+        },
       );
       expect(lastFrame()).toMatchSnapshot();
       unmount();
@@ -161,6 +186,11 @@ describe('<ToolGroupMessage />', () => {
           toolCalls={toolCalls}
           availableTerminalHeight={10}
         />,
+        {
+          uiState: {
+            pendingHistoryItems: [{ type: 'tool_group', tools: toolCalls }],
+          },
+        },
       );
       expect(lastFrame()).toMatchSnapshot();
       unmount();
@@ -174,6 +204,11 @@ describe('<ToolGroupMessage />', () => {
           toolCalls={toolCalls}
           isFocused={false}
         />,
+        {
+          uiState: {
+            pendingHistoryItems: [{ type: 'tool_group', tools: toolCalls }],
+          },
+        },
       );
       expect(lastFrame()).toMatchSnapshot();
       unmount();
@@ -193,6 +228,11 @@ describe('<ToolGroupMessage />', () => {
           toolCalls={toolCalls}
           terminalWidth={40}
         />,
+        {
+          uiState: {
+            pendingHistoryItems: [{ type: 'tool_group', tools: toolCalls }],
+          },
+        },
       );
       expect(lastFrame()).toMatchSnapshot();
       unmount();
@@ -201,6 +241,11 @@ describe('<ToolGroupMessage />', () => {
     it('renders empty tool calls array', () => {
       const { lastFrame, unmount } = renderWithProviders(
         <ToolGroupMessage {...baseProps} toolCalls={[]} />,
+        {
+          uiState: {
+            pendingHistoryItems: [{ type: 'tool_group', tools: [] }],
+          },
+        },
       );
       expect(lastFrame()).toMatchSnapshot();
       unmount();
@@ -226,6 +271,11 @@ describe('<ToolGroupMessage />', () => {
         <Scrollable height={10} hasFocus={true} scrollToBottom={true}>
           <ToolGroupMessage {...baseProps} toolCalls={toolCalls} />
         </Scrollable>,
+        {
+          uiState: {
+            pendingHistoryItems: [{ type: 'tool_group', tools: toolCalls }],
+          },
+        },
       );
       expect(lastFrame()).toMatchSnapshot();
       unmount();
@@ -243,6 +293,11 @@ describe('<ToolGroupMessage />', () => {
       ];
       const { lastFrame, unmount } = renderWithProviders(
         <ToolGroupMessage {...baseProps} toolCalls={toolCalls} />,
+        {
+          uiState: {
+            pendingHistoryItems: [{ type: 'tool_group', tools: toolCalls }],
+          },
+        },
       );
       expect(lastFrame()).toMatchSnapshot();
       unmount();
@@ -271,6 +326,14 @@ describe('<ToolGroupMessage />', () => {
           <ToolGroupMessage {...baseProps} toolCalls={toolCalls1} />
           <ToolGroupMessage {...baseProps} toolCalls={toolCalls2} />
         </Scrollable>,
+        {
+          uiState: {
+            pendingHistoryItems: [
+              { type: 'tool_group', tools: toolCalls1 },
+              { type: 'tool_group', tools: toolCalls2 },
+            ],
+          },
+        },
       );
       expect(lastFrame()).toMatchSnapshot();
       unmount();
@@ -282,6 +345,11 @@ describe('<ToolGroupMessage />', () => {
       const toolCalls = [createToolCall({ status: ToolCallStatus.Pending })];
       const { lastFrame, unmount } = renderWithProviders(
         <ToolGroupMessage {...baseProps} toolCalls={toolCalls} />,
+        {
+          uiState: {
+            pendingHistoryItems: [{ type: 'tool_group', tools: toolCalls }],
+          },
+        },
       );
       // The snapshot will capture the visual appearance including border color
       expect(lastFrame()).toMatchSnapshot();
@@ -297,6 +365,11 @@ describe('<ToolGroupMessage />', () => {
       ];
       const { lastFrame, unmount } = renderWithProviders(
         <ToolGroupMessage {...baseProps} toolCalls={toolCalls} />,
+        {
+          uiState: {
+            pendingHistoryItems: [{ type: 'tool_group', tools: toolCalls }],
+          },
+        },
       );
       expect(lastFrame()).toMatchSnapshot();
       unmount();
@@ -313,6 +386,11 @@ describe('<ToolGroupMessage />', () => {
       ];
       const { lastFrame, unmount } = renderWithProviders(
         <ToolGroupMessage {...baseProps} toolCalls={toolCalls} />,
+        {
+          uiState: {
+            pendingHistoryItems: [{ type: 'tool_group', tools: toolCalls }],
+          },
+        },
       );
       expect(lastFrame()).toMatchSnapshot();
       unmount();
@@ -341,6 +419,11 @@ describe('<ToolGroupMessage />', () => {
           toolCalls={toolCalls}
           availableTerminalHeight={20}
         />,
+        {
+          uiState: {
+            pendingHistoryItems: [{ type: 'tool_group', tools: toolCalls }],
+          },
+        },
       );
       expect(lastFrame()).toMatchSnapshot();
       unmount();
@@ -375,6 +458,11 @@ describe('<ToolGroupMessage />', () => {
       ];
       const { lastFrame, unmount } = renderWithProviders(
         <ToolGroupMessage {...baseProps} toolCalls={toolCalls} />,
+        {
+          uiState: {
+            pendingHistoryItems: [{ type: 'tool_group', tools: toolCalls }],
+          },
+        },
       );
       // Should only show confirmation for the first tool
       expect(lastFrame()).toMatchSnapshot();
@@ -400,7 +488,12 @@ describe('<ToolGroupMessage />', () => {
       });
       const { lastFrame, unmount } = renderWithProviders(
         <ToolGroupMessage {...baseProps} toolCalls={toolCalls} />,
-        { settings },
+        {
+          settings,
+          uiState: {
+            pendingHistoryItems: [{ type: 'tool_group', tools: toolCalls }],
+          },
+        },
       );
       expect(lastFrame()).toContain('Allow for all future sessions');
       expect(lastFrame()).toMatchSnapshot();
@@ -426,7 +519,12 @@ describe('<ToolGroupMessage />', () => {
       });
       const { lastFrame, unmount } = renderWithProviders(
         <ToolGroupMessage {...baseProps} toolCalls={toolCalls} />,
-        { settings },
+        {
+          settings,
+          uiState: {
+            pendingHistoryItems: [{ type: 'tool_group', tools: toolCalls }],
+          },
+        },
       );
       expect(lastFrame()).not.toContain('Allow for all future sessions');
       expect(lastFrame()).toMatchSnapshot();
