@@ -83,7 +83,7 @@ import { useKeypress } from './useKeypress.js';
 import type { LoadedSettings } from '../../config/settings.js';
 
 const SYSTEM_REMINDER_REGEX =
-  /\n\n<system_reminder>[\s\S]*?<\/system_reminder>/g;
+  /\s*<system_reminder>[\s\S]*?<\/system_reminder>\s*/gi;
 
 enum StreamProcessingStatus {
   Completed,
@@ -542,11 +542,23 @@ export const useGeminiStream = (
         return { queryToSend: null, shouldProceed: false };
       }
 
-      if (
-        config.getApprovalMode() === ApprovalMode.PLAN &&
-        typeof localQueryToSendToGemini === 'string'
-      ) {
-        localQueryToSendToGemini += `\n\n<system_reminder>\n${PLAN_MODE_REMINDER}\n</system_reminder>`;
+      if (config.getApprovalMode() === ApprovalMode.PLAN) {
+        const reminder = `\n\n<system_reminder>\n${PLAN_MODE_REMINDER}\n</system_reminder>`;
+        if (typeof localQueryToSendToGemini === 'string') {
+          localQueryToSendToGemini += reminder;
+        } else if (Array.isArray(localQueryToSendToGemini)) {
+          const firstPart = localQueryToSendToGemini[0];
+          if (
+            typeof firstPart === 'object' &&
+            firstPart !== null &&
+            'text' in firstPart &&
+            typeof firstPart.text === 'string'
+          ) {
+            firstPart.text += reminder;
+          } else {
+            localQueryToSendToGemini.push({ text: reminder });
+          }
+        }
       }
 
       return { queryToSend: localQueryToSendToGemini, shouldProceed: true };
@@ -1166,15 +1178,15 @@ export const useGeminiStream = (
                     const parts = content.parts;
                     if (parts) {
                       for (const part of parts) {
-                        if (
-                          part.text &&
-                          SYSTEM_REMINDER_REGEX.test(part.text)
-                        ) {
-                          part.text = part.text.replace(
+                        if (part.text) {
+                          const cleanedText = part.text.replace(
                             SYSTEM_REMINDER_REGEX,
                             '',
                           );
-                          historyChanged = true;
+                          if (cleanedText !== part.text) {
+                            part.text = cleanedText;
+                            historyChanged = true;
+                          }
                         }
                       }
                     }
