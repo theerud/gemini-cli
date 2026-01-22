@@ -707,6 +707,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       addConfirmUpdateExtensionRequest,
       setApprovalMode: (mode: ApprovalMode) =>
         approvalModeChangeHandlerRef.current(mode),
+      setText: (text: string) => buffer.setText(text),
     }),
     [
       setAuthState,
@@ -723,6 +724,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       openPermissionsDialog,
       addConfirmUpdateExtensionRequest,
       toggleDebugProfiler,
+      buffer,
     ],
   );
 
