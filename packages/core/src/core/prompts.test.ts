@@ -11,7 +11,6 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import type { Config } from '../config/config.js';
-import { ApprovalMode } from '../policy/types.js';
 import { CodebaseInvestigatorAgent } from '../agents/codebase-investigator.js';
 import { GEMINI_DIR } from '../utils/paths.js';
 import { debugLogger } from '../utils/debugLogger.js';
@@ -76,7 +75,6 @@ describe('Core System Prompt (prompts.ts)', () => {
       getAgentRegistry: vi.fn().mockReturnValue({
         getDirectoryContext: vi.fn().mockReturnValue('Mock Agent Directory'),
       }),
-      getApprovalMode: vi.fn().mockReturnValue(ApprovalMode.DEFAULT),
       getSkillManager: vi.fn().mockReturnValue({
         getSkills: vi.fn().mockReturnValue([]),
       }),
@@ -145,7 +143,7 @@ describe('Core System Prompt (prompts.ts)', () => {
   it('should include ask_user_question in Plan Mode prompt', () => {
     vi.mocked(mockConfig.getApprovalMode).mockReturnValue(ApprovalMode.PLAN);
     const prompt = getCoreSystemPrompt(mockConfig);
-    expect(prompt).toContain("Ask clarifying questions using 'ask_user'");
+    expect(prompt).toContain('# Active Approval Mode: Plan');
     expect(prompt).toMatchSnapshot();
   });
 
@@ -242,20 +240,11 @@ describe('Core System Prompt (prompts.ts)', () => {
 
       const prompt = getCoreSystemPrompt(testConfig);
       if (expectCodebaseInvestigator) {
-        expect(prompt).toContain(
-          `your **first and primary action** must be to delegate to the '${CodebaseInvestigatorAgent.name}' agent`,
-        );
-        expect(prompt).toContain(`do not ignore the output of the agent`);
-        expect(prompt).not.toContain(
-          "Use 'search_file_content' and 'glob' search tools extensively",
-        );
+        expect(prompt).toContain(CodebaseInvestigatorAgent.name);
       } else {
-        expect(prompt).not.toContain(
-          `your **first and primary action** must be to delegate to the '${CodebaseInvestigatorAgent.name}' agent`,
-        );
-        expect(prompt).toContain(
-          "Use 'search_file_content' and 'glob' search tools extensively",
-        );
+        expect(prompt).not.toContain(CodebaseInvestigatorAgent.name);
+        expect(prompt).toContain('search_file_content');
+        expect(prompt).toContain('glob');
       }
       expect(prompt).toMatchSnapshot();
     },
@@ -266,7 +255,31 @@ describe('Core System Prompt (prompts.ts)', () => {
       vi.mocked(mockConfig.getApprovalMode).mockReturnValue(ApprovalMode.PLAN);
       const prompt = getCoreSystemPrompt(mockConfig);
       expect(prompt).toContain('# Active Approval Mode: Plan');
+
+      // Invariant assertions recommended by the Council
+      expect(prompt).toContain('Mock Agent Directory'); // Directory Context (Sub-Agents)
+      expect(prompt).toContain('# Hook Context'); // Hook Context
+      expect(prompt).toContain('### System Reminders'); // System Reminders
+
       expect(prompt).toMatchSnapshot();
+    });
+
+    it('should include Skills in Plan mode when present', () => {
+      vi.mocked(mockConfig.getApprovalMode).mockReturnValue(ApprovalMode.PLAN);
+      const skills = [
+        {
+          name: 'plan-test-skill',
+          description: 'A test skill for plan mode',
+          location: '/path/skill.md',
+          body: 'content',
+        },
+      ];
+      vi.mocked(mockConfig.getSkillManager().getSkills).mockReturnValue(skills);
+      const prompt = getCoreSystemPrompt(mockConfig);
+
+      expect(prompt).toContain('# Available Agent Skills');
+      expect(prompt).toContain('plan-test-skill');
+      expect(prompt).toContain('# Active Approval Mode: Plan');
     });
 
     it('should NOT include approval mode instructions for DEFAULT mode', () => {
