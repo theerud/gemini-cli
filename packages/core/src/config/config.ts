@@ -32,6 +32,7 @@ import { WebFetchTool } from '../tools/web-fetch.js';
 import { MemoryTool, setGeminiMdFilename } from '../tools/memoryTool.js';
 import { PresentPlanTool } from '../tools/present-plan.js';
 import { WebSearchTool } from '../tools/web-search.js';
+import { AskUserTool } from '../tools/ask-user.js';
 import { GeminiClient } from '../core/client.js';
 import { BaseLlmClient } from '../core/baseLlmClient.js';
 import type { HookDefinition, HookEventName } from '../hooks/types.js';

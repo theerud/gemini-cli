@@ -35,6 +35,7 @@ import { AdminSettingsChangedDialog } from './AdminSettingsChangedDialog.js';
 import { IdeTrustChangeDialog } from './IdeTrustChangeDialog.js';
 import { AskUserDialog } from './AskUserDialog.js';
 import { AgentConfigDialog } from './AgentConfigDialog.js';
+import { useAskUserActions } from '../contexts/AskUserActionsContext.js';
 
 interface DialogManagerProps {
   addItem: UseHistoryManagerReturn['addItem'];
@@ -54,15 +55,22 @@ export const DialogManager = ({
   const { constrainHeight, terminalHeight, staticExtraHeight, mainAreaWidth } =
     uiState;
 
-  if (uiState.askUserRequest) {
+  const {
+    request: askUserRequest,
+    submit: askUserSubmit,
+    cancel: askUserCancel,
+  } = useAskUserActions();
+
+  if (askUserRequest) {
     return (
       <AskUserDialog
-        questions={uiState.askUserRequest.questions}
-        onSubmit={uiActions.handleAskUserSubmit}
-        onCancel={uiActions.clearAskUserRequest}
+        questions={askUserRequest.questions}
+        onSubmit={askUserSubmit}
+        onCancel={askUserCancel}
       />
     );
   }
+
   if (uiState.adminSettingsChanged) {
     return <AdminSettingsChangedDialog />;
   }
