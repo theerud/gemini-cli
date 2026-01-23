@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2025 Google LLC
+ * Copyright 2026 Google LLC
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -14,6 +14,7 @@ import {
 import type { MessageBus } from '../confirmation-bus/message-bus.js';
 import {
   MessageBusType,
+  QuestionType,
   type Question,
   type AskUserRequest,
   type AskUserResponse,
@@ -34,7 +35,7 @@ export class AskUserTool extends BaseDeclarativeTool<
       ASK_USER_TOOL_NAME,
       'Ask User',
       'Ask the user one or more questions to gather preferences, clarify requirements, or make decisions.',
-      Kind.Other,
+      Kind.Communicate,
       {
         type: 'object',
         required: ['questions'],
@@ -90,7 +91,7 @@ export class AskUserTool extends BaseDeclarativeTool<
                 multiSelect: {
                   type: 'boolean',
                   description:
-                    "Required for 'choice' type. The available choices (2-4 options). Do NOT include an 'Other' option - one is automatically added.",
+                    "Only applies to 'choice' type. Set to true to allow multiple selections.",
                 },
                 placeholder: {
                   type: 'string',
@@ -135,13 +136,14 @@ export class AskUserInvocation extends BaseToolInvocation<
 
     const request: AskUserRequest = {
       type: MessageBusType.ASK_USER_REQUEST,
-      questions: this.params.questions,
+      questions: this.params.questions.map((q) => ({
+        ...q,
+        type: q.type ?? QuestionType.CHOICE,
+      })),
       correlationId,
     };
 
     return new Promise<ToolResult>((resolve, reject) => {
-      let timeoutId: NodeJS.Timeout | undefined;
-
       const responseHandler = (response: AskUserResponse): void => {
         if (response.correlationId === correlationId) {
           cleanup();
@@ -165,10 +167,6 @@ export class AskUserInvocation extends BaseToolInvocation<
       };
 
       const cleanup = () => {
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-          timeoutId = undefined;
-        }
         if (responseHandler) {
           this.messageBus.unsubscribe(
             MessageBusType.ASK_USER_RESPONSE,
@@ -198,21 +196,6 @@ export class AskUserInvocation extends BaseToolInvocation<
       this.messageBus.subscribe(
         MessageBusType.ASK_USER_RESPONSE,
         responseHandler,
-      );
-
-      // 5 minute timeout
-      timeoutId = setTimeout(
-        () => {
-          cleanup();
-          resolve({
-            llmContent: 'Tool execution timed out waiting for user input.',
-            returnDisplay: 'Timed out',
-            error: {
-              message: 'Timed out waiting for user input',
-            },
-          });
-        },
-        5 * 60 * 1000,
       );
 
       // Publish request

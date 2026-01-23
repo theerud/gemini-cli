@@ -16,6 +16,7 @@ import type {
   Logger,
   CommandActionReturn,
   ApprovalMode,
+  AgentDefinition,
 } from '@google/gemini-cli-core';
 import type { LoadedSettings } from '../../config/settings.js';
 import type { UseHistoryManagerReturn } from '../hooks/useHistoryManager.js';
@@ -75,6 +76,11 @@ export interface CommandContext {
     toggleDebugProfiler: () => void;
     toggleVimEnabled: () => Promise<boolean>;
     reloadCommands: () => void;
+    openAgentConfigDialog: (
+      name: string,
+      displayName: string,
+      definition: AgentDefinition,
+    ) => void;
     extensionsUpdateState: Map<string, ExtensionUpdateStatus>;
     dispatchExtensionStateUpdate: (action: ExtensionUpdateAction) => void;
     addConfirmUpdateExtensionRequest: (value: ConfirmationRequest) => void;
@@ -113,6 +119,7 @@ export interface OpenDialogActionReturn {
     | 'settings'
     | 'sessionBrowser'
     | 'model'
+    | 'agentConfig'
     | 'permissions';
 }
 

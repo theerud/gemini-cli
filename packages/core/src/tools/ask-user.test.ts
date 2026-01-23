@@ -1,16 +1,21 @@
 /**
  * @license
- * Copyright 2025 Google LLC
+ * Copyright 2026 Google LLC
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AskUserTool } from './ask-user.js';
-import { MessageBusType } from '../confirmation-bus/types.js';
+import {
+  MessageBusType,
+  QuestionType,
+  type Question,
+} from '../confirmation-bus/types.js';
 import type { MessageBus } from '../confirmation-bus/message-bus.js';
 
 describe('AskUserTool', () => {
   let mockMessageBus: MessageBus;
+  let tool: AskUserTool;
 
   beforeEach(() => {
     mockMessageBus = {
@@ -18,16 +23,110 @@ describe('AskUserTool', () => {
       subscribe: vi.fn(),
       unsubscribe: vi.fn(),
     } as unknown as MessageBus;
+    tool = new AskUserTool(mockMessageBus);
   });
 
   it('should have correct metadata', () => {
-    const tool = new AskUserTool(mockMessageBus);
     expect(tool.name).toBe('ask_user');
     expect(tool.displayName).toBe('Ask User');
   });
 
+  describe('validateToolParams', () => {
+    it('should return error if questions is missing', () => {
+      // @ts-expect-error - Intentionally invalid params
+      const result = tool.validateToolParams({});
+      expect(result).toContain("must have required property 'questions'");
+    });
+
+    it('should return error if questions array is empty', () => {
+      const result = tool.validateToolParams({ questions: [] });
+      expect(result).toContain('must NOT have fewer than 1 items');
+    });
+
+    it('should return error if questions array exceeds max', () => {
+      const questions = Array(5).fill({
+        question: 'Test?',
+        header: 'Test',
+        options: [
+          { label: 'A', description: 'A' },
+          { label: 'B', description: 'B' },
+        ],
+      });
+      const result = tool.validateToolParams({ questions });
+      expect(result).toContain('must NOT have more than 4 items');
+    });
+
+    it('should return error if question field is missing', () => {
+      const result = tool.validateToolParams({
+        questions: [{ header: 'Test' } as unknown as Question],
+      });
+      expect(result).toContain("must have required property 'question'");
+    });
+
+    it('should return error if header field is missing', () => {
+      const result = tool.validateToolParams({
+        questions: [{ question: 'Test?' } as unknown as Question],
+      });
+      expect(result).toContain("must have required property 'header'");
+    });
+
+    it('should return error if header exceeds max length', () => {
+      const result = tool.validateToolParams({
+        questions: [{ question: 'Test?', header: 'This is way too long' }],
+      });
+      expect(result).toContain('must NOT have more than 12 characters');
+    });
+
+    it('should return error if options has fewer than 2 items', () => {
+      const result = tool.validateToolParams({
+        questions: [
+          {
+            question: 'Test?',
+            header: 'Test',
+            options: [{ label: 'A', description: 'A' }],
+          },
+        ],
+      });
+      expect(result).toContain('must NOT have fewer than 2 items');
+    });
+
+    it('should return error if options has more than 4 items', () => {
+      const result = tool.validateToolParams({
+        questions: [
+          {
+            question: 'Test?',
+            header: 'Test',
+            options: [
+              { label: 'A', description: 'A' },
+              { label: 'B', description: 'B' },
+              { label: 'C', description: 'C' },
+              { label: 'D', description: 'D' },
+              { label: 'E', description: 'E' },
+            ],
+          },
+        ],
+      });
+      expect(result).toContain('must NOT have more than 4 items');
+    });
+
+    it('should return null for valid params', () => {
+      const result = tool.validateToolParams({
+        questions: [
+          {
+            question: 'Which approach?',
+            header: 'Approach',
+            options: [
+              { label: 'A', description: 'Option A' },
+              { label: 'B', description: 'Option B' },
+            ],
+          },
+        ],
+      });
+      expect(result).toBeNull();
+    });
+  });
+
   it('should publish ASK_USER_REQUEST and wait for response', async () => {
-    const tool = new AskUserTool(mockMessageBus);
     const questions = [
       {
         question: 'How should we proceed with this task?',
@@ -51,11 +150,14 @@ describe('AskUserTool', () => {
     const invocation = tool.build({ questions });
     const executePromise = invocation.execute(new AbortController().signal);
 
-    // Verify publish called
+    // Verify publish called with normalized questions (type defaults to CHOICE)
     expect(mockMessageBus.publish).toHaveBeenCalledWith(
       expect.objectContaining({
         type: MessageBusType.ASK_USER_REQUEST,
-        questions,
+        questions: questions.map((q) => ({
+          ...q,
+          type: QuestionType.CHOICE,
+        })),
       }),
     );
 
@@ -94,13 +196,12 @@ describe('AskUserTool', () => {
   });
 
   it('should handle yesno type questions', async () => {
-    const tool = new AskUserTool(mockMessageBus);
     const questions = [
       {
         question:
           'Should we maintain backward compatibility with the existing API?',
         header: 'Compat',
-        type: 'yesno' as const,
+        type: QuestionType.YESNO,
       },
     ];
 
@@ -141,7 +242,6 @@ describe('AskUserTool', () => {
   });
 
   it('should handle cancellation', async () => {
-    const tool = new AskUserTool(mockMessageBus);
     const invocation = tool.build({
       questions: [
         {

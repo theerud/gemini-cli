@@ -30,6 +30,7 @@ export interface BaseSelectionListProps<
   showNumbers?: boolean;
   showScrollArrows?: boolean;
   maxItemsToShow?: number;
+  wrapAround?: boolean;
   renderItem: (item: TItem, context: RenderItemContext) => React.ReactNode;
   /** Custom color for the selected item indicator and number. Defaults to theme.status.success */
   selectedColor?: string;
@@ -61,6 +62,7 @@ export function BaseSelectionList<
   showNumbers = true,
   showScrollArrows = false,
   maxItemsToShow = 10,
+  wrapAround = true,
   renderItem,
   selectedColor = theme.status.success,
 }: BaseSelectionListProps<T, TItem>): React.JSX.Element {
@@ -71,6 +73,7 @@ export function BaseSelectionList<
     onHighlight,
     isFocused,
     showNumbers,
+    wrapAround,
   });
 
   const [scrollOffset, setScrollOffset] = useState(0);

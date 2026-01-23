@@ -21,9 +21,9 @@ export enum MessageBusType {
   HOOK_EXECUTION_REQUEST = 'hook-execution-request',
   HOOK_EXECUTION_RESPONSE = 'hook-execution-response',
   HOOK_POLICY_DECISION = 'hook-policy-decision',
+  TOOL_CALLS_UPDATE = 'tool-calls-update',
   ASK_USER_REQUEST = 'ask-user-request',
   ASK_USER_RESPONSE = 'ask-user-response',
-  TOOL_CALLS_UPDATE = 'tool-calls-update',
 }
 
 export interface ToolCallsUpdateMessage {
@@ -149,11 +149,17 @@ export interface QuestionOption {
   description: string;
 }
 
+export enum QuestionType {
+  CHOICE = 'choice',
+  TEXT = 'text',
+  YESNO = 'yesno',
+}
+
 export interface Question {
   question: string;
   header: string;
   /** Question type: 'choice' renders selectable options, 'text' renders free-form input, 'yesno' renders a binary Yes/No choice. Defaults to 'choice'. */
-  type?: 'choice' | 'text' | 'yesno';
+  type?: QuestionType;
   /** Available choices. Required when type is 'choice' (or omitted), ignored for 'text'. */
   options?: QuestionOption[];
   /** Allow multiple selections. Only applies to 'choice' type. */

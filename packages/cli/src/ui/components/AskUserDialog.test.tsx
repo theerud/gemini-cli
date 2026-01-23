@@ -8,7 +8,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { act } from 'react';
 import { renderWithProviders } from '../../test-utils/render.js';
 import { AskUserDialog } from './AskUserDialog.js';
-import type { Question } from '@google/gemini-cli-core';
+import { type Question, QuestionType } from '@google/gemini-cli-core';
 
 // Helper to write to stdin with proper act() wrapping
 const writeKey = async (
@@ -324,7 +324,7 @@ describe('AskUserDialog', () => {
         {
           question: 'What should we name this component?',
           header: 'Name',
-          type: 'text',
+          type: QuestionType.TEXT,
           placeholder: 'e.g., UserProfileCard',
         },
       ];
@@ -352,7 +352,7 @@ describe('AskUserDialog', () => {
         {
           question: 'Enter a name:',
           header: 'Name',
-          type: 'text',
+          type: QuestionType.TEXT,
         },
       ];
 
@@ -383,7 +383,7 @@ describe('AskUserDialog', () => {
         {
           question: 'Enter something:',
           header: 'Input',
-          type: 'text',
+          type: QuestionType.TEXT,
         },
       ];
 
@@ -403,7 +403,7 @@ describe('AskUserDialog', () => {
         {
           question: 'Enter name:',
           header: 'Name',
-          type: 'text',
+          type: QuestionType.TEXT,
         },
       ];
 
@@ -432,7 +432,7 @@ describe('AskUserDialog', () => {
         {
           question: 'Enter name:',
           header: 'Name',
-          type: 'text',
+          type: QuestionType.TEXT,
         },
       ];
 
@@ -456,7 +456,7 @@ describe('AskUserDialog', () => {
         {
           question: 'What name?',
           header: 'Name',
-          type: 'text',
+          type: QuestionType.TEXT,
         },
         {
           question: 'Which style?',
@@ -500,7 +500,7 @@ describe('AskUserDialog', () => {
         {
           question: 'What name?',
           header: 'Name',
-          type: 'text',
+          type: QuestionType.TEXT,
           placeholder: 'Enter name',
         },
         {
@@ -555,7 +555,7 @@ describe('AskUserDialog', () => {
         {
           question: 'Enter name:',
           header: 'Name',
-          type: 'text',
+          type: QuestionType.TEXT,
         },
       ];
 

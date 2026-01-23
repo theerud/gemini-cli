@@ -28,6 +28,7 @@ export interface UseSelectionListOptions<T> {
   onHighlight?: (value: T) => void;
   isFocused?: boolean;
   showNumbers?: boolean;
+  wrapAround?: boolean;
 }
 
 export interface UseSelectionListResult {
@@ -41,6 +42,7 @@ interface SelectionListState {
   pendingHighlight: boolean;
   pendingSelect: boolean;
   items: BaseSelectionItem[];
+  wrapAround: boolean;
 }
 
 type SelectionListAction =
@@ -61,7 +63,11 @@ type SelectionListAction =
     }
   | {
       type: 'INITIALIZE';
-      payload: { initialIndex: number; items: BaseSelectionItem[] };
+      payload: {
+        initialIndex: number;
+        items: BaseSelectionItem[];
+        wrapAround: boolean;
+      };
     }
   | {
       type: 'CLEAR_PENDING_FLAGS';
@@ -76,6 +82,7 @@ const findNextValidIndex = (
   currentIndex: number,
   direction: 'up' | 'down',
   items: BaseSelectionItem[],
+  wrapAround = true,
 ): number => {
   const len = items.length;
   if (len === 0) return currentIndex;
@@ -84,12 +91,33 @@ const findNextValidIndex = (
   const step = direction === 'down' ? 1 : -1;
 
   for (let i = 0; i < len; i++) {
-    // Calculate the next index, wrapping around if necessary.
-    // We add `len` before the modulo to ensure a positive result in JS for negative steps.
-    nextIndex = (nextIndex + step + len) % len;
+    const candidateIndex = nextIndex + step;
+
+    if (wrapAround) {
+      // Calculate the next index, wrapping around if necessary.
+      // We add `len` before the modulo to ensure a positive result in JS for negative steps.
+      nextIndex = (candidateIndex + len) % len;
+    } else {
+      if (candidateIndex < 0 || candidateIndex >= len) {
+        // Out of bounds and wrapping is disabled
+        return currentIndex;
+      }
+      nextIndex = candidateIndex;
+    }
 
     if (!items[nextIndex]?.disabled) {
       return nextIndex;
+    }
+
+    if (!wrapAround) {
+      // If the item is disabled and we're not wrapping, we continue searching
+      // in the same direction, but we must stop if we hit the bounds.
+      if (
+        (direction === 'down' && nextIndex === len - 1) ||
+        (direction === 'up' && nextIndex === 0)
+      ) {
+        return currentIndex;
+      }
     }
   }
 
@@ -121,7 +149,7 @@ const computeInitialIndex = (
   }
 
   if (items[targetIndex]?.disabled) {
-    const nextValid = findNextValidIndex(targetIndex, 'down', items);
+    const nextValid = findNextValidIndex(targetIndex, 'down', items, true);
     targetIndex = nextValid;
   }
 
@@ -149,8 +177,13 @@ function selectionListReducer(
     }
 
     case 'MOVE_UP': {
-      const { items } = state;
-      const newIndex = findNextValidIndex(state.activeIndex, 'up', items);
+      const { items, wrapAround } = state;
+      const newIndex = findNextValidIndex(
+        state.activeIndex,
+        'up',
+        items,
+        wrapAround,
+      );
       if (newIndex !== state.activeIndex) {
         return { ...state, activeIndex: newIndex, pendingHighlight: true };
       }
@@ -158,8 +191,13 @@ function selectionListReducer(
     }
 
     case 'MOVE_DOWN': {
-      const { items } = state;
-      const newIndex = findNextValidIndex(state.activeIndex, 'down', items);
+      const { items, wrapAround } = state;
+      const newIndex = findNextValidIndex(
+        state.activeIndex,
+        'down',
+        items,
+        wrapAround,
+      );
       if (newIndex !== state.activeIndex) {
         return { ...state, activeIndex: newIndex, pendingHighlight: true };
       }
@@ -171,7 +209,7 @@ function selectionListReducer(
     }
 
     case 'INITIALIZE': {
-      const { initialIndex, items } = action.payload;
+      const { initialIndex, items, wrapAround } = action.payload;
       const activeKey =
         initialIndex === state.initialIndex &&
         state.activeIndex !== state.initialIndex
@@ -187,6 +225,7 @@ function selectionListReducer(
         initialIndex,
         activeIndex: targetIndex,
         pendingHighlight: false,
+        wrapAround,
       };
     }
 
@@ -246,6 +285,7 @@ export function useSelectionList<T>({
   onHighlight,
   isFocused = true,
   showNumbers = false,
+  wrapAround = true,
 }: UseSelectionListOptions<T>): UseSelectionListResult {
   const baseItems = toBaseItems(items);
 
@@ -255,12 +295,14 @@ export function useSelectionList<T>({
     pendingHighlight: false,
     pendingSelect: false,
     items: baseItems,
+    wrapAround,
   });
   const numberInputRef = useRef('');
   const numberInputTimer = useRef<NodeJS.Timeout | null>(null);
 
   const prevBaseItemsRef = useRef(baseItems);
   const prevInitialIndexRef = useRef(initialIndex);
+  const prevWrapAroundRef = useRef(wrapAround);
 
   // Initialize/synchronize state when initialIndex or items change
   useEffect(() => {
@@ -269,14 +311,16 @@ export function useSelectionList<T>({
       baseItems,
     );
     const initialIndexChanged = prevInitialIndexRef.current !== initialIndex;
+    const wrapAroundChanged = prevWrapAroundRef.current !== wrapAround;
 
-    if (baseItemsChanged || initialIndexChanged) {
+    if (baseItemsChanged || initialIndexChanged || wrapAroundChanged) {
       dispatch({
         type: 'INITIALIZE',
-        payload: { initialIndex, items: baseItems },
+        payload: { initialIndex, items: baseItems, wrapAround },
       });
       prevBaseItemsRef.current = baseItems;
       prevInitialIndexRef.current = initialIndex;
+      prevWrapAroundRef.current = wrapAround;
     }
   });
 

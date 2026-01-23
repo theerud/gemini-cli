@@ -260,7 +260,7 @@ export abstract class BaseToolInvocation<
         }
       };
 
-      abortSignal.addEventListener('abort', abortHandler);
+      abortSignal.addEventListener('abort', abortHandler, { once: true });
 
       timeoutId = setTimeout(() => {
         cleanup();
@@ -778,6 +778,7 @@ export enum Kind {
   Execute = 'execute',
   Think = 'think',
   Fetch = 'fetch',
+  Communicate = 'communicate',
   Other = 'other',
 }
 
