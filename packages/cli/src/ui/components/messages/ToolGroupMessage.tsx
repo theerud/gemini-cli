@@ -39,7 +39,28 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
   activeShellPtyId,
   embeddedShellFocused,
 }) => {
-  const isEmbeddedShellFocused = toolCalls.some((t) =>
+  const config = useConfig();
+
+  const isEventDriven = config.isEventDrivenSchedulerEnabled();
+
+  // If Event-Driven Scheduler is enabled, we HIDE tools that are still in
+  // pre-execution states (Confirming, Pending) from the History log.
+  // They live in the Global Queue or wait for their turn.
+  const visibleToolCalls = useMemo(() => {
+    if (!isEventDriven) {
+      return toolCalls;
+    }
+    // Only show tools that are actually running or finished.
+    // We explicitly exclude Pending and Confirming to ensure they only
+    // appear in the Global Queue until they are approved and start executing.
+    return toolCalls.filter(
+      (t) =>
+        t.status !== ToolCallStatus.Pending &&
+        t.status !== ToolCallStatus.Confirming,
+    );
+  }, [toolCalls, isEventDriven]);
+
+  const isEmbeddedShellFocused = visibleToolCalls.some((t) =>
     isThisShellFocused(
       t.name,
       t.status,
@@ -49,11 +70,10 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
     ),
   );
 
-  const hasPending = !toolCalls.every(
+  const hasPending = !visibleToolCalls.every(
     (t) => t.status === ToolCallStatus.Success,
   );
 
-  const config = useConfig();
   const isShellCommand = toolCalls.some((t) => isShellTool(t.name));
   const borderColor =
     (isShellCommand && hasPending) || isEmbeddedShellFocused
@@ -68,25 +88,34 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
   const staticHeight = /* border */ 2 + /* marginBottom */ 1;
 
   // Check if this is a parallel execution (multiple tools in the same group)
-  const isParallelExecution = toolCalls.length > 1;
-  const executingCount = toolCalls.filter(
+  const isParallelExecution = visibleToolCalls.length > 1;
+  const executingCount = visibleToolCalls.filter(
     (t) => t.status === ToolCallStatus.Executing,
   ).length;
 
-  // only prompt for tool approval on the first 'confirming' tool in the list
-  // note, after the CTA, this automatically moves over to the next 'confirming' tool
+  // Inline confirmations are ONLY used when the Global Queue is disabled.
   const toolAwaitingApproval = useMemo(
-    () => toolCalls.find((tc) => tc.status === ToolCallStatus.Confirming),
-    [toolCalls],
+    () =>
+      isEventDriven
+        ? undefined
+        : toolCalls.find((tc) => tc.status === ToolCallStatus.Confirming),
+    [toolCalls, isEventDriven],
   );
 
+  // If all tools are hidden (e.g. group only contains confirming or pending tools),
+  // render nothing in the history log.
+  if (visibleToolCalls.length === 0) {
+    return null;
+  }
+
   let countToolCallsWithResults = 0;
-  for (const tool of toolCalls) {
+  for (const tool of visibleToolCalls) {
     if (tool.resultDisplay !== undefined && tool.resultDisplay !== '') {
       countToolCallsWithResults++;
     }
   }
-  const countOneLineToolCalls = toolCalls.length - countToolCallsWithResults;
+  const countOneLineToolCalls =
+    visibleToolCalls.length - countToolCallsWithResults;
   const availableTerminalHeightPerToolMessage = availableTerminalHeight
     ? Math.max(
         Math.floor(
@@ -125,12 +154,12 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
         >
           <Text color={theme.text.accent}>
             {executingCount > 0
-              ? `⋮ Running ${toolCalls.length} tools in parallel...`
-              : `⋮ Ran ${toolCalls.length} tools in parallel`}
+              ? `⋮ Running ${visibleToolCalls.length} tools in parallel...`
+              : `⋮ Ran ${visibleToolCalls.length} tools in parallel`}
           </Text>
         </Box>
       )}
-      {toolCalls.map((tool, index) => {
+      {visibleToolCalls.map((tool, index) => {
         const isConfirming = toolAwaitingApproval?.callId === tool.callId;
         const isFirst = index === 0;
         const treeConnector = isParallelExecution ? PARALLEL_BULLET : '';
@@ -210,7 +239,7 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
               We have to keep the bottom border separate so it doesn't get
               drawn over by the sticky header directly inside it.
              */
-        toolCalls.length > 0 && (
+        visibleToolCalls.length > 0 && (
           <Box
             height={0}
             width={terminalWidth}

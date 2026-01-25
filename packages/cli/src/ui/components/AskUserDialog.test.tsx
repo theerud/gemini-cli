@@ -1,35 +1,35 @@
 /**
  * @license
- * Copyright 2025 Google LLC
+ * Copyright 2026 Google LLC
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { act } from 'react';
 import { renderWithProviders } from '../../test-utils/render.js';
+import { waitFor } from '../../test-utils/async.js';
 import { AskUserDialog } from './AskUserDialog.js';
-import { type Question, QuestionType } from '@google/gemini-cli-core';
+import { QuestionType, type Question } from '@google/gemini-cli-core';
 
 // Helper to write to stdin with proper act() wrapping
-const writeKey = async (
-  stdin: { write: (data: string) => void },
-  key: string,
-  delay = 50,
-) => {
-  await act(async () => {
+const writeKey = (stdin: { write: (data: string) => void }, key: string) => {
+  act(() => {
     stdin.write(key);
   });
-  await new Promise((resolve) => setTimeout(resolve, delay));
 };
 
 describe('AskUserDialog', () => {
-  const questions: Question[] = [
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const authQuestion: Question[] = [
     {
-      question: 'Q1?',
-      header: 'H1',
+      question: 'Which authentication method should we use?',
+      header: 'Auth',
       options: [
-        { label: 'Opt1', description: 'Desc1' },
-        { label: 'Opt2', description: 'Desc2' },
+        { label: 'OAuth 2.0', description: 'Industry standard, supports SSO' },
+        { label: 'JWT tokens', description: 'Stateless, good for APIs' },
       ],
       multiSelect: false,
     },
@@ -38,129 +38,163 @@ describe('AskUserDialog', () => {
   it('renders question and options', () => {
     const { lastFrame } = renderWithProviders(
       <AskUserDialog
-        questions={questions}
+        questions={authQuestion}
         onSubmit={vi.fn()}
         onCancel={vi.fn()}
       />,
     );
 
-    const output = lastFrame();
-    expect(output).toContain('Q1?');
-    expect(output).toContain('Opt1');
-    expect(output).toContain('Desc1');
-    expect(output).toContain('Opt2');
-    expect(output).toContain('Desc2');
+    expect(lastFrame()).toMatchSnapshot();
   });
 
-  it('calls onSubmit with answers when an option is selected', async () => {
-    const onSubmit = vi.fn();
-    const { stdin } = renderWithProviders(
-      <AskUserDialog
-        questions={questions}
-        onSubmit={onSubmit}
-        onCancel={vi.fn()}
-      />,
-    );
-
-    // Press enter to select the first option
-    await writeKey(stdin, '\r', 100);
-
-    expect(onSubmit).toHaveBeenCalledWith({ '0': 'Opt1' });
-  });
-
-  it('handles multi-select and done', async () => {
-    const multiQuestions: Question[] = [
-      {
-        question: 'Select features:',
-        header: 'Features',
-        options: [
-          { label: 'Feature1', description: 'Desc1' },
-          { label: 'Feature2', description: 'Desc2' },
-        ],
-        multiSelect: true,
+  describe.each([
+    {
+      name: 'Single Select',
+      questions: authQuestion,
+      actions: (stdin: { write: (data: string) => void }) => {
+        writeKey(stdin, '\r');
       },
-    ];
-    const onSubmit = vi.fn();
-    const { stdin } = renderWithProviders(
-      <AskUserDialog
-        questions={multiQuestions}
-        onSubmit={onSubmit}
-        onCancel={vi.fn()}
-      />,
-    );
+      expectedSubmit: { '0': 'OAuth 2.0' },
+    },
+    {
+      name: 'Multi-select',
+      questions: [
+        {
+          question: 'Which features?',
+          header: 'Features',
+          options: [
+            { label: 'TypeScript', description: '' },
+            { label: 'ESLint', description: '' },
+          ],
+          multiSelect: true,
+        },
+      ] as Question[],
+      actions: (stdin: { write: (data: string) => void }) => {
+        writeKey(stdin, '\r'); // Toggle TS
+        writeKey(stdin, '\x1b[B'); // Down
+        writeKey(stdin, '\r'); // Toggle ESLint
+        writeKey(stdin, '\x1b[B'); // Down to Other
+        writeKey(stdin, '\x1b[B'); // Down to Done
+        writeKey(stdin, '\r'); // Done
+      },
+      expectedSubmit: { '0': 'TypeScript, ESLint' },
+    },
+    {
+      name: 'Text Input',
+      questions: [
+        {
+          question: 'Name?',
+          header: 'Name',
+          type: QuestionType.TEXT,
+        },
+      ] as Question[],
+      actions: (stdin: { write: (data: string) => void }) => {
+        for (const char of 'test-app') {
+          writeKey(stdin, char);
+        }
+        writeKey(stdin, '\r');
+      },
+      expectedSubmit: { '0': 'test-app' },
+    },
+  ])('Submission: $name', ({ name, questions, actions, expectedSubmit }) => {
+    it(`submits correct values for ${name}`, async () => {
+      const onSubmit = vi.fn();
+      const { stdin } = renderWithProviders(
+        <AskUserDialog
+          questions={questions}
+          onSubmit={onSubmit}
+          onCancel={vi.fn()}
+        />,
+      );
 
-    // Toggle Feature1 (Enter)
-    await writeKey(stdin, '\r');
+      actions(stdin);
 
-    // Move down to Feature2 (down arrow)
-    await writeKey(stdin, '\x1b[B');
-
-    // Toggle Feature2 (Enter)
-    await writeKey(stdin, '\r');
-
-    // Move down to custom option (down arrow)
-    await writeKey(stdin, '\x1b[B');
-
-    // Move down to Done
-    await writeKey(stdin, '\x1b[B');
-
-    // Press Enter on Done
-    await writeKey(stdin, '\r', 100);
-
-    expect(onSubmit).toHaveBeenCalledWith({ '0': 'Feature1, Feature2' });
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith(expectedSubmit);
+      });
+    });
   });
 
   it('handles custom option in single select with inline typing', async () => {
     const onSubmit = vi.fn();
     const { stdin, lastFrame } = renderWithProviders(
       <AskUserDialog
-        questions={questions}
+        questions={authQuestion}
         onSubmit={onSubmit}
         onCancel={vi.fn()}
       />,
     );
 
     // Move down to custom option
-    await writeKey(stdin, '\x1b[B');
-    await writeKey(stdin, '\x1b[B');
+    writeKey(stdin, '\x1b[B');
+    writeKey(stdin, '\x1b[B');
 
-    // Should show placeholder when custom option is focused
-    expect(lastFrame()).toContain('Enter a custom value');
+    await waitFor(() => {
+      expect(lastFrame()).toContain('Enter a custom value');
+    });
 
-    // Type directly (inline) - no need to press Enter first
-    for (const char of 'Custom Value') {
-      await writeKey(stdin, char, 10);
+    // Type directly (inline)
+    for (const char of 'API Key') {
+      writeKey(stdin, char);
     }
 
-    // Should show the typed text
-    expect(lastFrame()).toContain('Custom Value');
-
-    // Wait for state to settle
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await waitFor(() => {
+      expect(lastFrame()).toContain('API Key');
+    });
 
     // Press Enter to submit the custom value
-    await writeKey(stdin, '\r', 100);
+    writeKey(stdin, '\r');
 
-    expect(onSubmit).toHaveBeenCalledWith({ '0': 'Custom Value' });
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith({ '0': 'API Key' });
+    });
+  });
+
+  it('navigates to custom option when typing unbound characters (Type-to-Jump)', async () => {
+    const { stdin, lastFrame } = renderWithProviders(
+      <AskUserDialog
+        questions={authQuestion}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    // Type a character without navigating down
+    writeKey(stdin, 'A');
+
+    await waitFor(() => {
+      // Should show the custom input with 'A'
+      // Placeholder is hidden when text is present
+      expect(lastFrame()).toContain('A');
+      expect(lastFrame()).toContain('3.  A');
+    });
+
+    // Continue typing
+    writeKey(stdin, 'P');
+    writeKey(stdin, 'I');
+
+    await waitFor(() => {
+      expect(lastFrame()).toContain('API');
+    });
   });
 
   it('shows progress header for multiple questions', () => {
     const multiQuestions: Question[] = [
       {
-        question: 'Q1?',
-        header: 'First',
+        question: 'Which database should we use?',
+        header: 'Database',
         options: [
-          { label: 'Opt1', description: 'Desc1' },
-          { label: 'Opt2', description: 'Desc2' },
+          { label: 'PostgreSQL', description: 'Relational database' },
+          { label: 'MongoDB', description: 'Document database' },
         ],
         multiSelect: false,
       },
       {
-        question: 'Q2?',
-        header: 'Second',
+        question: 'Which ORM do you prefer?',
+        header: 'ORM',
         options: [
-          { label: 'Opt3', description: 'Desc3' },
-          { label: 'Opt4', description: 'Desc4' },
+          { label: 'Prisma', description: 'Type-safe ORM' },
+          { label: 'Drizzle', description: 'Lightweight ORM' },
         ],
         multiSelect: false,
       },
@@ -174,56 +208,47 @@ describe('AskUserDialog', () => {
       />,
     );
 
-    const output = lastFrame();
-    // Should show progress header with both question headers
-    expect(output).toContain('First');
-    expect(output).toContain('Second');
-    // Should show navigation arrows
-    expect(output).toContain('←');
-    expect(output).toContain('→');
+    expect(lastFrame()).toMatchSnapshot();
   });
 
   it('hides progress header for single question', () => {
     const { lastFrame } = renderWithProviders(
       <AskUserDialog
-        questions={questions}
+        questions={authQuestion}
         onSubmit={vi.fn()}
         onCancel={vi.fn()}
       />,
     );
 
-    const output = lastFrame();
-    // Should not show navigation arrows for single question
-    // (header may still appear in the question view itself)
-    expect(output).not.toMatch(/←.*□.*→/);
+    expect(lastFrame()).toMatchSnapshot();
   });
 
   it('shows keyboard hints', () => {
     const { lastFrame } = renderWithProviders(
       <AskUserDialog
-        questions={questions}
+        questions={authQuestion}
         onSubmit={vi.fn()}
         onCancel={vi.fn()}
       />,
     );
 
-    const output = lastFrame();
-    expect(output).toContain('Enter to select');
-    expect(output).toContain('Esc to cancel');
+    expect(lastFrame()).toMatchSnapshot();
   });
 
   it('navigates between questions with arrow keys', async () => {
     const multiQuestions: Question[] = [
       {
-        question: 'Q1?',
-        header: 'First',
-        options: [{ label: 'Opt1', description: 'Desc1' }],
+        question: 'Which testing framework?',
+        header: 'Testing',
+        options: [{ label: 'Vitest', description: 'Fast unit testing' }],
         multiSelect: false,
       },
       {
-        question: 'Q2?',
-        header: 'Second',
-        options: [{ label: 'Opt2', description: 'Desc2' }],
+        question: 'Which CI provider?',
+        header: 'CI',
+        options: [
+          { label: 'GitHub Actions', description: 'Built into GitHub' },
+        ],
         multiSelect: false,
       },
     ];
@@ -236,42 +261,33 @@ describe('AskUserDialog', () => {
       />,
     );
 
-    // Initially on Q1
-    expect(lastFrame()).toContain('Q1?');
+    expect(lastFrame()).toContain('Which testing framework?');
 
-    // Navigate to next question with right arrow
-    await writeKey(stdin, '\x1b[C'); // Right arrow escape sequence
+    writeKey(stdin, '\x1b[C'); // Right arrow
 
-    expect(lastFrame()).toContain('Q2?');
+    await waitFor(() => {
+      expect(lastFrame()).toContain('Which CI provider?');
+    });
 
-    // Navigate to Submit tab with right arrow
-    await writeKey(stdin, '\x1b[C'); // Right arrow escape sequence
+    writeKey(stdin, '\x1b[D'); // Left arrow
 
-    expect(lastFrame()).toContain('Review your answers');
-
-    // Navigate back to Q2 with left arrow
-    await writeKey(stdin, '\x1b[D'); // Left arrow escape sequence
-
-    expect(lastFrame()).toContain('Q2?');
-
-    // Navigate back to Q1 with left arrow
-    await writeKey(stdin, '\x1b[D'); // Left arrow escape sequence
-
-    expect(lastFrame()).toContain('Q1?');
+    await waitFor(() => {
+      expect(lastFrame()).toContain('Which testing framework?');
+    });
   });
 
   it('preserves answers when navigating back', async () => {
     const multiQuestions: Question[] = [
       {
-        question: 'Q1?',
-        header: 'First',
-        options: [{ label: 'Opt1', description: 'Desc1' }],
+        question: 'Which package manager?',
+        header: 'Package',
+        options: [{ label: 'pnpm', description: 'Fast, disk efficient' }],
         multiSelect: false,
       },
       {
-        question: 'Q2?',
-        header: 'Second',
-        options: [{ label: 'Opt2', description: 'Desc2' }],
+        question: 'Which bundler?',
+        header: 'Bundler',
+        options: [{ label: 'Vite', description: 'Next generation bundler' }],
         multiSelect: false,
       },
     ];
@@ -285,39 +301,188 @@ describe('AskUserDialog', () => {
       />,
     );
 
-    // Answer first question (should auto-advance to second)
-    await writeKey(stdin, '\r', 100);
+    // Answer first question (should auto-advance)
+    writeKey(stdin, '\r');
 
-    // Should be on Q2 now
-    expect(lastFrame()).toContain('Q2?');
+    await waitFor(() => {
+      expect(lastFrame()).toContain('Which bundler?');
+    });
 
-    // Navigate back to Q1
-    await writeKey(stdin, '\x1b[D'); // Left arrow
+    // Navigate back
+    writeKey(stdin, '\x1b[D');
 
-    // Should be on Q1
-    expect(lastFrame()).toContain('Q1?');
+    await waitFor(() => {
+      expect(lastFrame()).toContain('Which package manager?');
+    });
 
-    // Navigate forward again
-    await writeKey(stdin, '\x1b[C'); // Right arrow
+    // Navigate forward
+    writeKey(stdin, '\x1b[C');
+
+    await waitFor(() => {
+      expect(lastFrame()).toContain('Which bundler?');
+    });
 
     // Answer second question
-    await writeKey(stdin, '\r', 100);
+    writeKey(stdin, '\r');
 
-    // Should show Review Screen (Submit tab)
-    expect(lastFrame()).toContain('Review your answers');
+    await waitFor(() => {
+      expect(lastFrame()).toContain('Review your answers:');
+    });
 
-    // Move down to "Submit answers" (Q1, Q2, Submit -> 2 downs)
-    await writeKey(stdin, '\x1b[B');
-    await writeKey(stdin, '\x1b[B');
+    // Submit from Review
+    writeKey(stdin, '\r');
 
-    // Press Enter to submit
-    await writeKey(stdin, '\r', 100);
-
-    // Both answers should be submitted
-    expect(onSubmit).toHaveBeenCalledWith({ '0': 'Opt1', '1': 'Opt2' });
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith({ '0': 'pnpm', '1': 'Vite' });
+    });
   });
 
-  // Text-type question tests
+  it('shows Review tab in progress header for multiple questions', () => {
+    const multiQuestions: Question[] = [
+      {
+        question: 'Which framework?',
+        header: 'Framework',
+        options: [
+          { label: 'React', description: 'Component library' },
+          { label: 'Vue', description: 'Progressive framework' },
+        ],
+        multiSelect: false,
+      },
+      {
+        question: 'Which styling?',
+        header: 'Styling',
+        options: [
+          { label: 'Tailwind', description: 'Utility-first CSS' },
+          { label: 'CSS Modules', description: 'Scoped styles' },
+        ],
+        multiSelect: false,
+      },
+    ];
+
+    const { lastFrame } = renderWithProviders(
+      <AskUserDialog
+        questions={multiQuestions}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    expect(lastFrame()).toMatchSnapshot();
+  });
+
+  it('allows navigating to Review tab and back', async () => {
+    const multiQuestions: Question[] = [
+      {
+        question: 'Create tests?',
+        header: 'Tests',
+        options: [{ label: 'Yes', description: 'Generate test files' }],
+        multiSelect: false,
+      },
+      {
+        question: 'Add documentation?',
+        header: 'Docs',
+        options: [{ label: 'Yes', description: 'Generate JSDoc comments' }],
+        multiSelect: false,
+      },
+    ];
+
+    const { stdin, lastFrame } = renderWithProviders(
+      <AskUserDialog
+        questions={multiQuestions}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    writeKey(stdin, '\x1b[C'); // Right arrow
+
+    await waitFor(() => {
+      expect(lastFrame()).toContain('Add documentation?');
+    });
+
+    writeKey(stdin, '\x1b[C'); // Right arrow to Review
+
+    await waitFor(() => {
+      expect(lastFrame()).toMatchSnapshot();
+    });
+
+    writeKey(stdin, '\x1b[D'); // Left arrow back
+
+    await waitFor(() => {
+      expect(lastFrame()).toContain('Add documentation?');
+    });
+  });
+
+  it('shows warning for unanswered questions on Review tab', async () => {
+    const multiQuestions: Question[] = [
+      {
+        question: 'Which license?',
+        header: 'License',
+        options: [{ label: 'MIT', description: 'Permissive license' }],
+        multiSelect: false,
+      },
+      {
+        question: 'Include README?',
+        header: 'README',
+        options: [{ label: 'Yes', description: 'Generate README.md' }],
+        multiSelect: false,
+      },
+    ];
+
+    const { stdin, lastFrame } = renderWithProviders(
+      <AskUserDialog
+        questions={multiQuestions}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    // Navigate directly to Review tab without answering
+    writeKey(stdin, '\x1b[C');
+    writeKey(stdin, '\x1b[C');
+
+    await waitFor(() => {
+      expect(lastFrame()).toMatchSnapshot();
+    });
+  });
+
+  it('submits with unanswered questions when user confirms on Review', async () => {
+    const multiQuestions: Question[] = [
+      {
+        question: 'Target Node version?',
+        header: 'Node',
+        options: [{ label: 'Node 20', description: 'LTS version' }],
+        multiSelect: false,
+      },
+      {
+        question: 'Enable strict mode?',
+        header: 'Strict',
+        options: [{ label: 'Yes', description: 'Strict TypeScript' }],
+        multiSelect: false,
+      },
+    ];
+
+    const onSubmit = vi.fn();
+    const { stdin } = renderWithProviders(
+      <AskUserDialog
+        questions={multiQuestions}
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    // Answer only first question
+    writeKey(stdin, '\r');
+    // Navigate to Review tab
+    writeKey(stdin, '\x1b[C');
+    // Submit
+    writeKey(stdin, '\r');
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith({ '0': 'Node 20' });
+    });
+  });
+
   describe('Text type questions', () => {
     it('renders text input for type: "text"', () => {
       const textQuestion: Question[] = [
@@ -337,52 +502,14 @@ describe('AskUserDialog', () => {
         />,
       );
 
-      const output = lastFrame();
-      expect(output).toContain('What should we name this component?');
-      expect(output).toContain('e.g., UserProfileCard');
-      // Should show the prompt indicator
-      expect(output).toContain('>');
-      // Should NOT show option selection UI (checkboxes, numbered options)
-      expect(output).not.toContain('[');
-      expect(output).not.toContain('1.');
-    });
-
-    it('handles text input and submission for text type', async () => {
-      const textQuestion: Question[] = [
-        {
-          question: 'Enter a name:',
-          header: 'Name',
-          type: QuestionType.TEXT,
-        },
-      ];
-
-      const onSubmit = vi.fn();
-      const { stdin, lastFrame } = renderWithProviders(
-        <AskUserDialog
-          questions={textQuestion}
-          onSubmit={onSubmit}
-          onCancel={vi.fn()}
-        />,
-      );
-
-      // Type text
-      for (const char of 'MyComponent') {
-        await writeKey(stdin, char, 10);
-      }
-
-      expect(lastFrame()).toContain('MyComponent');
-
-      // Press Enter to submit
-      await writeKey(stdin, '\r', 100);
-
-      expect(onSubmit).toHaveBeenCalledWith({ '0': 'MyComponent' });
+      expect(lastFrame()).toMatchSnapshot();
     });
 
     it('shows default placeholder when none provided', () => {
       const textQuestion: Question[] = [
         {
-          question: 'Enter something:',
-          header: 'Input',
+          question: 'Enter the database connection string:',
+          header: 'Database',
           type: QuestionType.TEXT,
         },
       ];
@@ -395,14 +522,14 @@ describe('AskUserDialog', () => {
         />,
       );
 
-      expect(lastFrame()).toContain('Enter your response');
+      expect(lastFrame()).toMatchSnapshot();
     });
 
     it('supports backspace in text mode', async () => {
       const textQuestion: Question[] = [
         {
-          question: 'Enter name:',
-          header: 'Name',
+          question: 'Enter the function name:',
+          header: 'Function',
           type: QuestionType.TEXT,
         },
       ];
@@ -415,23 +542,27 @@ describe('AskUserDialog', () => {
         />,
       );
 
-      // Type "abc"
       for (const char of 'abc') {
-        await writeKey(stdin, char, 10);
+        writeKey(stdin, char);
       }
-      expect(lastFrame()).toContain('abc');
 
-      // Backspace
-      await writeKey(stdin, '\x7f'); // Backspace
-      expect(lastFrame()).toContain('ab');
-      expect(lastFrame()).not.toContain('abc');
+      await waitFor(() => {
+        expect(lastFrame()).toContain('abc');
+      });
+
+      writeKey(stdin, '\x7f'); // Backspace
+
+      await waitFor(() => {
+        expect(lastFrame()).toContain('ab');
+        expect(lastFrame()).not.toContain('abc');
+      });
     });
 
     it('shows correct keyboard hints for text type', () => {
       const textQuestion: Question[] = [
         {
-          question: 'Enter name:',
-          header: 'Name',
+          question: 'Enter the variable name:',
+          header: 'Variable',
           type: QuestionType.TEXT,
         },
       ];
@@ -444,26 +575,22 @@ describe('AskUserDialog', () => {
         />,
       );
 
-      const output = lastFrame();
-      expect(output).toContain('Enter to submit');
-      expect(output).toContain('Esc to cancel');
-      // Should NOT mention navigation since it's a single text question
-      expect(output).not.toContain('↑/↓');
+      expect(lastFrame()).toMatchSnapshot();
     });
 
     it('preserves text answer when navigating between questions', async () => {
       const mixedQuestions: Question[] = [
         {
-          question: 'What name?',
-          header: 'Name',
+          question: 'What should we name this hook?',
+          header: 'Hook',
           type: QuestionType.TEXT,
         },
         {
-          question: 'Which style?',
-          header: 'Style',
+          question: 'Should it be async?',
+          header: 'Async',
           options: [
-            { label: 'Modern', description: 'Modern style' },
-            { label: 'Classic', description: 'Classic style' },
+            { label: 'Yes', description: 'Use async/await' },
+            { label: 'No', description: 'Synchronous hook' },
           ],
           multiSelect: false,
         },
@@ -477,38 +604,37 @@ describe('AskUserDialog', () => {
         />,
       );
 
-      // Type in first question (text type)
-      for (const char of 'TestName') {
-        await writeKey(stdin, char, 10);
+      for (const char of 'useAuth') {
+        writeKey(stdin, char);
       }
 
-      // Navigate to second question
-      await writeKey(stdin, '\x1b[C'); // Right arrow
+      writeKey(stdin, '\t'); // Use Tab instead of Right arrow when text input is active
 
-      // Should be on choice question
-      expect(lastFrame()).toContain('Which style?');
+      await waitFor(() => {
+        expect(lastFrame()).toContain('Should it be async?');
+      });
 
-      // Navigate back
-      await writeKey(stdin, '\x1b[D'); // Left arrow
+      writeKey(stdin, '\x1b[D'); // Left arrow should work when NOT focusing a text input
 
-      // Answer should be preserved
-      expect(lastFrame()).toContain('TestName');
+      await waitFor(() => {
+        expect(lastFrame()).toContain('useAuth');
+      });
     });
 
     it('handles mixed text and choice questions', async () => {
       const mixedQuestions: Question[] = [
         {
-          question: 'What name?',
+          question: 'What should we name this component?',
           header: 'Name',
           type: QuestionType.TEXT,
-          placeholder: 'Enter name',
+          placeholder: 'Enter component name',
         },
         {
-          question: 'Which color?',
-          header: 'Color',
+          question: 'Which styling approach?',
+          header: 'Style',
           options: [
-            { label: 'Red', description: 'Red color' },
-            { label: 'Blue', description: 'Blue color' },
+            { label: 'CSS Modules', description: 'Scoped CSS' },
+            { label: 'Tailwind', description: 'Utility classes' },
           ],
           multiSelect: false,
         },
@@ -523,38 +649,41 @@ describe('AskUserDialog', () => {
         />,
       );
 
-      // Type text answer
-      for (const char of 'MyName') {
-        await writeKey(stdin, char, 10);
+      for (const char of 'DataTable') {
+        writeKey(stdin, char);
       }
 
-      // Press Enter to submit text and advance
-      await writeKey(stdin, '\r', 100);
+      writeKey(stdin, '\r');
 
-      // Should be on choice question
-      expect(lastFrame()).toContain('Which color?');
+      await waitFor(() => {
+        expect(lastFrame()).toContain('Which styling approach?');
+      });
 
-      // Select first option
-      await writeKey(stdin, '\r', 100);
+      writeKey(stdin, '\r');
 
-      // Should be on Review Screen (Submit tab)
-      expect(lastFrame()).toContain('Review your answers');
-      expect(lastFrame()).toContain('Name');
-      expect(lastFrame()).toContain('MyName');
-      expect(lastFrame()).toContain('Color');
-      expect(lastFrame()).toContain('Red');
+      await waitFor(() => {
+        expect(lastFrame()).toContain('Review your answers:');
+        expect(lastFrame()).toContain('Name');
+        expect(lastFrame()).toContain('DataTable');
+        expect(lastFrame()).toContain('Style');
+        expect(lastFrame()).toContain('CSS Modules');
+      });
 
-      // Submit from Review
-      await writeKey(stdin, '\r', 100);
+      writeKey(stdin, '\r');
 
-      expect(onSubmit).toHaveBeenCalledWith({ '0': 'MyName', '1': 'Red' });
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith({
+          '0': 'DataTable',
+          '1': 'CSS Modules',
+        });
+      });
     });
 
-    it('does not submit empty text', async () => {
+    it('does not submit empty text', () => {
       const textQuestion: Question[] = [
         {
-          question: 'Enter name:',
-          header: 'Name',
+          question: 'Enter the class name:',
+          header: 'Class',
           type: QuestionType.TEXT,
         },
       ];
@@ -568,11 +697,156 @@ describe('AskUserDialog', () => {
         />,
       );
 
-      // Press Enter without typing anything
-      await writeKey(stdin, '\r', 100);
+      writeKey(stdin, '\r');
 
-      // Should not have submitted
+      // onSubmit should not be called for empty text
       expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('clears text on Ctrl+C', async () => {
+      const textQuestion: Question[] = [
+        {
+          question: 'Enter the class name:',
+          header: 'Class',
+          type: QuestionType.TEXT,
+        },
+      ];
+
+      const onCancel = vi.fn();
+      const { stdin, lastFrame } = renderWithProviders(
+        <AskUserDialog
+          questions={textQuestion}
+          onSubmit={vi.fn()}
+          onCancel={onCancel}
+        />,
+      );
+
+      for (const char of 'SomeText') {
+        writeKey(stdin, char);
+      }
+
+      await waitFor(() => {
+        expect(lastFrame()).toContain('SomeText');
+      });
+
+      // Send Ctrl+C
+      writeKey(stdin, '\x03'); // Ctrl+C
+
+      await waitFor(() => {
+        // Text should be cleared
+        expect(lastFrame()).not.toContain('SomeText');
+        expect(lastFrame()).toContain('>');
+      });
+
+      // Should NOT call onCancel (dialog should stay open)
+      expect(onCancel).not.toHaveBeenCalled();
+    });
+
+    it('allows immediate arrow navigation after switching away from text input', async () => {
+      const multiQuestions: Question[] = [
+        {
+          question: 'Choice Q?',
+          header: 'Choice',
+          options: [{ label: 'Option 1', description: '' }],
+          multiSelect: false,
+        },
+        {
+          question: 'Text Q?',
+          header: 'Text',
+          type: QuestionType.TEXT,
+        },
+      ];
+
+      const { stdin, lastFrame } = renderWithProviders(
+        <AskUserDialog
+          questions={multiQuestions}
+          onSubmit={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      );
+
+      // 1. Move to Text Q (Right arrow works for Choice Q)
+      writeKey(stdin, '\x1b[C');
+      await waitFor(() => {
+        expect(lastFrame()).toContain('Text Q?');
+      });
+
+      // 2. Type something in Text Q to make isEditingCustomOption true
+      writeKey(stdin, 'a');
+      await waitFor(() => {
+        expect(lastFrame()).toContain('a');
+      });
+
+      // 3. Move back to Choice Q (Left arrow works because cursor is at left edge)
+      // When typing 'a', cursor is at index 1.
+      // We need to move cursor to index 0 first for Left arrow to work for navigation.
+      writeKey(stdin, '\x1b[D'); // Left arrow moves cursor to index 0
+      await waitFor(() => {
+        expect(lastFrame()).toContain('Text Q?');
+      });
+
+      writeKey(stdin, '\x1b[D'); // Second Left arrow should now trigger navigation
+      await waitFor(() => {
+        expect(lastFrame()).toContain('Choice Q?');
+      });
+
+      // 4. Immediately try Right arrow to go back to Text Q
+      writeKey(stdin, '\x1b[C');
+      await waitFor(() => {
+        expect(lastFrame()).toContain('Text Q?');
+      });
+    });
+
+    it('handles rapid sequential answers correctly (stale closure protection)', async () => {
+      const multiQuestions: Question[] = [
+        {
+          question: 'Question 1?',
+          header: 'Q1',
+          options: [{ label: 'A1', description: '' }],
+          multiSelect: false,
+        },
+        {
+          question: 'Question 2?',
+          header: 'Q2',
+          options: [{ label: 'A2', description: '' }],
+          multiSelect: false,
+        },
+      ];
+
+      const onSubmit = vi.fn();
+      const { stdin, lastFrame } = renderWithProviders(
+        <AskUserDialog
+          questions={multiQuestions}
+          onSubmit={onSubmit}
+          onCancel={vi.fn()}
+        />,
+      );
+
+      // Answer Q1 and Q2 sequentialy
+      act(() => {
+        stdin.write('\r'); // Select A1 for Q1 -> triggers autoAdvance
+      });
+      await waitFor(() => {
+        expect(lastFrame()).toContain('Question 2?');
+      });
+
+      act(() => {
+        stdin.write('\r'); // Select A2 for Q2 -> triggers autoAdvance to Review
+      });
+      await waitFor(() => {
+        expect(lastFrame()).toContain('Review your answers:');
+      });
+
+      act(() => {
+        stdin.write('\r'); // Submit from Review
+      });
+
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith({
+          '0': 'A1',
+          '1': 'A2',
+        });
+      });
     });
   });
 });

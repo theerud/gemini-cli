@@ -36,6 +36,7 @@ import {
   type HookDefinition,
   type HookEventName,
   type OutputFormat,
+  coreEvents,
   GEMINI_MODEL_ALIAS_AUTO,
 } from '@google/gemini-cli-core';
 import {
@@ -47,7 +48,6 @@ import {
 
 import { isSandboxCommand, loadSandboxConfig } from './sandboxConfig.js';
 import { resolvePath } from '../utils/resolvePath.js';
-import { appEvents } from '../utils/events.js';
 import { RESUME_LATEST } from '../utils/sessionUtils.js';
 
 import { isWorkspaceTrusted } from './trustedFolders.js';
@@ -503,7 +503,7 @@ export async function loadCliConfig(
     requestSetting: promptForSetting,
     workspaceDir: cwd,
     enabledExtensionOverrides: argv.extensions,
-    eventEmitter: appEvents as EventEmitter<ExtensionEvents>,
+    eventEmitter: coreEvents as EventEmitter<ExtensionEvents>,
     clientVersion: await getVersion(),
   });
   await extensionManager.loadExtensions();
@@ -538,9 +538,15 @@ export async function loadCliConfig(
 
   // Determine approval mode with backward compatibility
   let approvalMode: ApprovalMode;
-  if (argv.approvalMode) {
-    // New --approval-mode flag takes precedence
-    switch (argv.approvalMode) {
+  const rawApprovalMode =
+    argv.approvalMode ||
+    (argv.yolo ? 'yolo' : undefined) ||
+    ((settings.tools?.approvalMode as string) !== 'yolo'
+      ? settings.tools.approvalMode
+      : undefined);
+
+  if (rawApprovalMode) {
+    switch (rawApprovalMode) {
       case 'yolo':
         approvalMode = ApprovalMode.YOLO;
         break;
@@ -560,13 +566,11 @@ export async function loadCliConfig(
         break;
       default:
         throw new Error(
-          `Invalid approval mode: ${argv.approvalMode}. Valid values are: yolo, auto_edit, plan, default`,
+          `Invalid approval mode: ${rawApprovalMode}. Valid values are: yolo, auto_edit, plan, default`,
         );
     }
   } else {
-    // Fallback to legacy --yolo flag behavior
-    approvalMode =
-      argv.yolo || false ? ApprovalMode.YOLO : ApprovalMode.DEFAULT;
+    approvalMode = ApprovalMode.DEFAULT;
   }
 
   // Override approval mode if disableYoloMode is set.
@@ -808,7 +812,7 @@ export async function loadCliConfig(
     truncateToolOutputThreshold: settings.tools?.truncateToolOutputThreshold,
     truncateToolOutputLines: settings.tools?.truncateToolOutputLines,
     enableToolOutputTruncation: settings.tools?.enableToolOutputTruncation,
-    eventEmitter: appEvents,
+    eventEmitter: coreEvents,
     useWriteTodos: argv.useWriteTodos ?? settings.useWriteTodos,
     output: {
       format: (argv.outputFormat ?? settings.output?.format) as OutputFormat,

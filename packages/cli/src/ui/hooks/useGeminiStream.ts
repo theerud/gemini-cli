@@ -34,7 +34,6 @@ import {
   ValidationRequiredError,
   coreEvents,
   CoreEvent,
-  MCPDiscoveryState,
 } from '@google/gemini-cli-core';
 import type {
   Config,
@@ -502,6 +501,12 @@ export const useGeminiStream = (
 
         // Handle @-commands (which might involve tool calls)
         if (isAtCommand(trimmedQuery)) {
+          // Add user's turn before @ command processing for correct UI ordering.
+          addItem(
+            { type: MessageType.USER, text: trimmedQuery },
+            userMessageTimestamp,
+          );
+
           const atCommandResult = await handleAtCommand({
             query: trimmedQuery,
             config,
@@ -510,12 +515,6 @@ export const useGeminiStream = (
             messageId: userMessageTimestamp,
             signal: abortSignal,
           });
-
-          // Add user's turn after @ command processing is done.
-          addItem(
-            { type: MessageType.USER, text: trimmedQuery },
-            userMessageTimestamp,
-          );
 
           if (atCommandResult.error) {
             onDebugMessage(atCommandResult.error);
@@ -834,7 +833,12 @@ export const useGeminiStream = (
   );
 
   const handleAgentExecutionStoppedEvent = useCallback(
-    (reason: string, userMessageTimestamp: number, systemMessage?: string) => {
+    (
+      reason: string,
+      userMessageTimestamp: number,
+      systemMessage?: string,
+      contextCleared?: boolean,
+    ) => {
       if (pendingHistoryItemRef.current) {
         addItem(pendingHistoryItemRef.current, userMessageTimestamp);
         setPendingHistoryItem(null);
@@ -846,13 +850,27 @@ export const useGeminiStream = (
         },
         userMessageTimestamp,
       );
+      if (contextCleared) {
+        addItem(
+          {
+            type: MessageType.INFO,
+            text: 'Conversation context has been cleared.',
+          },
+          userMessageTimestamp,
+        );
+      }
       setIsResponding(false);
     },
     [addItem, pendingHistoryItemRef, setPendingHistoryItem, setIsResponding],
   );
 
   const handleAgentExecutionBlockedEvent = useCallback(
-    (reason: string, userMessageTimestamp: number, systemMessage?: string) => {
+    (
+      reason: string,
+      userMessageTimestamp: number,
+      systemMessage?: string,
+      contextCleared?: boolean,
+    ) => {
       if (pendingHistoryItemRef.current) {
         addItem(pendingHistoryItemRef.current, userMessageTimestamp);
         setPendingHistoryItem(null);
@@ -864,6 +882,15 @@ export const useGeminiStream = (
         },
         userMessageTimestamp,
       );
+      if (contextCleared) {
+        addItem(
+          {
+            type: MessageType.INFO,
+            text: 'Conversation context has been cleared.',
+          },
+          userMessageTimestamp,
+        );
+      }
     },
     [addItem, pendingHistoryItemRef, setPendingHistoryItem],
   );
@@ -904,6 +931,7 @@ export const useGeminiStream = (
               event.value.reason,
               userMessageTimestamp,
               event.value.systemMessage,
+              event.value.contextCleared,
             );
             break;
           case ServerGeminiEventType.AgentExecutionBlocked:
@@ -911,6 +939,7 @@ export const useGeminiStream = (
               event.value.reason,
               userMessageTimestamp,
               event.value.systemMessage,
+              event.value.contextCleared,
             );
             break;
           case ServerGeminiEventType.ChatCompressed:
@@ -991,25 +1020,6 @@ export const useGeminiStream = (
         { name: 'submitQuery' },
         async ({ metadata: spanMetadata }) => {
           spanMetadata.input = query;
-
-          const discoveryState = config
-            .getMcpClientManager()
-            ?.getDiscoveryState();
-          const mcpServerCount =
-            config.getMcpClientManager()?.getMcpServerCount() ?? 0;
-          if (
-            !options?.isContinuation &&
-            typeof query === 'string' &&
-            !isSlashCommand(query.trim()) &&
-            mcpServerCount > 0 &&
-            discoveryState !== MCPDiscoveryState.COMPLETED
-          ) {
-            coreEvents.emitFeedback(
-              'info',
-              'Waiting for MCP servers to initialize... Slash commands are still available.',
-            );
-            return;
-          }
 
           const queryId = `${Date.now()}-${Math.random()}`;
           activeQueryIdRef.current = queryId;
