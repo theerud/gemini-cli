@@ -64,6 +64,23 @@ export function useAskUser(config: Config) {
     [config, request],
   );
 
+  const handleCancel = useCallback(async () => {
+    if (!request) return;
+
+    const messageBus = config.getMessageBus();
+    if (!messageBus) return;
+
+    const response: AskUserResponse = {
+      type: MessageBusType.ASK_USER_RESPONSE,
+      correlationId: request.correlationId,
+      answers: {},
+      cancelled: true,
+    };
+
+    await messageBus.publish(response);
+    setRequest(null);
+  }, [config, request]);
+
   const clearRequest = useCallback(() => {
     setRequest(null);
   }, []);
@@ -71,6 +88,7 @@ export function useAskUser(config: Config) {
   return {
     request,
     handleSubmit,
+    handleCancel,
     clearRequest,
   };
 }
