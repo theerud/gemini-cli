@@ -66,6 +66,8 @@ import {
   SessionEndReason,
   generateSummary,
   ASK_USER_TOOL_NAME,
+  type AgentsDiscoveredPayload,
+  ChangeAuthRequestedError,
 } from '@google/gemini-cli-core';
 import { validateAuthMethod } from '../config/auth.js';
 import process from 'node:process';
@@ -136,6 +138,7 @@ import {
 } from './constants.js';
 import { LoginWithGoogleRestartDialog } from './auth/LoginWithGoogleRestartDialog.js';
 import { useAskUser } from './hooks/useAskUser.js';
+import { NewAgentsChoice } from './components/NewAgentsNotification.js';
 import { isSlashCommand } from './utils/commandUtils.js';
 
 function isToolExecuting(pendingHistoryItems: HistoryItemWithoutId[]) {
@@ -220,6 +223,8 @@ export const AppContainer = (props: AppContainerProps) => {
   const [queueErrorMessage, setQueueErrorMessage] = useState<string | null>(
     null,
   );
+
+  const [newAgents, setNewAgents] = useState<AgentDefinition[] | null>(null);
 
   const [defaultBannerText, setDefaultBannerText] = useState('');
   const [warningBannerText, setWarningBannerText] = useState('');
@@ -424,14 +429,20 @@ export const AppContainer = (props: AppContainerProps) => {
       setAdminSettingsChanged(true);
     };
 
+    const handleAgentsDiscovered = (payload: AgentsDiscoveredPayload) => {
+      setNewAgents(payload.agents);
+    };
+
     coreEvents.on(CoreEvent.SettingsChanged, handleSettingsChanged);
     coreEvents.on(CoreEvent.AdminSettingsChanged, handleAdminSettingsChanged);
+    coreEvents.on(CoreEvent.AgentsDiscovered, handleAgentsDiscovered);
     return () => {
       coreEvents.off(CoreEvent.SettingsChanged, handleSettingsChanged);
       coreEvents.off(
         CoreEvent.AdminSettingsChanged,
         handleAdminSettingsChanged,
       );
+      coreEvents.off(CoreEvent.AgentsDiscovered, handleAgentsDiscovered);
     };
   }, []);
 
@@ -538,7 +549,7 @@ export const AppContainer = (props: AppContainerProps) => {
     onAuthError,
     apiKeyDefaultValue,
     reloadApiKey,
-  } = useAuthCommand(settings, config);
+  } = useAuthCommand(settings, config, initializationResult.authError);
   const [authContext, setAuthContext] = useState<{ requiresRestart?: boolean }>(
     {},
   );
@@ -560,6 +571,7 @@ export const AppContainer = (props: AppContainerProps) => {
     historyManager,
     userTier,
     setModelSwitchedFromQuotaError,
+    onShowAuthSelection: () => setAuthState(AuthState.Updating),
   });
 
   // Derive auth state variables for backward compatibility with UIStateContext
@@ -569,7 +581,7 @@ export const AppContainer = (props: AppContainerProps) => {
   // Session browser and resume functionality
   const isGeminiClientInitialized = config.getGeminiClient()?.isInitialized();
 
-  const { loadHistoryForResume } = useSessionResume({
+  const { loadHistoryForResume, isResuming } = useSessionResume({
     config,
     historyManager,
     refreshStatic,
@@ -609,6 +621,9 @@ export const AppContainer = (props: AppContainerProps) => {
           await config.refreshAuth(authType);
           setAuthState(AuthState.Authenticated);
         } catch (e) {
+          if (e instanceof ChangeAuthRequestedError) {
+            return;
+          }
           onAuthError(
             `Failed to authenticate: ${e instanceof Error ? e.message : String(e)}`,
           );
@@ -1035,6 +1050,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
     isConfigInitialized &&
     !initError &&
     !isProcessing &&
+    !isResuming &&
     !!slashCommands &&
     (streamingState === StreamingState.Idle ||
       streamingState === StreamingState.Responding) &&
@@ -1587,8 +1603,8 @@ Logging in with Google... Restarting Gemini CLI to continue.
     !!proQuotaRequest ||
     !!validationRequest ||
     isSessionBrowserOpen ||
-    isAuthDialogOpen ||
-    authState === AuthState.AwaitingApiKeyInput;
+    authState === AuthState.AwaitingApiKeyInput ||
+    !!newAgents;
 
   const pendingHistoryItems = useMemo(() => {
     const items = [
@@ -1724,6 +1740,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       inputWidth,
       suggestionsWidth,
       isInputActive,
+      isResuming,
       shouldShowIdePrompt,
       isFolderTrustDialogOpen: isFolderTrustDialogOpen ?? false,
       isTrustedFolder,
@@ -1781,6 +1798,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       settingsNonce,
       askUserRequest,
       adminSettingsChanged,
+      newAgents,
     }),
     [
       isThemeDialogOpen,
@@ -1822,6 +1840,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       inputWidth,
       suggestionsWidth,
       isInputActive,
+      isResuming,
       shouldShowIdePrompt,
       isFolderTrustDialogOpen,
       isTrustedFolder,
@@ -1882,6 +1901,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       settingsNonce,
       askUserRequest,
       adminSettingsChanged,
+      newAgents,
     ],
   );
 
@@ -1936,6 +1956,26 @@ Logging in with Google... Restarting Gemini CLI to continue.
         await runExitCleanup();
         process.exit(RELAUNCH_EXIT_CODE);
       },
+      handleNewAgentsSelect: async (choice: NewAgentsChoice) => {
+        if (newAgents && choice === NewAgentsChoice.ACKNOWLEDGE) {
+          const registry = config.getAgentRegistry();
+          try {
+            await Promise.all(
+              newAgents.map((agent) => registry.acknowledgeAgent(agent)),
+            );
+          } catch (error) {
+            debugLogger.error('Failed to acknowledge agents:', error);
+            historyManager.addItem(
+              {
+                type: MessageType.ERROR,
+                text: `Failed to acknowledge agents: ${getErrorMessage(error)}`,
+              },
+              Date.now(),
+            );
+          }
+        }
+        setNewAgents(null);
+      },
     }),
     [
       handleThemeSelect,
@@ -1978,6 +2018,9 @@ Logging in with Google... Restarting Gemini CLI to continue.
       setAuthContext,
       handleAskUserSubmit,
       clearAskUserRequest,
+      newAgents,
+      config,
+      historyManager,
     ],
   );
 
