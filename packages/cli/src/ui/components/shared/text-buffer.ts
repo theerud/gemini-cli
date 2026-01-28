@@ -2943,6 +2943,13 @@ export function useTextBuffer({
         return true;
       }
       if (keyMatchers[Command.DELETE_CHAR_RIGHT](key)) {
+        const lastLineIdx = lines.length - 1;
+        if (
+          cursorRow === lastLineIdx &&
+          cursorCol === cpLen(lines[lastLineIdx] ?? '')
+        ) {
+          return false;
+        }
         del();
         return true;
       }

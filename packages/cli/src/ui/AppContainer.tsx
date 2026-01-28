@@ -1308,7 +1308,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
   useEffect(() => {
     if (ctrlDTimerRef.current) {
       clearTimeout(ctrlDTimerRef.current);
-      ctrlCTimerRef.current = null;
+      ctrlDTimerRef.current = null;
     }
     if (ctrlDPressCount > 2) {
       recordExitFail(config);

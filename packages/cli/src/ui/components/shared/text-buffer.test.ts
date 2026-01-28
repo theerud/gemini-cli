@@ -1515,6 +1515,62 @@ describe('useTextBuffer', () => {
       expect(getBufferState(result).text).toBe('');
     });
 
+    it('should return false for Ctrl+D when at the end of the buffer', () => {
+      const { result } = renderHook(() =>
+        useTextBuffer({ viewport, isValidPath: () => false }),
+      );
+
+      // Buffer is empty
+      let handled: boolean | void = undefined;
+      act(() => {
+        handled = result.current.handleInput({
+          name: 'd',
+          shift: false,
+          alt: false,
+          ctrl: true,
+          cmd: false,
+          insertable: false,
+          sequence: '\x04',
+        });
+      });
+      expect(handled).toBe(false);
+
+      // Add some text
+      act(() => result.current.setText('hello'));
+      act(() => result.current.moveToOffset(5)); // End of text
+
+      let handledAtEnd: boolean | void = undefined;
+      act(() => {
+        handledAtEnd = result.current.handleInput({
+          name: 'd',
+          shift: false,
+          alt: false,
+          ctrl: true,
+          cmd: false,
+          insertable: false,
+          sequence: '\x04',
+        });
+      });
+      expect(handledAtEnd).toBe(false);
+
+      // Move to middle of text
+      act(() => result.current.moveToOffset(2));
+      let handledInMiddle: boolean | void = undefined;
+      act(() => {
+        handledInMiddle = result.current.handleInput({
+          name: 'd',
+          shift: false,
+          alt: false,
+          ctrl: true,
+          cmd: false,
+          insertable: false,
+          sequence: '\x04',
+        });
+      });
+      expect(handledInMiddle).toBe(true);
+      expect(getBufferState(result).text).toBe('helo');
+    });
+
     it('should handle "Backspace" key', () => {
       const { result } = renderHook(() =>
         useTextBuffer({

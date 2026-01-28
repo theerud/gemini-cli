@@ -32,7 +32,7 @@ export function useApprovalModeIndicator({
   }, [currentConfigValue]);
 
   useKeypress(
-    async (key) => {
+    (key) => {
       let nextApprovalMode: ApprovalMode | undefined;
 
       if (keyMatchers[Command.TOGGLE_YOLO](key)) {
