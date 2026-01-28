@@ -11,6 +11,7 @@ import {
   GLOB_TOOL_NAME,
   GREP_TOOL_NAME,
   MEMORY_TOOL_NAME,
+  READ_FILE_TOOL_NAME,
   SHELL_TOOL_NAME,
   WRITE_FILE_TOOL_NAME,
   WRITE_TODOS_TOOL_NAME,
@@ -354,7 +355,8 @@ ${options.planModeToolsList}
 
 ### Phase 1: Requirements Understanding
 - Analyze the user's request to identify core requirements and constraints
-- If critical information is missing or ambiguous, ask ONE clarifying question at a time
+- If critical information is missing or ambiguous, ask clarifying questions using the \`${ASK_USER_TOOL_NAME}\` tool
+- When using \`${ASK_USER_TOOL_NAME}\`, prefer providing multiple-choice options for the user to select from when possible
 - Do NOT explore the project or create a plan yet
 
 ### Phase 2: Project Exploration
@@ -383,8 +385,8 @@ ${options.planModeToolsList}
 
 function mandateConfirm(interactive: boolean): string {
   return interactive
-    ? "**Confirm Ambiguity/Expansion:** Do not take significant actions beyond the clear scope of the request without confirming with the user. If asked *how* to do something, explain first, don't just do it."
-    : '**Handle Ambiguity/Expansion:** Do not take significant actions beyond the clear scope of the request.';
+    ? "**Confirm Ambiguity/Expansion:** Do not take significant actions beyond the clear scope of the request without confirming with the user. If the user implies a change (e.g., reports a bug) without explicitly asking for a fix, **ask for confirmation first**. If asked *how* to do something, explain first, don't just do it."
+    : '**Handle Ambiguity/Expansion:** Do not take significant actions beyond the clear scope of the request. If the user implies a change (e.g., reports a bug) without explicitly asking for a fix, do not perform it automatically.';
 }
 
 function mandateSkillGuidance(hasSkills: boolean): string {
@@ -406,20 +408,11 @@ function mandateContinueWork(interactive: boolean): string {
 }
 
 function workflowStepUnderstand(options: PrimaryWorkflowsOptions): string {
-  const common = `
-   - **Safety Directive:** During this phase, you are restricted to **read-only tools**. Do NOT use state-changing tools (write, edit, shell) until user intent is confirmed and a plan is proposed.
-   - **Parallel Exploration (CRITICAL):** ALWAYS call multiple read-only tools in a SINGLE response to speed up research.
-     ✅ glob("**/*.ts") + ${GREP_TOOL_NAME}("auth") + read_file("auth.ts")
-     ❌ Sequential calls across multiple turns.
-   - **Search:** Use '${GREP_TOOL_NAME}' and '${GLOB_TOOL_NAME}' extensively (in parallel if independent) to understand file structures and patterns.
-   - **Context Gathering:** **Treat the User as a primary source of context. For high-level requests or when significant product context is missing, use '${ASK_USER_TOOL_NAME}' to structuredly "interview" the user.**`;
-
   if (options.enableCodebaseInvestigator) {
-    return `1. **Understand & Strategize:** Think about the user's request and the relevant codebase context.${common}
-   - **Strategize:** When the task involves **complex refactoring, codebase exploration or system-wide analysis**, your **first and primary action** must be to delegate to the 'codebase_investigator' agent using the 'codebase_investigator' tool. Use it to build a comprehensive understanding of the code, its structure, and dependencies. For **simple, targeted searches**, you should use '${GREP_TOOL_NAME}' or '${GLOB_TOOL_NAME}' directly.`;
+    return `1. **Understand & Strategize:** Think about the user's request and the relevant codebase context. When the task involves **complex refactoring, code base exploration or system-wide analysis**, your **first and primary action** must be to delegate to the 'codebase_investigator' agent using the 'codebase_investigator' tool. Use it to build a comprehensive understanding of the code, its structure, and dependencies. For **simple, targeted searches** (like finding a specific function name, file path, or variable declaration), you should use '${GREP_TOOL_NAME}' or '${GLOB_TOOL_NAME}' directly.`;
   }
-  return `1. **Understand:** Think about the user's request and the relevant codebase context.${common}
-   - **Detect Intent:** Determine if the user wants an investigation, an explanation, or a code modification.`;
+  return `1. **Understand:** Think about the user's request and the relevant codebase context. Use '${GREP_TOOL_NAME}' and '${GLOB_TOOL_NAME}' search tools extensively (in parallel if independent) to understand file structures, existing code patterns, and conventions.
+Use '${READ_FILE_TOOL_NAME}' to understand context and validate any assumptions you may have. If you need to read multiple files, you should make multiple parallel calls to '${READ_FILE_TOOL_NAME}'.`;
 }
 
 function workflowStepPlan(options: PrimaryWorkflowsOptions): string {
