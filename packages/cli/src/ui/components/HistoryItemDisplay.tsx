@@ -142,6 +142,8 @@ export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
           isFocused={isFocused}
           activeShellPtyId={activeShellPtyId}
           embeddedShellFocused={embeddedShellFocused}
+          borderTop={itemForDisplay.borderTop}
+          borderBottom={itemForDisplay.borderBottom}
         />
       )}
       {itemForDisplay.type === 'compression' && (

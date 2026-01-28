@@ -15,6 +15,9 @@ import { ToolConfirmationMessage } from './ToolConfirmationMessage.js';
 import { theme } from '../../semantic-colors.js';
 import { useConfig } from '../../contexts/ConfigContext.js';
 import { isShellTool, isThisShellFocused } from './ToolShared.js';
+import { ASK_USER_DISPLAY_NAME } from '@google/gemini-cli-core';
+import { ShowMoreLines } from '../ShowMoreLines.js';
+import { useUIState } from '../../contexts/UIStateContext.js';
 
 interface ToolGroupMessageProps {
   groupId: number;
@@ -25,21 +28,41 @@ interface ToolGroupMessageProps {
   activeShellPtyId?: number | null;
   embeddedShellFocused?: boolean;
   onShellInputSubmit?: (input: string) => void;
+  borderTop?: boolean;
+  borderBottom?: boolean;
 }
 
 // Bullet character for parallel tool visualization
 const PARALLEL_BULLET = '•';
 
+// Helper to identify Ask User tools that are in progress (have their own dialog UI)
+const isAskUserInProgress = (t: IndividualToolCallDisplay): boolean =>
+  t.name === ASK_USER_DISPLAY_NAME &&
+  [
+    ToolCallStatus.Pending,
+    ToolCallStatus.Executing,
+    ToolCallStatus.Confirming,
+  ].includes(t.status);
+
 // Main component renders the border and maps the tools using ToolMessage
 export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
-  toolCalls,
+  toolCalls: allToolCalls,
   availableTerminalHeight,
   terminalWidth,
   isFocused = true,
   activeShellPtyId,
   embeddedShellFocused,
+  borderTop: borderTopOverride,
+  borderBottom: borderBottomOverride,
 }) => {
+  // Filter out in-progress Ask User tools (they have their own AskUserDialog UI)
+  const toolCalls = useMemo(
+    () => allToolCalls.filter((t) => !isAskUserInProgress(t)),
+    [allToolCalls],
+  );
+
   const config = useConfig();
+  const { constrainHeight } = useUIState();
 
   const isEventDriven = config.isEventDrivenSchedulerEnabled();
 
@@ -103,8 +126,12 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
   );
 
   // If all tools are hidden (e.g. group only contains confirming or pending tools),
-  // render nothing in the history log.
-  if (visibleToolCalls.length === 0) {
+  // render nothing in the history log unless we have a border override.
+  if (
+    visibleToolCalls.length === 0 &&
+    borderTopOverride === undefined &&
+    borderBottomOverride === undefined
+  ) {
     return null;
   }
 
@@ -174,7 +201,10 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
             : toolAwaitingApproval
               ? ('low' as const)
               : ('medium' as const),
-          isFirst,
+          isFirst:
+            borderTopOverride !== undefined
+              ? borderTopOverride && isFirst
+              : isFirst,
           borderColor,
           borderDimColor,
           treeConnector,
@@ -239,20 +269,25 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
               We have to keep the bottom border separate so it doesn't get
               drawn over by the sticky header directly inside it.
              */
-        visibleToolCalls.length > 0 && (
+        (visibleToolCalls.length > 0 || borderBottomOverride !== undefined) && (
           <Box
             height={0}
             width={terminalWidth}
             borderLeft={true}
             borderRight={true}
             borderTop={false}
-            borderBottom={true}
+            borderBottom={borderBottomOverride ?? true}
             borderColor={borderColor}
             borderDimColor={borderDimColor}
             borderStyle="round"
           />
         )
       }
+      {(borderBottomOverride ?? true) && visibleToolCalls.length > 0 && (
+        <Box paddingX={1}>
+          <ShowMoreLines constrainHeight={constrainHeight} />
+        </Box>
+      )}
     </Box>
   );
 };
