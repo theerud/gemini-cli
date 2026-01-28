@@ -314,6 +314,22 @@ export function renderUserMemory(memory?: string): string {
   return `\n---\n\n${memory.trim()}`;
 }
 
+/**
+ * Returns the text for the Plan Mode reminder.
+ */
+export function renderPlanModeReminder(): string {
+  return `
+Plan Mode is active. You are in **read-only planning mode**. You **CANNOT** create, edit, or delete any files or execute shell commands that modify state.
+`.trim();
+}
+
+/**
+ * Wraps text in a system reminder XML block.
+ */
+export function wrapSystemReminder(text: string): string {
+  return `\n\n<system_reminder>\n${text}\n</system_reminder>`;
+}
+
 export function renderApprovalModePlan(
   options?: ApprovalModePlanOptions,
 ): string {

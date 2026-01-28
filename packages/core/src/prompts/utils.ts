@@ -9,6 +9,9 @@ import process from 'node:process';
 import { homedir } from '../utils/paths.js';
 import { debugLogger } from '../utils/debugLogger.js';
 import type { Config } from '../config/config.js';
+import { ApprovalMode } from '../policy/types.js';
+import type { PartListUnion } from '@google/genai';
+import * as snippets from './snippets.js';
 
 export type ResolvedPath = {
   isSwitch: boolean;
@@ -98,4 +101,49 @@ export function isSectionEnabled(key: string): boolean {
   const envVar = process.env[`GEMINI_PROMPT_${key.toUpperCase()}`];
   const lowerEnvVar = envVar?.trim().toLowerCase();
   return lowerEnvVar !== '0' && lowerEnvVar !== 'false';
+}
+
+/**
+ * Appends system-level reminders (like Plan Mode guardrails) to the user's message.
+ * Reminders are wrapped in <system_reminder> XML tags.
+ */
+export function applySystemReminders(
+  config: Config,
+  message: PartListUnion,
+): PartListUnion {
+  let reminders = '';
+
+  if (config.getApprovalMode?.() === ApprovalMode.PLAN) {
+    reminders += snippets.wrapSystemReminder(snippets.renderPlanModeReminder());
+  }
+
+  if (!reminders) {
+    return message;
+  }
+
+  if (typeof message === 'string') {
+    return message + reminders;
+  }
+
+  if (Array.isArray(message)) {
+    const result = [...message];
+    const lastPart = result[result.length - 1];
+
+    if (
+      lastPart &&
+      typeof lastPart === 'object' &&
+      'text' in lastPart &&
+      typeof lastPart.text === 'string'
+    ) {
+      result[result.length - 1] = {
+        ...lastPart,
+        text: lastPart.text + reminders,
+      };
+    } else {
+      result.push({ text: reminders });
+    }
+    return result;
+  }
+
+  return message;
 }

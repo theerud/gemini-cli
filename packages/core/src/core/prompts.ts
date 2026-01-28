@@ -8,10 +8,6 @@ import type { Config } from '../config/config.js';
 import { PromptProvider } from '../prompts/promptProvider.js';
 import { resolvePathFromEnv as resolvePathFromEnvImpl } from '../prompts/utils.js';
 
-export const PLAN_MODE_REMINDER = `
-Plan Mode is active. You are in **read-only planning mode**. You **CANNOT** create, edit, or delete any files or execute shell commands that modify state.
-`.trim();
-
 /**
  * Resolves a path or switch value from an environment variable.
  * @deprecated Use resolvePathFromEnv from @google/gemini-cli-core/prompts/utils instead.

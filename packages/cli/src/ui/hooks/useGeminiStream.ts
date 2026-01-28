@@ -26,7 +26,6 @@ import {
   runInDevTraceSpan,
   EDIT_TOOL_NAMES,
   processRestorableToolCalls,
-  PLAN_MODE_REMINDER,
   recordToolCallInteractions,
   ToolErrorType,
   PRESENT_PLAN_TOOL_NAME,
@@ -696,25 +695,6 @@ export const useGeminiStream = (
           'Query processing resulted in null, not sending to Gemini.',
         );
         return { queryToSend: null, shouldProceed: false };
-      }
-
-      if (config.getApprovalMode() === ApprovalMode.PLAN) {
-        const reminder = `\n\n<system_reminder>\n${PLAN_MODE_REMINDER}\n</system_reminder>`;
-        if (typeof localQueryToSendToGemini === 'string') {
-          localQueryToSendToGemini += reminder;
-        } else if (Array.isArray(localQueryToSendToGemini)) {
-          const firstPart = localQueryToSendToGemini[0];
-          if (
-            typeof firstPart === 'object' &&
-            firstPart !== null &&
-            'text' in firstPart &&
-            typeof firstPart.text === 'string'
-          ) {
-            firstPart.text += reminder;
-          } else {
-            localQueryToSendToGemini.push({ text: reminder });
-          }
-        }
       }
 
       return { queryToSend: localQueryToSendToGemini, shouldProceed: true };

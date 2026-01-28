@@ -34,7 +34,6 @@ import {
   ToolConfirmationOutcome,
   tokenLimit,
   debugLogger,
-  PLAN_MODE_REMINDER,
   coreEvents,
   CoreEvent,
   MCPDiscoveryState,
@@ -50,7 +49,6 @@ const mockSendMessageStream = vi
   .fn()
   .mockReturnValue((async function* () {})());
 const mockStartChat = vi.fn();
-let mockGetApprovalMode: Mock; // Declare outside beforeEach
 
 const MockedGeminiClientClass = vi.hoisted(() =>
   vi.fn().mockImplementation(function (this: any, _config: any) {
@@ -3120,38 +3118,6 @@ describe('useGeminiStream', () => {
         expect(result.current.loopDetectionConfirmationRequest).not.toBeNull();
       });
     });
-  });
-
-  it('should inject plan mode reminder into user query when in PLAN mode', async () => {
-    // 1. Setup
-    const testQuery = 'My plan request.';
-    const mockGeminiClient = new MockedGeminiClientClass(mockConfig);
-    mockGetApprovalMode.mockReturnValue(ApprovalMode.PLAN);
-
-    let capturedQuery: PartListUnion | undefined;
-    mockSendMessageStream.mockImplementation(async (query: PartListUnion) => {
-      capturedQuery = query;
-      return (async function* () {})() as AsyncGenerator<any>;
-    });
-
-    const { result } = renderHookWithDefaults({
-      geminiClient: mockGeminiClient,
-    });
-
-    // 2. Action
-    await act(async () => {
-      await result.current.submitQuery(testQuery);
-    });
-
-    // 3. Assertion
-    await waitFor(() => {
-      expect(mockSendMessageStream).toHaveBeenCalledTimes(1);
-    });
-
-    // Expect the original query + the reminder
-    const expectedQueryContent = `${testQuery}\n\n<system_reminder>\n${PLAN_MODE_REMINDER}\n</system_reminder>`;
-
-    expect(capturedQuery).toEqual(expectedQueryContent);
   });
 
   describe('Agent Execution Events', () => {

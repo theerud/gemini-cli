@@ -51,6 +51,7 @@ import {
   createAvailabilityContextProvider,
 } from '../availability/policyHelpers.js';
 import { coreEvents } from '../utils/events.js';
+import { applySystemReminders } from '../prompts/utils.js';
 
 export enum StreamEventType {
   /** A regular content chunk from the API. */
@@ -295,13 +296,12 @@ export class GeminiChat {
     });
     this.sendPromise = streamDonePromise;
 
-    const userContent = createUserContent(message);
     const { model } =
       this.config.modelConfigService.getResolvedConfig(modelConfigKey);
 
     // Record user input - capture complete message with all parts (text, files, images, etc.)
     // but skip recording function responses (tool call results) as they should be stored in tool call records
-    if (!isFunctionResponse(userContent)) {
+    if (!isFunctionResponse(createUserContent(message))) {
       const userMessage = Array.isArray(message) ? message : [message];
       const userMessageContent = partListUnionToString(toParts(userMessage));
       this.chatRecordingService.recordMessage({
@@ -310,6 +310,10 @@ export class GeminiChat {
         content: userMessageContent,
       });
     }
+
+    // Apply safety reminders (e.g. Plan Mode) before sending to the model.
+    const messageWithReminders = applySystemReminders(this.config, message);
+    const userContent = createUserContent(messageWithReminders);
 
     // Add user content to history ONCE before any attempts.
     this.history.push(userContent);

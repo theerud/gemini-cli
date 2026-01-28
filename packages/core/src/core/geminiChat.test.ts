@@ -15,6 +15,7 @@ import {
   SYNTHETIC_THOUGHT_SIGNATURE,
   type StreamEvent,
 } from './geminiChat.js';
+import { ApprovalMode } from '../policy/types.js';
 import type { Config } from '../config/config.js';
 import { setSimulate429 } from '../utils/testUtils.js';
 import { DEFAULT_THINKING_MODE } from '../config/models.js';
@@ -216,6 +217,83 @@ describe('GeminiChat', () => {
     it('should initialize lastPromptTokenCount for empty history', () => {
       const chatEmpty = new GeminiChat(mockConfig);
       expect(chatEmpty.getLastPromptTokenCount()).toBe(0);
+    });
+  });
+
+  describe('System Reminders', () => {
+    it('should inject PLAN_MODE_REMINDER when ApprovalMode is PLAN', async () => {
+      mockConfig.getApprovalMode = vi.fn().mockReturnValue(ApprovalMode.PLAN);
+      const chatInstance = new GeminiChat(mockConfig);
+
+      const streamGenerator = (async function* () {
+        yield {
+          candidates: [
+            {
+              content: { parts: [{ text: 'response' }] },
+              finishReason: 'STOP',
+            },
+          ],
+        };
+      })();
+      mockRetryWithBackoff.mockResolvedValue(streamGenerator);
+
+      const message = 'test query';
+      const generator = await chatInstance.sendMessageStream(
+        { model: 'test-model' },
+        message,
+        'prompt-id',
+        new AbortController().signal,
+      );
+
+      // Drain the generator
+      for await (const _ of generator) {
+        // ignore
+      }
+
+      // Check the history - the last user message should have the reminder
+      const history = chatInstance.getHistory();
+      const lastUserMessage = history.findLast((c) => c.role === 'user');
+      expect(lastUserMessage?.parts?.[0].text).toContain(message);
+      expect(lastUserMessage?.parts?.[0].text).toContain('<system_reminder>');
+      expect(lastUserMessage?.parts?.[0].text).toContain('Plan Mode is active');
+    });
+
+    it('should NOT inject PLAN_MODE_REMINDER when ApprovalMode is NOT PLAN', async () => {
+      mockConfig.getApprovalMode = vi
+        .fn()
+        .mockReturnValue(ApprovalMode.DEFAULT);
+      const chatInstance = new GeminiChat(mockConfig);
+
+      const streamGenerator = (async function* () {
+        yield {
+          candidates: [
+            {
+              content: { parts: [{ text: 'response' }] },
+              finishReason: 'STOP',
+            },
+          ],
+        };
+      })();
+      mockRetryWithBackoff.mockResolvedValue(streamGenerator);
+
+      const message = 'test query';
+      const generator = await chatInstance.sendMessageStream(
+        { model: 'test-model' },
+        message,
+        'prompt-id',
+        new AbortController().signal,
+      );
+
+      for await (const _ of generator) {
+        // ignore
+      }
+
+      const history = chatInstance.getHistory();
+      const lastUserMessage = history.findLast((c) => c.role === 'user');
+      expect(lastUserMessage?.parts?.[0].text).toBe(message);
+      expect(lastUserMessage?.parts?.[0].text).not.toContain(
+        '<system_reminder>',
+      );
     });
   });
 
