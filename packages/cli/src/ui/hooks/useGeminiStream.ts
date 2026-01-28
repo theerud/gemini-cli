@@ -1562,7 +1562,7 @@ ${args.content}
 Please revise the plan based on this feedback:
 ${feedback}
 
-Create an updated implementation plan addressing the feedback. Use present_plan to show me the revised plan.`;
+Create an updated implementation plan addressing the feedback.`;
                   // eslint-disable-next-line @typescript-eslint/no-floating-promises
                   submitQuery([{ text: refinePrompt }], {
                     isContinuation: true,
@@ -1630,7 +1630,7 @@ ${args.content}
 Please revise the plan based on this feedback:
 ${feedback}
 
-Create an updated implementation plan addressing the feedback. Use present_plan to show me the revised plan.`;
+Create an updated implementation plan addressing the feedback.`;
                   // eslint-disable-next-line @typescript-eslint/no-floating-promises
                   submitQuery([{ text: refinePrompt }], {
                     isContinuation: true,
