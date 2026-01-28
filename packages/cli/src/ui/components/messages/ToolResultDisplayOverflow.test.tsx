@@ -28,6 +28,7 @@ describe('ToolResultDisplay Overflow', () => {
       {
         callId: 'call-1',
         name: 'test-tool',
+        toolName: 'test-tool',
         description: 'a test tool',
         status: ToolCallStatus.Success,
         resultDisplay,

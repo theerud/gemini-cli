@@ -79,6 +79,7 @@ describe('ToolConfirmationMessage Overflow', () => {
       {
         callId: 'test-call-id',
         name: 'test-tool',
+        toolName: 'test-tool',
         description: 'a test tool',
         status: ToolCallStatus.Confirming,
         confirmationDetails,
