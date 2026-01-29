@@ -66,7 +66,6 @@ import {
   SessionStartSource,
   SessionEndReason,
   generateSummary,
-  ASK_USER_TOOL_NAME,
   type AgentsDiscoveredPayload,
   ChangeAuthRequestedError,
 } from '@google/gemini-cli-core';
@@ -1664,39 +1663,10 @@ Logging in with Google... Restarting Gemini CLI to continue.
     authState === AuthState.AwaitingApiKeyInput ||
     !!newAgents;
 
-  const pendingHistoryItems = useMemo(() => {
-    const items = [
-      ...pendingSlashCommandHistoryItems,
-      ...pendingGeminiHistoryItems,
-    ];
-
-    // Hide ask_user tool display when the dialog is shown
-    if (askUserRequest) {
-      return items
-        .map((item) => {
-          if (item.type === 'tool_group') {
-            // Filter out ask_user tool but keep others
-            const filteredTools = item.tools.filter(
-              (tool) => tool.toolName !== ASK_USER_TOOL_NAME,
-            );
-            // If no tools left, exclude the entire group
-            if (filteredTools.length === 0) {
-              return null;
-            }
-            // Return group with filtered tools
-            return { ...item, tools: filteredTools };
-          }
-          return item;
-        })
-        .filter((item): item is HistoryItemWithoutId => item !== null);
-    }
-
-    return items;
-  }, [
-    pendingSlashCommandHistoryItems,
-    pendingGeminiHistoryItems,
-    askUserRequest,
-  ]);
+  const pendingHistoryItems = useMemo(
+    () => [...pendingSlashCommandHistoryItems, ...pendingGeminiHistoryItems],
+    [pendingSlashCommandHistoryItems, pendingGeminiHistoryItems],
+  );
 
   const allToolCalls = useMemo(
     () =>
