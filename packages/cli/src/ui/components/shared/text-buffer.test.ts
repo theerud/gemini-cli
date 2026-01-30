@@ -1418,7 +1418,7 @@ describe('useTextBuffer', () => {
       const { result } = renderHook(() =>
         useTextBuffer({ viewport, isValidPath: () => false }),
       );
-      act(() =>
+      act(() => {
         result.current.handleInput({
           name: 'h',
           shift: false,
@@ -1427,9 +1427,9 @@ describe('useTextBuffer', () => {
           cmd: false,
           insertable: true,
           sequence: 'h',
-        }),
-      );
-      act(() =>
+        });
+      });
+      void act(() =>
         result.current.handleInput({
           name: 'i',
           shift: false,
@@ -1447,7 +1447,7 @@ describe('useTextBuffer', () => {
       const { result } = renderHook(() =>
         useTextBuffer({ viewport, isValidPath: () => false }),
       );
-      act(() =>
+      act(() => {
         result.current.handleInput({
           name: 'return',
           shift: false,
@@ -1456,8 +1456,8 @@ describe('useTextBuffer', () => {
           cmd: false,
           insertable: true,
           sequence: '\r',
-        }),
-      );
+        });
+      });
       expect(getBufferState(result).lines).toEqual(['', '']);
     });
 
@@ -1465,7 +1465,7 @@ describe('useTextBuffer', () => {
       const { result } = renderHook(() =>
         useTextBuffer({ viewport, isValidPath: () => false }),
       );
-      act(() =>
+      act(() => {
         result.current.handleInput({
           name: 'j',
           shift: false,
@@ -1474,8 +1474,8 @@ describe('useTextBuffer', () => {
           cmd: false,
           insertable: false,
           sequence: '\n',
-        }),
-      );
+        });
+      });
       expect(getBufferState(result).lines).toEqual(['', '']);
     });
 
@@ -1483,7 +1483,7 @@ describe('useTextBuffer', () => {
       const { result } = renderHook(() =>
         useTextBuffer({ viewport, isValidPath: () => false }),
       );
-      act(() =>
+      act(() => {
         result.current.handleInput({
           name: 'tab',
           shift: false,
@@ -1492,8 +1492,8 @@ describe('useTextBuffer', () => {
           cmd: false,
           insertable: false,
           sequence: '\t',
-        }),
-      );
+        });
+      });
       expect(getBufferState(result).text).toBe('');
     });
 
@@ -1501,7 +1501,7 @@ describe('useTextBuffer', () => {
       const { result } = renderHook(() =>
         useTextBuffer({ viewport, isValidPath: () => false }),
       );
-      act(() =>
+      act(() => {
         result.current.handleInput({
           name: 'tab',
           shift: true,
@@ -1510,8 +1510,8 @@ describe('useTextBuffer', () => {
           cmd: false,
           insertable: false,
           sequence: '\u001b[9;2u',
-        }),
-      );
+        });
+      });
       expect(getBufferState(result).text).toBe('');
     });
 
@@ -1580,7 +1580,7 @@ describe('useTextBuffer', () => {
         }),
       );
       act(() => result.current.move('end'));
-      act(() =>
+      act(() => {
         result.current.handleInput({
           name: 'backspace',
           shift: false,
@@ -1589,8 +1589,8 @@ describe('useTextBuffer', () => {
           cmd: false,
           insertable: false,
           sequence: '\x7f',
-        }),
-      );
+        });
+      });
       expect(getBufferState(result).text).toBe('');
     });
 
@@ -1683,7 +1683,7 @@ describe('useTextBuffer', () => {
         }),
       );
       act(() => result.current.move('end')); // cursor [0,2]
-      act(() =>
+      act(() => {
         result.current.handleInput({
           name: 'left',
           shift: false,
@@ -1692,10 +1692,10 @@ describe('useTextBuffer', () => {
           cmd: false,
           insertable: false,
           sequence: '\x1b[D',
-        }),
-      );
+        });
+      });
       expect(getBufferState(result).cursor).toEqual([0, 1]);
-      act(() =>
+      act(() => {
         result.current.handleInput({
           name: 'right',
           shift: false,
@@ -1704,8 +1704,8 @@ describe('useTextBuffer', () => {
           cmd: false,
           insertable: false,
           sequence: '\x1b[C',
-        }),
-      );
+        });
+      });
       expect(getBufferState(result).cursor).toEqual([0, 2]);
     });
 
@@ -1715,7 +1715,7 @@ describe('useTextBuffer', () => {
       );
       const textWithAnsi = '\x1B[31mHello\x1B[0m \x1B[32mWorld\x1B[0m';
       // Simulate pasting by calling handleInput with a string longer than 1 char
-      act(() =>
+      act(() => {
         result.current.handleInput({
           name: '',
           shift: false,
@@ -1724,8 +1724,8 @@ describe('useTextBuffer', () => {
           cmd: false,
           insertable: true,
           sequence: textWithAnsi,
-        }),
-      );
+        });
+      });
       expect(getBufferState(result).text).toBe('Hello World');
     });
 
@@ -1733,7 +1733,7 @@ describe('useTextBuffer', () => {
       const { result } = renderHook(() =>
         useTextBuffer({ viewport, isValidPath: () => false }),
       );
-      act(() =>
+      act(() => {
         result.current.handleInput({
           name: 'return',
           shift: true,
@@ -1742,8 +1742,8 @@ describe('useTextBuffer', () => {
           cmd: false,
           insertable: true,
           sequence: '\r',
-        }),
-      ); // Simulates Shift+Enter in VSCode terminal
+        });
+      }); // Simulates Shift+Enter in VSCode terminal
       expect(getBufferState(result).lines).toEqual(['', '']);
     });
 
@@ -1983,7 +1983,9 @@ Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots 
       const { result } = renderHook(() =>
         useTextBuffer({ viewport, isValidPath: () => false }),
       );
-      act(() => result.current.handleInput(createInput(input)));
+      act(() => {
+        result.current.handleInput(createInput(input));
+      });
       expect(getBufferState(result).text).toBe(expected);
     });
 
@@ -1992,7 +1994,9 @@ Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots 
         useTextBuffer({ viewport, isValidPath: () => false }),
       );
       const validText = 'Hello World\nThis is a test.';
-      act(() => result.current.handleInput(createInput(validText)));
+      act(() => {
+        result.current.handleInput(createInput(validText));
+      });
       expect(getBufferState(result).text).toBe(validText);
     });
 
@@ -2006,7 +2010,7 @@ Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots 
 
       expect(largeTextWithUnsafe.length).toBeGreaterThan(5000);
 
-      act(() =>
+      act(() => {
         result.current.handleInput({
           name: '',
           shift: false,
@@ -2015,8 +2019,8 @@ Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots 
           cmd: false,
           insertable: true,
           sequence: largeTextWithUnsafe,
-        }),
-      );
+        });
+      });
 
       const resultText = getBufferState(result).text;
       expect(resultText).not.toContain('\x07');
@@ -2041,7 +2045,7 @@ Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots 
 
       expect(largeTextWithAnsi.length).toBeGreaterThan(5000);
 
-      act(() =>
+      act(() => {
         result.current.handleInput({
           name: '',
           shift: false,
@@ -2050,8 +2054,8 @@ Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots 
           cmd: false,
           insertable: true,
           sequence: largeTextWithAnsi,
-        }),
-      );
+        });
+      });
 
       const resultText = getBufferState(result).text;
       expect(resultText).not.toContain('\x1B[31m');
@@ -2066,7 +2070,7 @@ Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots 
         useTextBuffer({ viewport, isValidPath: () => false }),
       );
       const emojis = '🐍🐳🦀🦄';
-      act(() =>
+      act(() => {
         result.current.handleInput({
           name: '',
           shift: false,
@@ -2075,8 +2079,8 @@ Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots 
           cmd: false,
           insertable: true,
           sequence: emojis,
-        }),
-      );
+        });
+      });
       expect(getBufferState(result).text).toBe(emojis);
     });
   });
@@ -2258,7 +2262,7 @@ Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots 
           singleLine: true,
         }),
       );
-      act(() =>
+      act(() => {
         result.current.handleInput({
           name: 'return',
           shift: false,
@@ -2267,8 +2271,8 @@ Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots 
           cmd: false,
           insertable: true,
           sequence: '\r',
-        }),
-      );
+        });
+      });
       expect(getBufferState(result).lines).toEqual(['']);
     });
 
@@ -2280,7 +2284,7 @@ Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots 
           singleLine: true,
         }),
       );
-      act(() =>
+      act(() => {
         result.current.handleInput({
           name: 'f1',
           shift: false,
@@ -2289,8 +2293,8 @@ Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots 
           cmd: false,
           insertable: false,
           sequence: '\u001bOP',
-        }),
-      );
+        });
+      });
       expect(getBufferState(result).lines).toEqual(['']);
     });
 
