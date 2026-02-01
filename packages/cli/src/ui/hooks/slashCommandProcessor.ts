@@ -84,6 +84,7 @@ interface SlashCommandProcessorActions {
   dispatchExtensionStateUpdate: (action: ExtensionUpdateAction) => void;
   addConfirmUpdateExtensionRequest: (request: ConfirmationRequest) => void;
   setApprovalMode: (mode: ApprovalMode) => Promise<void>;
+  toggleBackgroundShell: () => void;
   setText: (text: string) => void;
 }
 
@@ -240,6 +241,7 @@ export const useSlashCommandProcessor = (
           actions.addConfirmUpdateExtensionRequest,
         removeComponent: () => setCustomDialog(null),
         setApprovalMode: actions.setApprovalMode,
+        toggleBackgroundShell: actions.toggleBackgroundShell,
       },
       session: {
         stats: session.stats,

@@ -2930,6 +2930,13 @@ export function useTextBuffer({
         move('end');
         return true;
       }
+      if (keyMatchers[Command.CLEAR_INPUT](key)) {
+        if (text.length > 0) {
+          setText('');
+          return true;
+        }
+        return false;
+      }
       if (keyMatchers[Command.DELETE_WORD_BACKWARD](key)) {
         deleteWordLeft();
         return true;
@@ -2983,6 +2990,8 @@ export function useTextBuffer({
       singleLine,
       visualCursor,
       visualLines,
+      setText,
+      text,
     ],
   );
 

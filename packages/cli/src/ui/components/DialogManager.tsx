@@ -36,7 +36,6 @@ import { IdeTrustChangeDialog } from './IdeTrustChangeDialog.js';
 import { AskUserDialog } from './AskUserDialog.js';
 import { NewAgentsNotification } from './NewAgentsNotification.js';
 import { AgentConfigDialog } from './AgentConfigDialog.js';
-import { useAskUserActions } from '../contexts/AskUserActionsContext.js';
 
 interface DialogManagerProps {
   addItem: UseHistoryManagerReturn['addItem'];
@@ -59,22 +58,6 @@ export const DialogManager = ({
     staticExtraHeight,
     terminalWidth: uiTerminalWidth,
   } = uiState;
-
-  const {
-    request: askUserRequest,
-    submit: askUserSubmit,
-    cancel: askUserCancel,
-  } = useAskUserActions();
-
-  if (askUserRequest) {
-    return (
-      <AskUserDialog
-        questions={askUserRequest.questions}
-        onSubmit={askUserSubmit}
-        onCancel={askUserCancel}
-      />
-    );
-  }
 
   if (uiState.adminSettingsChanged) {
     return <AdminSettingsChangedDialog />;
@@ -167,6 +150,16 @@ export const DialogManager = ({
         prompt={request.prompt}
         onConfirm={request.onConfirm}
         terminalWidth={terminalWidth}
+      />
+    );
+  }
+  if (uiState.askUserRequest) {
+    return (
+      <AskUserDialog
+        questions={uiState.askUserRequest.questions}
+        onSubmit={uiActions.handleAskUserSubmit}
+        onCancel={uiActions.clearAskUserRequest}
+        width={terminalWidth}
       />
     );
   }

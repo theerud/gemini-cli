@@ -269,6 +269,7 @@ export class GeminiChat {
    * @param message - The list of messages to send.
    * @param prompt_id - The ID of the prompt.
    * @param signal - An abort signal for this message.
+   * @param displayContent - An optional user-friendly version of the message to record.
    * @return The model's response.
    *
    * @example
@@ -287,6 +288,7 @@ export class GeminiChat {
     message: PartListUnion,
     prompt_id: string,
     signal: AbortSignal,
+    displayContent?: PartListUnion,
   ): Promise<AsyncGenerator<StreamEvent>> {
     await this.sendPromise;
 
@@ -299,21 +301,34 @@ export class GeminiChat {
     const { model } =
       this.config.modelConfigService.getResolvedConfig(modelConfigKey);
 
-    // Record user input - capture complete message with all parts (text, files, images, etc.)
-    // but skip recording function responses (tool call results) as they should be stored in tool call records
-    if (!isFunctionResponse(createUserContent(message))) {
-      const userMessage = Array.isArray(message) ? message : [message];
-      const userMessageContent = partListUnionToString(toParts(userMessage));
-      this.chatRecordingService.recordMessage({
-        model,
-        type: 'user',
-        content: userMessageContent,
-      });
-    }
-
     // Apply safety reminders (e.g. Plan Mode) before sending to the model.
     const messageWithReminders = applySystemReminders(this.config, message);
     const userContent = createUserContent(messageWithReminders);
+
+    // Record user input - capture complete message with all parts (text, files, images, etc.)
+    // but skip recording function responses (tool call results) as they should be stored in tool call records
+    if (!isFunctionResponse(userContent)) {
+      const userMessageParts = userContent.parts || [];
+      const userMessageContent = partListUnionToString(userMessageParts);
+
+      let finalDisplayContent: Part[] | undefined = undefined;
+      if (displayContent !== undefined) {
+        const displayParts = toParts(
+          Array.isArray(displayContent) ? displayContent : [displayContent],
+        );
+        const displayContentString = partListUnionToString(displayParts);
+        if (displayContentString !== userMessageContent) {
+          finalDisplayContent = displayParts;
+        }
+      }
+
+      this.chatRecordingService.recordMessage({
+        model,
+        type: 'user',
+        content: userMessageParts,
+        displayContent: finalDisplayContent,
+      });
+    }
 
     // Add user content to history ONCE before any attempts.
     this.history.push(userContent);
