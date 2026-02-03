@@ -71,8 +71,8 @@ priority = 50
 modes = ["plan"]
 
 [[rule]]
-toolName = "SubagentInvocation"
-decision = "allow"
+toolName = "exit_plan_mode"
+decision = "ask_user"
 priority = 50
 modes = ["plan"]
 
