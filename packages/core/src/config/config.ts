@@ -32,7 +32,6 @@ import { ShellTool } from '../tools/shell.js';
 import { WriteFileTool } from '../tools/write-file.js';
 import { WebFetchTool } from '../tools/web-fetch.js';
 import { MemoryTool, setGeminiMdFilename } from '../tools/memoryTool.js';
-import { PresentPlanTool } from '../tools/present-plan.js';
 import { WebSearchTool } from '../tools/web-search.js';
 import { AskUserTool } from '../tools/ask-user.js';
 import { ExitPlanModeTool } from '../tools/exit-plan-mode.js';
@@ -2140,7 +2139,6 @@ export class Config {
     registerCoreTool(WebFetchTool, this);
     registerCoreTool(ShellTool, this);
     registerCoreTool(MemoryTool);
-    registerCoreTool(PresentPlanTool);
     registerCoreTool(WebSearchTool, this);
     registerCoreTool(AskUserTool);
     if (this.getUseWriteTodos()) {

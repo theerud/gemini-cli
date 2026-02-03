@@ -32,7 +32,6 @@ import { SkillsList } from './views/SkillsList.js';
 import { AgentsStatus } from './views/AgentsStatus.js';
 import { McpStatus } from './views/McpStatus.js';
 import { ChatList } from './views/ChatList.js';
-import { PlanList } from './views/PlanList.js';
 import { HooksList } from './views/HooksList.js';
 import { ModelMessage } from './messages/ModelMessage.js';
 
@@ -185,9 +184,6 @@ export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
       )}
       {itemForDisplay.type === 'chat_list' && (
         <ChatList chats={itemForDisplay.chats} />
-      )}
-      {itemForDisplay.type === 'plan_list' && (
-        <PlanList plans={itemForDisplay.plans} />
       )}
       {itemForDisplay.type === 'hooks_list' && (
         <HooksList hooks={itemForDisplay.hooks} />

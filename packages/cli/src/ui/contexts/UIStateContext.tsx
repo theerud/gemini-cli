@@ -11,7 +11,6 @@ import type {
   ConsoleMessageItem,
   ConfirmationRequest,
   LoopDetectionConfirmationRequest,
-  PlanCompletionRequest,
   HistoryItemWithoutId,
   StreamingState,
   ActiveHook,
@@ -87,7 +86,6 @@ export interface UIState {
   authConsentRequest: ConfirmationRequest | null;
   confirmUpdateExtensionRequests: ConfirmationRequest[];
   loopDetectionConfirmationRequest: LoopDetectionConfirmationRequest | null;
-  planCompletionRequest: PlanCompletionRequest | null;
   askUserRequest: AskUserState | null;
   geminiMdFileCount: number;
   streamingState: StreamingState;

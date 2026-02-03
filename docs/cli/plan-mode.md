@@ -15,8 +15,6 @@ Plan Mode helps you:
   approved before any code changes
 - **Work in parallel** - Read-only tools run without confirmation, enabling
   efficient parallel exploration
-- **Save and resume plans** - Store implementation plans for later execution or
-  reference
 
 ## Entering Plan Mode
 
@@ -55,7 +53,7 @@ The following tools run without user confirmation in Plan Mode:
 | `web_fetch`           | Fetch web content for research         |
 | `google_web_search`   | Search the web                         |
 | `delegate_to_agent`   | Delegate to sub-agents for exploration |
-| `present_plan`        | Present completed implementation plan  |
+| `exit_plan_mode`      | Finalize plan and request approval     |
 | `write_todos`         | Track planning progress                |
 
 ### Blocked Tools (Denied)
@@ -81,140 +79,61 @@ emphasize:
 - Research the codebase thoroughly before proposing changes
 - Use parallel tool calls for efficient exploration
 - Create detailed, actionable implementation plans
-- Present plans using the `present_plan` tool
+- Finalize and exit Plan Mode using the `exit_plan_mode` tool
 
 ## Managing Plans
 
-### The `/plan` Command
+### Finalizing a Plan
 
-Plan Mode includes a command for managing saved implementation plans:
+When you have completed your research and designed an implementation strategy,
+you should:
 
-#### List Plans
+1.  **Write the plan to a file** in the `plans/` directory (e.g.,
+    `plans/my-feature.md`). The agent will use `write_file` for this, as it is
+    specially allowed for the `plans/` directory in Plan Mode.
+2.  **Call `exit_plan_mode`** with the path to your plan file.
 
-```
-/plan list
-```
+When `exit_plan_mode` is called, a confirmation dialog appears with the plan
+details.
 
-Shows all saved plans with their titles, dates, and status
-(draft/saved/executed). The most recently viewed plan is marked with
-`[last viewed]` to help you quickly find the plan you were just looking at.
+### The Approval Dialog
 
-#### View a Plan
+The approval dialog provides the following options:
 
-```
-/plan view <title>
-```
-
-Displays the full content of a saved plan. Supports partial title matching.
-Viewing a plan marks it as "last viewed" so you can easily find it again.
-
-#### Resume/Execute a Plan
-
-```
-/plan resume <title>
-```
-
-Loads a saved plan and switches to Auto Edit mode for implementation. The plan
-content is injected as context for the agent.
-
-#### Delete a Plan
-
-```
-/plan delete <title>
-```
-
-Removes a saved plan from the `.gemini/plans/` directory.
-
-#### Export a Plan
-
-```
-/plan export <title> <filename>
-```
-
-Exports the plan content (without metadata) to a file in your current working
-directory. This is useful for:
-
-- Moving a plan into your project as documentation
-- Sharing a plan with team members
-- Creating a permanent record of the implementation approach
-
-**Tip:** Use `/plan view <title>` first to preview a plan, then
-`/plan export <title> plan.md` to save it. The `[last viewed]` indicator in
-`/plan list` helps you remember which plan you just looked at.
+1.  **Approve**: Select an implementation mode (Default or Auto Edit) and
+    proceed. The session will automatically switch to the selected mode.
+2.  **Reject with Feedback**: Provide feedback to the agent. The session remains
+    in Plan Mode, and the agent should revise the plan based on your feedback.
+3.  **Cancel**: Discard the tool call and remain in Plan Mode.
 
 ### Plan Storage
 
-Plans are stored locally in your project's `.gemini/plans/` directory:
+Plans are stored locally in your project's temporary directory:
 
 ```
-.gemini/plans/plan-<timestamp>-<id>.md
+.gemini/tmp/<hash>/plans/
 ```
 
-> **Note:** Plans are project-specific. They are stored in the `.gemini/` folder
-> within your current working directory, not in a global location. This means
-> plans created in one project are not visible from another project.
+### The `exit_plan_mode` Tool
 
-#### Plan File Format
+When the agent completes its research and has written a plan to a file, it uses
+the `exit_plan_mode` tool to request approval. This tool accepts:
 
-Each plan file is a Markdown document with YAML frontmatter containing metadata:
+| Parameter   | Description                                                       |
+| ----------- | ----------------------------------------------------------------- |
+| `plan_path` | The file path to the finalized plan (e.g., `plans/feature-x.md`). |
 
-```markdown
----
-id: plan-1704312000000-abc123
-title: Add user authentication
-createdAt: 2025-01-03T12:00:00.000Z
-updatedAt: 2025-01-03T12:05:00.000Z
-status: draft
-originalPrompt: Add user authentication with JWT tokens
-lastViewed: 2025-01-03T12:10:00.000Z
----
+When the agent calls this tool, a dialog will appear showing the plan content
+and asking for approval.
 
-## Implementation Steps
+### Approved Plan Execution
 
-1. Create auth middleware...
-```
+When a plan is approved:
 
-#### Plan Status Lifecycle
-
-Plans have three possible statuses:
-
-| Status     | Description                                                    |
-| ---------- | -------------------------------------------------------------- |
-| `draft`    | Auto-saved when the agent presents a plan (before user action) |
-| `saved`    | User explicitly chose "Save" to keep the plan for later        |
-| `executed` | User chose "Execute" and implementation began                  |
-
-#### Auto-Save Behavior
-
-When the agent calls the `present_plan` tool, the plan is **automatically saved
-as a draft** before the completion dialog appears. This ensures:
-
-- Your plan is preserved if the session is interrupted
-- You can resume later with `/plan resume <title>`
-- Draft plans appear in `/plan list` with `[draft]` status
-
-## The `present_plan` Tool
-
-When the agent completes its research in Plan Mode, it uses the `present_plan`
-tool to present the implementation plan. This tool accepts:
-
-| Parameter        | Description                                       |
-| ---------------- | ------------------------------------------------- |
-| `title`          | Short descriptive title for the plan              |
-| `content`        | Full implementation plan in Markdown              |
-| `affected_files` | List of files that will be created or modified    |
-| `dependencies`   | Shell commands to run first (e.g., `npm install`) |
-
-When the agent presents a plan, a dialog will automatically appear with options:
-
-1. **Execute**: Switch to Auto Edit mode and start implementing the plan
-2. **Save**: Save the plan for later execution (status changes to 'saved')
-3. **Refine**: Opens an inline text input where you can type feedback to improve
-   the plan. Press Enter to submit, or Esc to go back to the options.
-4. **Cancel**: Discard the plan and return to the prompt
-
-Plans are automatically saved as drafts when presented, so your work is
-preserved even if the session is interrupted.
+1. The session mode switches to the selected mode (Default or Auto Edit).
+2. The agent receives a confirmation that the plan was approved.
+3. The agent should then read the plan file and follow it strictly during
+   implementation.
 
 ## Best Practices
 
@@ -234,26 +153,12 @@ read-only tools enable efficient parallel exploration without interruption.
 
 ### 3. Review the Plan
 
-When the agent presents a plan, review:
+When the agent presents a plan via the `exit_plan_mode` dialog, review:
 
-- **Affected files**: Are these the right files to modify?
-- **Dependencies**: Are there prerequisites to install?
 - **Implementation steps**: Is the approach sound?
+- **File paths**: Are these the right files to modify?
 
-### 4. Save Complex Plans
-
-For large implementations, choose "Save" when the plan completion dialog
-appears. This changes the plan status from 'draft' to 'saved', making it easy to
-find later:
-
-```
-/plan list   # Shows all saved plans
-/plan resume dark-mode   # Resume a saved plan
-```
-
-Plans are auto-saved as drafts when presented, so your work is never lost.
-
-### 5. Execute with Context
+### 4. Execute with Context
 
 When you're ready to implement, the plan content becomes context for the agent,
 ensuring it follows the researched approach.
@@ -277,16 +182,14 @@ ensuring it follows the researched approach.
    - Searches for user model
    - Checks dependencies
 
-4. **Agent Presents Plan**
-   - Lists files to modify
-   - Shows implementation steps
-   - Notes dependencies
+4. **Agent Finalizes Plan**
+   - Writes plan to `plans/auth-implementation.md`
+   - Calls `exit_plan_mode` with the path to the plan
 
-5. **Choose Action from Dialog**
-   - **Execute**: Starts implementation immediately (switches to Auto Edit)
-   - **Save**: Marks plan as 'saved' for later
-   - **Refine**: Type feedback inline to improve the plan
-   - **Cancel**: Discard and start over
+5. **Approve Plan via Dialog**
+   - **Approve**: Select "Auto Edit" and start implementation
+   - **Reject**: Provide feedback for revisions
+   - **Cancel**: Discard and stay in Plan Mode
 
 ## Troubleshooting
 
@@ -299,12 +202,6 @@ cannot modify files until you switch modes.
 
 In Plan Mode, read-only tools should run without confirmation. If you're still
 seeing prompts, check that Plan Mode is active (blue "planning mode" indicator).
-
-### Plan Not Appearing in List
-
-Plans are auto-saved as drafts when the agent calls `present_plan`. If a plan
-doesn't appear in `/plan list`, the agent may not have completed the planning
-phase. Check that the agent called the `present_plan` tool successfully.
 
 ## Related Documentation
 
