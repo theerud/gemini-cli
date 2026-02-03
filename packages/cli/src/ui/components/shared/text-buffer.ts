@@ -2988,10 +2988,10 @@ export function useTextBuffer({
       cursorCol,
       lines,
       singleLine,
-      visualCursor,
-      visualLines,
       setText,
       text,
+      visualCursor,
+      visualLines,
     ],
   );
 
