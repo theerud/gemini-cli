@@ -182,37 +182,25 @@ export const ExitPlanModeDialog: React.FC<ExitPlanModeDialogProps> = ({
     useCallback(
       (key: Key) => {
         if (state.submitted) return false;
-        if (keyMatchers[Command.ESCAPE](key)) {
-          onCancel();
-          return true;
-        }
-        if (keyMatchers[Command.QUIT](key)) {
-          onCancel();
-          return false;
-        }
-        return false;
-      },
-      [onCancel, state.submitted],
-    ),
-    { isActive: !state.submitted },
-  );
 
-  useKeypress(
-    useCallback(
-      (key: Key) => {
-        if (
-          state.isEditingFeedback &&
-          keyMatchers[Command.QUIT](key) &&
-          feedbackBuffer.text !== ''
-        ) {
+        const isQuit = keyMatchers[Command.QUIT](key);
+
+        // If editing feedback, Ctrl+C clears the buffer instead of canceling the dialog.
+        if (isQuit && state.isEditingFeedback && feedbackBuffer.text !== '') {
           feedbackBuffer.setText('');
           return true;
         }
+
+        if (isQuit || keyMatchers[Command.ESCAPE](key)) {
+          onCancel();
+          return true;
+        }
+
         return false;
       },
-      [state.isEditingFeedback, feedbackBuffer],
+      [onCancel, state.submitted, state.isEditingFeedback, feedbackBuffer],
     ),
-    { isActive: state.isEditingFeedback, priority: true },
+    { isActive: !state.submitted, priority: true },
   );
 
   const handleSelect = useCallback(
