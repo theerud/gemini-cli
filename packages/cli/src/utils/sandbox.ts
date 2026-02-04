@@ -319,6 +319,8 @@ export async function start_sandbox(
         'TERM_PROGRAM',
         'GEMINI_CLI_TEST_VAR',
         'GOOGLE_APPLICATION_CREDENTIALS',
+        'GOOGLE_GEMINI_BASE_URL',
+        'GOOGLE_VERTEX_BASE_URL',
       ];
 
       for (const envVar of envVarsToCopy) {
