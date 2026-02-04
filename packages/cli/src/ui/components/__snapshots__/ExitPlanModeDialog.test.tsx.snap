@@ -1,5 +1,31 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`ExitPlanModeDialog > useAlternateBuffer: false > bubbles up Ctrl+C when feedback is empty while editing 1`] = `
+"Overview
+
+Add user authentication to the CLI application.
+
+Implementation Steps
+
+ 1. Create src/auth/AuthService.ts with login/logout methods
+ 2. Add session storage in src/storage/SessionStore.ts
+ 3. Update src/commands/index.ts to check auth status
+ 4. Add tests in src/auth/__tests__/
+
+Files to Modify
+
+ - src/index.ts - Add auth middleware
+ - src/config.ts - Add auth configuration options
+
+  1.  Yes, automatically accept edits
+      Approves plan and allows tools to run automatically
+  2.  Yes, manually accept edits
+      Approves plan but requires confirmation for each tool
+● 3.  Type your feedback... ✓
+
+Enter to submit · Esc to cancel"
+`;
+
 exports[`ExitPlanModeDialog > useAlternateBuffer: false > calls onFeedback when feedback is typed and submitted 1`] = `
 "Overview
 
@@ -17,26 +43,16 @@ Files to Modify
  - src/index.ts - Add auth middleware
  - src/config.ts - Add auth configuration options
 
-Ready to start implementation?
+  1.  Yes, automatically accept edits
+      Approves plan and allows tools to run automatically
+  2.  Yes, manually accept edits
+      Approves plan but requires confirmation for each tool
+● 3.  Add tests  ✓
 
-  1. Yes, automatically accept edits
-  2. Yes, manually accept edits
-● 3. Add tests
-
-Enter to send feedback · ↑/↓ to navigate · Esc to cancel"
+Enter to submit · Esc to cancel"
 `;
 
-exports[`ExitPlanModeDialog > useAlternateBuffer: false > displays error state when file read fails 1`] = `
-"Error reading plan: File not found
-
-Ready to start implementation?
-
-● 1. Yes, automatically accept edits
-  2. Yes, manually accept edits
-  3. Type your feedback...
-
-Enter to select · ↑/↓ to navigate · Esc to cancel"
-`;
+exports[`ExitPlanModeDialog > useAlternateBuffer: false > displays error state when file read fails 1`] = `" Error reading plan: File not found"`;
 
 exports[`ExitPlanModeDialog > useAlternateBuffer: false > handles long plan content appropriately 1`] = `
 "Overview
@@ -53,15 +69,13 @@ Implementation Steps
  6. Add LDAP provider support in src/auth/providers/LDAPProvider.ts
  7. Create token refresh mechanism in src/auth/TokenManager.ts
  8. Add multi-factor authentication in src/auth/MFAService.ts
- 9. Implement session timeout handling in src/auth/SessionManager.ts
- 10. Add audit logging for auth events in src/auth/AuditLogger.ts
-... last 20 lines hidden ...
+... last 22 lines hidden ...
 
-Ready to start implementation?
-
-● 1. Yes, automatically accept edits
-  2. Yes, manually accept edits
-  3. Type your feedback...
+● 1.  Yes, automatically accept edits
+      Approves plan and allows tools to run automatically
+  2.  Yes, manually accept edits
+      Approves plan but requires confirmation for each tool
+  3.  Type your feedback...
 
 Enter to select · ↑/↓ to navigate · Esc to cancel"
 `;
@@ -83,13 +97,39 @@ Files to Modify
  - src/index.ts - Add auth middleware
  - src/config.ts - Add auth configuration options
 
-Ready to start implementation?
-
-● 1. Yes, automatically accept edits
-  2. Yes, manually accept edits
-  3. Type your feedback...
+● 1.  Yes, automatically accept edits
+      Approves plan and allows tools to run automatically
+  2.  Yes, manually accept edits
+      Approves plan but requires confirmation for each tool
+  3.  Type your feedback...
 
 Enter to select · ↑/↓ to navigate · Esc to cancel"
+`;
+
+exports[`ExitPlanModeDialog > useAlternateBuffer: true > bubbles up Ctrl+C when feedback is empty while editing 1`] = `
+"Overview
+
+Add user authentication to the CLI application.
+
+Implementation Steps
+
+ 1. Create src/auth/AuthService.ts with login/logout methods
+ 2. Add session storage in src/storage/SessionStore.ts
+ 3. Update src/commands/index.ts to check auth status
+ 4. Add tests in src/auth/__tests__/
+
+Files to Modify
+
+ - src/index.ts - Add auth middleware
+ - src/config.ts - Add auth configuration options
+
+  1.  Yes, automatically accept edits
+      Approves plan and allows tools to run automatically
+  2.  Yes, manually accept edits
+      Approves plan but requires confirmation for each tool
+● 3.  Type your feedback... ✓
+
+Enter to submit · Esc to cancel"
 `;
 
 exports[`ExitPlanModeDialog > useAlternateBuffer: true > calls onFeedback when feedback is typed and submitted 1`] = `
@@ -109,26 +149,16 @@ Files to Modify
  - src/index.ts - Add auth middleware
  - src/config.ts - Add auth configuration options
 
-Ready to start implementation?
+  1.  Yes, automatically accept edits
+      Approves plan and allows tools to run automatically
+  2.  Yes, manually accept edits
+      Approves plan but requires confirmation for each tool
+● 3.  Add tests  ✓
 
-  1. Yes, automatically accept edits
-  2. Yes, manually accept edits
-● 3. Add tests
-
-Enter to send feedback · ↑/↓ to navigate · Esc to cancel"
+Enter to submit · Esc to cancel"
 `;
 
-exports[`ExitPlanModeDialog > useAlternateBuffer: true > displays error state when file read fails 1`] = `
-"Error reading plan: File not found
-
-Ready to start implementation?
-
-● 1. Yes, automatically accept edits
-  2. Yes, manually accept edits
-  3. Type your feedback...
-
-Enter to select · ↑/↓ to navigate · Esc to cancel"
-`;
+exports[`ExitPlanModeDialog > useAlternateBuffer: true > displays error state when file read fails 1`] = `" Error reading plan: File not found"`;
 
 exports[`ExitPlanModeDialog > useAlternateBuffer: true > handles long plan content appropriately 1`] = `
 "Overview
@@ -168,11 +198,11 @@ Testing Strategy
  - Security penetration testing
  - Load testing for session management
 
-Ready to start implementation?
-
-● 1. Yes, automatically accept edits
-  2. Yes, manually accept edits
-  3. Type your feedback...
+● 1.  Yes, automatically accept edits
+      Approves plan and allows tools to run automatically
+  2.  Yes, manually accept edits
+      Approves plan but requires confirmation for each tool
+  3.  Type your feedback...
 
 Enter to select · ↑/↓ to navigate · Esc to cancel"
 `;
@@ -194,11 +224,11 @@ Files to Modify
  - src/index.ts - Add auth middleware
  - src/config.ts - Add auth configuration options
 
-Ready to start implementation?
-
-● 1. Yes, automatically accept edits
-  2. Yes, manually accept edits
-  3. Type your feedback...
+● 1.  Yes, automatically accept edits
+      Approves plan and allows tools to run automatically
+  2.  Yes, manually accept edits
+      Approves plan but requires confirmation for each tool
+  3.  Type your feedback...
 
 Enter to select · ↑/↓ to navigate · Esc to cancel"
 `;
