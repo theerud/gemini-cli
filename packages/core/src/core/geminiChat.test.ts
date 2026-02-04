@@ -235,7 +235,10 @@ describe('GeminiChat', () => {
           ],
         };
       })();
-      mockRetryWithBackoff.mockResolvedValue(streamGenerator);
+      mockRetryWithBackoff.mockImplementation(async (apiCall) => await apiCall());
+      mockContentGenerator.generateContentStream = vi
+        .fn()
+        .mockReturnValue(streamGenerator);
 
       const message = 'test query';
       const generator = await chatInstance.sendMessageStream(
@@ -250,12 +253,30 @@ describe('GeminiChat', () => {
         // ignore
       }
 
-      // Check the history - the last user message should have the reminder
+      // Check that the Content Generator received the reminder
+      expect(mockContentGenerator.generateContentStream).toHaveBeenCalledWith(
+        expect.objectContaining({
+          contents: expect.arrayContaining([
+            expect.objectContaining({
+              role: 'user',
+              parts: expect.arrayContaining([
+                expect.objectContaining({
+                  text: expect.stringContaining('<system_reminder>'),
+                }),
+              ]),
+            }),
+          ]),
+        }),
+        'prompt-id',
+      );
+
+      // Check the history - the last user message should NOT have the reminder
       const history = chatInstance.getHistory();
       const lastUserMessage = history.findLast((c) => c.role === 'user');
-      expect(lastUserMessage?.parts?.[0].text).toContain(message);
-      expect(lastUserMessage?.parts?.[0].text).toContain('<system_reminder>');
-      expect(lastUserMessage?.parts?.[0].text).toContain('Plan Mode is active');
+      expect(lastUserMessage?.parts?.[0].text).toBe(message);
+      expect(lastUserMessage?.parts?.[0].text).not.toContain(
+        '<system_reminder>',
+      );
     });
 
     it('should NOT inject PLAN_MODE_REMINDER when ApprovalMode is NOT PLAN', async () => {
@@ -274,7 +295,10 @@ describe('GeminiChat', () => {
           ],
         };
       })();
-      mockRetryWithBackoff.mockResolvedValue(streamGenerator);
+      mockRetryWithBackoff.mockImplementation(async (apiCall) => await apiCall());
+      mockContentGenerator.generateContentStream = vi
+        .fn()
+        .mockReturnValue(streamGenerator);
 
       const message = 'test query';
       const generator = await chatInstance.sendMessageStream(
@@ -293,6 +317,54 @@ describe('GeminiChat', () => {
       expect(lastUserMessage?.parts?.[0].text).toBe(message);
       expect(lastUserMessage?.parts?.[0].text).not.toContain(
         '<system_reminder>',
+      );
+    });
+
+    it('should NOT inject PLAN_MODE_REMINDER for function response turns', async () => {
+      mockConfig.getApprovalMode = vi.fn().mockReturnValue(ApprovalMode.PLAN);
+      const chatInstance = new GeminiChat(mockConfig);
+
+      const streamGenerator = (async function* () {
+        yield {
+          candidates: [
+            {
+              content: { parts: [{ text: 'response' }] },
+              finishReason: 'STOP',
+            },
+          ],
+        };
+      })();
+      mockRetryWithBackoff.mockImplementation(async (apiCall) => await apiCall());
+      mockContentGenerator.generateContentStream = vi
+        .fn()
+        .mockReturnValue(streamGenerator);
+
+      // Create a function response message
+      const message = [
+        { functionResponse: { name: 'test', response: { ok: true } } },
+      ];
+      const generator = await chatInstance.sendMessageStream(
+        { model: 'test-model' },
+        message,
+        'prompt-id',
+        new AbortController().signal,
+      );
+
+      for await (const _ of generator) {
+        // ignore
+      }
+
+      // Check that the Content Generator did NOT receive the reminder
+      expect(mockContentGenerator.generateContentStream).toHaveBeenCalledWith(
+        expect.objectContaining({
+          contents: expect.arrayContaining([
+            expect.objectContaining({
+              role: 'user',
+              parts: message,
+            }),
+          ]),
+        }),
+        'prompt-id',
       );
     });
   });

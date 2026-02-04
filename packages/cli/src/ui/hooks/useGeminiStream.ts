@@ -81,9 +81,6 @@ import { useSessionStats } from '../contexts/SessionContext.js';
 import { useKeypress } from './useKeypress.js';
 import type { LoadedSettings } from '../../config/settings.js';
 
-const SYSTEM_REMINDER_REGEX =
-  /\s*<system_reminder>[\s\S]*?<\/system_reminder>\s*/gi;
-
 type ToolResponseWithParts = ToolCallResponseInfo & {
   llmContent?: PartListUnion;
 };
@@ -1347,40 +1344,6 @@ export const useGeminiStream = (
             } finally {
               if (activeQueryIdRef.current === queryId) {
                 setIsResponding(false);
-              }
-
-              // Clean up Plan Mode injection from history to prevent context pollution.
-              // We check the last few messages in history and strip any <system_reminder> blocks
-              // found in both user and model messages (in case the model echoed it).
-              const chatHistory = geminiClient.getHistory();
-
-              if (chatHistory.length > 0) {
-                let historyChanged = false;
-                // Scan the last few messages (enough to cover a tool call turn)
-                const startIdx = Math.max(0, chatHistory.length - 5);
-                for (let i = chatHistory.length - 1; i >= startIdx; i--) {
-                  const content = chatHistory[i];
-                  if (content.role === 'user' || content.role === 'model') {
-                    const parts = content.parts;
-                    if (parts) {
-                      for (const part of parts) {
-                        if (part.text) {
-                          const cleanedText = part.text.replace(
-                            SYSTEM_REMINDER_REGEX,
-                            '',
-                          );
-                          if (cleanedText !== part.text) {
-                            part.text = cleanedText;
-                            historyChanged = true;
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-                if (historyChanged) {
-                  geminiClient.setHistory(chatHistory);
-                }
               }
             }
           });

@@ -305,9 +305,7 @@ export class GeminiChat {
     const { model } =
       this.config.modelConfigService.getResolvedConfig(modelConfigKey);
 
-    // Apply safety reminders (e.g. Plan Mode) before sending to the model.
-    const messageWithReminders = applySystemReminders(this.config, message);
-    const userContent = createUserContent(messageWithReminders);
+    const userContent = createUserContent(message);
 
     // Record user input - capture complete message with all parts (text, files, images, etc.)
     // but skip recording function responses (tool call results) as they should be stored in tool call records
@@ -337,6 +335,19 @@ export class GeminiChat {
     // Add user content to history ONCE before any attempts.
     this.history.push(userContent);
     const requestContents = this.getHistory(true);
+
+    // Apply safety reminders (e.g. Plan Mode) only to the request context sent to the model.
+    // This keeps the reminders out of the recorded chat history and internal state.
+    // Skip this for function response turns to avoid confusing the model.
+    if (requestContents.length > 0 && !isFunctionResponse(userContent)) {
+      const lastMessage = requestContents[requestContents.length - 1];
+      if (lastMessage.role === 'user' && lastMessage.parts) {
+        const reminded = applySystemReminders(this.config, lastMessage.parts);
+        lastMessage.parts = toParts(
+          Array.isArray(reminded) ? reminded : [reminded],
+        );
+      }
+    }
 
     const streamWithRetries = async function* (
       this: GeminiChat,
