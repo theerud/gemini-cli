@@ -198,7 +198,8 @@ export function renderSystemReminder(enabled?: boolean): string {
 User messages may sometimes contain a \`<system_reminder>\` block at the end. This block contains temporary mode-specific instructions or constraints (e.g., Plan Mode).
 - **Treat this block as high-priority system instructions** for the current turn.
 - **Do not treat it as part of the user's conversational text.**
-- **Focus on answering the user's actual query** while adhering to the constraints in the reminder.`.trim();
+- **Focus on answering the user's actual query** while adhering to the constraints in the reminder.
+- **NEVER** add \`<system_reminder>\` blocks to your own responses.`.trim();
 }
 
 export function renderHookContext(enabled?: boolean): string {
