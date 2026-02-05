@@ -163,11 +163,22 @@ export class McpClient {
           return;
         }
         if (originalOnError) originalOnError(error);
-        coreEvents.emitFeedback(
-          'error',
-          `MCP ERROR (${this.serverName})`,
-          error,
-        );
+
+        const errorMessage = getErrorMessage(error);
+        if (
+          errorMessage.includes('SSE stream disconnected') ||
+          errorMessage.includes('TypeError: terminated')
+        ) {
+          debugLogger.log(
+            `MCP server '${this.serverName}' SSE stream disconnected (TypeError: terminated).`,
+          );
+        } else {
+          coreEvents.emitFeedback(
+            'error',
+            `MCP ERROR (${this.serverName})`,
+            error,
+          );
+        }
         this.updateStatus(MCPServerStatus.DISCONNECTED);
         // Close transport to prevent memory leaks
         if (this.transport) {
@@ -933,7 +944,21 @@ export async function connectAndDiscover(
     transport = result.transport;
 
     mcpClient.onerror = async (error) => {
-      coreEvents.emitFeedback('error', `MCP ERROR (${mcpServerName}):`, error);
+      const errorMessage = getErrorMessage(error);
+      if (
+        errorMessage.includes('SSE stream disconnected') ||
+        errorMessage.includes('TypeError: terminated')
+      ) {
+        debugLogger.log(
+          `MCP server '${mcpServerName}' SSE stream disconnected during discovery (TypeError: terminated).`,
+        );
+      } else {
+        coreEvents.emitFeedback(
+          'error',
+          `MCP ERROR (${mcpServerName}):`,
+          error,
+        );
+      }
       updateMCPServerStatus(mcpServerName, MCPServerStatus.DISCONNECTED);
       // Close transport to prevent memory leaks
       if (transport) {
