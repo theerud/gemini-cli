@@ -48,6 +48,15 @@ export class EnterPlanModeTool extends BaseDeclarativeTool<
     );
   }
 
+  protected override validateToolParamValues(
+    _params: EnterPlanModeParams,
+  ): string | null {
+    if (this.config.getApprovalMode() === ApprovalMode.PLAN) {
+      return 'Already in Plan Mode.';
+    }
+    return null;
+  }
+
   protected createInvocation(
     params: EnterPlanModeParams,
     messageBus: MessageBus,

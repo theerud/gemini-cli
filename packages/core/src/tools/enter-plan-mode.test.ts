@@ -15,7 +15,7 @@ import { ApprovalMode } from '../policy/types.js';
 describe('EnterPlanModeTool', () => {
   let tool: EnterPlanModeTool;
   let mockMessageBus: ReturnType<typeof createMockMessageBus>;
-  let mockConfig: Partial<Config>;
+  let mockConfig: Config;
 
   beforeEach(() => {
     mockMessageBus = createMockMessageBus();
@@ -23,12 +23,13 @@ describe('EnterPlanModeTool', () => {
 
     mockConfig = {
       setApprovalMode: vi.fn(),
+      getApprovalMode: vi.fn().mockReturnValue(ApprovalMode.DEFAULT),
       storage: {
         getProjectTempPlansDir: vi.fn().mockReturnValue('/mock/plans/dir'),
       } as unknown as Config['storage'],
-    };
+    } as unknown as Config;
     tool = new EnterPlanModeTool(
-      mockConfig as Config,
+      mockConfig,
       mockMessageBus as unknown as MessageBus,
     );
   });
@@ -165,6 +166,12 @@ describe('EnterPlanModeTool', () => {
     it('should allow reason param', () => {
       const result = tool.validateToolParams({ reason: 'test' });
       expect(result).toBeNull();
+    });
+
+    it('should return error when already in Plan Mode', () => {
+      vi.mocked(mockConfig.getApprovalMode).mockReturnValue(ApprovalMode.PLAN);
+      const result = tool.validateToolParams({});
+      expect(result).toBe('Already in Plan Mode.');
     });
   });
 });

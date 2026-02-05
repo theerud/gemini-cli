@@ -19,7 +19,7 @@ import { validatePlanPath } from '../utils/planUtils.js';
 describe('ExitPlanModeTool', () => {
   let tool: ExitPlanModeTool;
   let mockMessageBus: ReturnType<typeof createMockMessageBus>;
-  let mockConfig: Partial<Config>;
+  let mockConfig: Config;
   let tempRootDir: string;
   let mockPlansDir: string;
 
@@ -39,12 +39,13 @@ describe('ExitPlanModeTool', () => {
       getTargetDir: vi.fn().mockReturnValue(tempRootDir),
       setApprovalMode: vi.fn(),
       setApprovedPlanPath: vi.fn(),
+      getApprovalMode: vi.fn().mockReturnValue(ApprovalMode.PLAN),
       storage: {
         getProjectTempPlansDir: vi.fn().mockReturnValue(mockPlansDir),
       } as unknown as Config['storage'],
-    };
+    } as unknown as Config;
     tool = new ExitPlanModeTool(
-      mockConfig as Config,
+      mockConfig,
       mockMessageBus as unknown as MessageBus,
     );
     // Mock getMessageBusDecision on the invocation prototype
@@ -372,6 +373,16 @@ Ask the user for specific feedback on how to improve the plan.`,
   });
 
   describe('validateToolParams', () => {
+    it('should return error when NOT in Plan Mode', () => {
+      vi.mocked(mockConfig.getApprovalMode).mockReturnValue(
+        ApprovalMode.DEFAULT,
+      );
+      const result = tool.validateToolParams({ plan_path: 'plans/test.md' });
+      expect(result).toBe(
+        'Not in Plan Mode. You can only exit Plan Mode when you are in it.',
+      );
+    });
+
     it('should reject empty plan_path', () => {
       const result = tool.validateToolParams({ plan_path: '' });
       expect(result).toBe('plan_path is required.');

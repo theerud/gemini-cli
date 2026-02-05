@@ -21,7 +21,13 @@ import { safeJsonStringify } from '../utils/safeJsonStringify.js';
 import type { MessageBus } from '../confirmation-bus/message-bus.js';
 import { debugLogger } from '../utils/debugLogger.js';
 import { coreEvents } from '../utils/events.js';
-import { DISCOVERED_TOOL_PREFIX, TOOL_LEGACY_ALIASES } from './tool-names.js';
+import {
+  DISCOVERED_TOOL_PREFIX,
+  TOOL_LEGACY_ALIASES,
+  ENTER_PLAN_MODE_TOOL_NAME,
+  EXIT_PLAN_MODE_TOOL_NAME,
+} from './tool-names.js';
+import { ApprovalMode } from '../policy/types.js';
 
 type ToolParams = Record<string, unknown>;
 
@@ -463,7 +469,21 @@ export class ToolRegistry {
         possibleNames.push(`${tool.getFullyQualifiedPrefix()}${tool.name}`);
       }
     }
-    return !possibleNames.some((name) => excludeTools.has(name));
+
+    if (possibleNames.some((name) => excludeTools.has(name))) {
+      return false;
+    }
+
+    // Dynamic visibility for Plan Mode tools
+    const currentMode = this.config.getApprovalMode();
+    if (tool.name === ENTER_PLAN_MODE_TOOL_NAME) {
+      return currentMode !== ApprovalMode.PLAN;
+    }
+    if (tool.name === EXIT_PLAN_MODE_TOOL_NAME) {
+      return currentMode === ApprovalMode.PLAN;
+    }
+
+    return true;
   }
 
   /**

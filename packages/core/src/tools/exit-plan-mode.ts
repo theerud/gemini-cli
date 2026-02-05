@@ -76,6 +76,10 @@ export class ExitPlanModeTool extends BaseDeclarativeTool<
   protected override validateToolParamValues(
     params: ExitPlanModeParams,
   ): string | null {
+    if (this.config.getApprovalMode() !== ApprovalMode.PLAN) {
+      return 'Not in Plan Mode. You can only exit Plan Mode when you are in it.';
+    }
+
     if (!params.plan_path || params.plan_path.trim() === '') {
       return 'plan_path is required.';
     }

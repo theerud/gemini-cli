@@ -22,6 +22,10 @@ import fs from 'node:fs';
 import { MockTool } from '../test-utils/mock-tool.js';
 import { ToolErrorType } from './tool-error.js';
 import type { MessageBus } from '../confirmation-bus/message-bus.js';
+import {
+  ENTER_PLAN_MODE_TOOL_NAME,
+  EXIT_PLAN_MODE_TOOL_NAME,
+} from './tool-names.js';
 
 vi.mock('node:fs');
 
@@ -612,6 +616,32 @@ describe('ToolRegistry', () => {
       const retrievedTool = toolRegistry.getTool(legacyName);
       expect(retrievedTool).toBeDefined();
       expect(retrievedTool?.name).toBe(currentName);
+    });
+  });
+
+  describe('Plan Mode tool visibility', () => {
+    let enterTool: MockTool;
+    let exitTool: MockTool;
+
+    beforeEach(() => {
+      enterTool = new MockTool({ name: ENTER_PLAN_MODE_TOOL_NAME });
+      exitTool = new MockTool({ name: EXIT_PLAN_MODE_TOOL_NAME });
+      toolRegistry.registerTool(enterTool);
+      toolRegistry.registerTool(exitTool);
+    });
+
+    it('should show enter_plan_mode and hide exit_plan_mode when in DEFAULT mode', () => {
+      vi.spyOn(config, 'getApprovalMode').mockReturnValue(ApprovalMode.DEFAULT);
+
+      expect(toolRegistry.getTool(ENTER_PLAN_MODE_TOOL_NAME)).toBe(enterTool);
+      expect(toolRegistry.getTool(EXIT_PLAN_MODE_TOOL_NAME)).toBeUndefined();
+    });
+
+    it('should hide enter_plan_mode and show exit_plan_mode when in PLAN mode', () => {
+      vi.spyOn(config, 'getApprovalMode').mockReturnValue(ApprovalMode.PLAN);
+
+      expect(toolRegistry.getTool(ENTER_PLAN_MODE_TOOL_NAME)).toBeUndefined();
+      expect(toolRegistry.getTool(EXIT_PLAN_MODE_TOOL_NAME)).toBe(exitTool);
     });
   });
 
