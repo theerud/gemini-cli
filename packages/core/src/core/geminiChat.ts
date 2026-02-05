@@ -55,7 +55,6 @@ import {
   createAvailabilityContextProvider,
 } from '../availability/policyHelpers.js';
 import { coreEvents } from '../utils/events.js';
-import { applySystemReminders } from '../prompts/utils.js';
 
 export enum StreamEventType {
   /** A regular content chunk from the API. */
@@ -335,19 +334,6 @@ export class GeminiChat {
     // Add user content to history ONCE before any attempts.
     this.history.push(userContent);
     const requestContents = this.getHistory(true);
-
-    // Apply safety reminders (e.g. Plan Mode) only to the request context sent to the model.
-    // This keeps the reminders out of the recorded chat history and internal state.
-    // Skip this for function response turns to avoid confusing the model.
-    if (requestContents.length > 0 && !isFunctionResponse(userContent)) {
-      const lastMessage = requestContents[requestContents.length - 1];
-      if (lastMessage.role === 'user' && lastMessage.parts) {
-        const reminded = applySystemReminders(this.config, lastMessage.parts);
-        lastMessage.parts = toParts(
-          Array.isArray(reminded) ? reminded : [reminded],
-        );
-      }
-    }
 
     const streamWithRetries = async function* (
       this: GeminiChat,

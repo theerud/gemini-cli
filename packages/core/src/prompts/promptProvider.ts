@@ -98,7 +98,6 @@ export class PromptProvider {
             })),
           skills.length > 0,
         ),
-        systemReminder: isSectionEnabled('systemReminder') || undefined,
         hookContext: isSectionEnabled('hookContext') || undefined,
         primaryWorkflows: this.withSection(
           'primaryWorkflows',

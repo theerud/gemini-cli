@@ -272,7 +272,6 @@ describe('Core System Prompt (prompts.ts)', () => {
       // Invariant assertions recommended by the Council
       expect(prompt).toContain('Mock Agent Directory'); // Directory Context (Sub-Agents)
       expect(prompt).toContain('# Hook Context'); // Hook Context
-      expect(prompt).toContain('### System Reminders'); // System Reminders
 
       expect(prompt).toMatchSnapshot();
     });

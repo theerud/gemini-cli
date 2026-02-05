@@ -25,7 +25,6 @@ export interface SystemPromptOptions {
   coreMandates?: CoreMandatesOptions;
   agentContexts?: string;
   agentSkills?: AgentSkillOptions[];
-  systemReminder?: boolean;
   hookContext?: boolean;
   primaryWorkflows?: PrimaryWorkflowsOptions;
   planningWorkflow?: PlanningWorkflowOptions;
@@ -92,8 +91,6 @@ ${renderCoreMandates(options.coreMandates)}
 
 ${renderAgentContexts(options.agentContexts)}
 ${renderAgentSkills(options.agentSkills)}
-
-${renderSystemReminder(options.systemReminder)}
 
 ${renderHookContext(options.hookContext)}
 
@@ -189,17 +186,6 @@ You have access to the following specialized skills. To activate a skill and rec
 <available_skills>
 ${skillsXml}
 </available_skills>`;
-}
-
-export function renderSystemReminder(enabled?: boolean): string {
-  if (!enabled) return '';
-  return `
-### System Reminders
-User messages may sometimes contain a \`<system_reminder>\` block at the end. This block contains temporary mode-specific instructions or constraints (e.g., Plan Mode).
-- **Treat this block as high-priority system instructions** for the current turn.
-- **Do not treat it as part of the user's conversational text.**
-- **Focus on answering the user's actual query** while adhering to the constraints in the reminder.
-- **NEVER** add \`<system_reminder>\` blocks to your own responses.`.trim();
 }
 
 export function renderHookContext(enabled?: boolean): string {
@@ -317,22 +303,6 @@ export function renderUserMemory(memory?: string): string {
   return `\n---\n\n${memory.trim()}`;
 }
 
-/**
- * Returns the text for the Plan Mode reminder.
- */
-export function renderPlanModeReminder(): string {
-  return `
-Plan Mode is active. You are in **read-only planning mode**. You **CANNOT** create, edit, or delete any files or execute shell commands that modify state.
-`.trim();
-}
-
-/**
- * Wraps text in a system reminder XML block.
- */
-export function wrapSystemReminder(text: string): string {
-  return `\n\n<system_reminder>\n${text}\n</system_reminder>`;
-}
-
 export function renderPlanningWorkflow(
   options?: PlanningWorkflowOptions,
 ): string {
@@ -412,7 +382,7 @@ function mandateContinueWork(interactive: boolean): string {
 
 function workflowStepUnderstand(options: PrimaryWorkflowsOptions): string {
   if (options.enableCodebaseInvestigator) {
-    return `1. **Understand & Strategize:** Think about the user's request and the relevant codebase context. When the task involves **complex refactoring, code base exploration or system-wide analysis**, your **first and primary action** must be to delegate to the 'codebase_investigator' agent using the 'codebase_investigator' tool. Use it to build a comprehensive understanding of the code, its structure, and dependencies. For **simple, targeted searches** (like finding a specific function name, file path, or variable declaration), you should use '${GREP_TOOL_NAME}' or '${GLOB_TOOL_NAME}' directly.`;
+    return `1. **Understand & Strategize:** Think about the user's request and the relevant codebase context. When the task involves **complex refactoring, codebase exploration or system-wide analysis**, your **first and primary action** must be to delegate to the 'codebase_investigator' agent using the 'codebase_investigator' tool. Use it to build a comprehensive understanding of the code, its structure, and dependencies. For **simple, targeted searches** (like finding a specific function name, file path, or variable declaration), you should use '${GREP_TOOL_NAME}' or '${GLOB_TOOL_NAME}' directly.`;
   }
   return `1. **Understand:** Think about the user's request and the relevant codebase context. Use '${GREP_TOOL_NAME}' and '${GLOB_TOOL_NAME}' search tools extensively (in parallel if independent) to understand file structures, existing code patterns, and conventions.
 Use '${READ_FILE_TOOL_NAME}' to understand context and validate any assumptions you may have. If you need to read multiple files, you should make multiple parallel calls to '${READ_FILE_TOOL_NAME}'.`;
