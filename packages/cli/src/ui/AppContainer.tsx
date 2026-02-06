@@ -1632,18 +1632,6 @@ Logging in with Google... Restarting Gemini CLI to continue.
     ],
   );
 
-  useKeypress(
-    useCallback(() => {
-      if (copyModeEnabled) {
-        setCopyModeEnabled(false);
-        enableMouseEvents();
-        return true;
-      }
-      return false;
-    }, [copyModeEnabled]),
-    { isActive: copyModeEnabled, priority: true },
-  );
-
   useKeypress(handleGlobalKeypress, { isActive: true });
 
   useEffect(() => {
