@@ -46,7 +46,6 @@ describe('<ToolGroupMessage />', () => {
     folderTrust: false,
     ideMode: false,
     enableInteractiveShell: true,
-    previewFeatures: false,
     enableEventDrivenScheduler: true,
   });
 
