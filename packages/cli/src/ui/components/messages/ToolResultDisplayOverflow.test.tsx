@@ -50,6 +50,7 @@ describe('ToolResultDisplay Overflow', () => {
           streamingState: StreamingState.Idle,
           constrainHeight: true,
         },
+        useAlternateBuffer: false,
       },
     );
 

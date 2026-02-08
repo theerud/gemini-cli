@@ -22,6 +22,12 @@ import {
   FocusHint,
 } from './ToolShared.js';
 import type { ToolMessageProps } from './ToolMessage.js';
+import { ToolCallStatus } from '../../types.js';
+import {
+  ACTIVE_SHELL_MAX_LINES,
+  COMPLETED_SHELL_MAX_LINES,
+} from '../../constants.js';
+import { useAlternateBuffer } from '../../hooks/useAlternateBuffer.js';
 import type { Config } from '@google/gemini-cli-core';
 import { theme } from '../../semantic-colors.js';
 
@@ -63,6 +69,7 @@ export const ShellToolMessage: React.FC<ShellToolMessageProps> = ({
   borderDimColor,
   treeConnector,
 }) => {
+  const isAlternateBuffer = useAlternateBuffer();
   const isThisShellFocused = checkIsShellFocused(
     name,
     status,
@@ -72,6 +79,18 @@ export const ShellToolMessage: React.FC<ShellToolMessageProps> = ({
   );
 
   const { setEmbeddedShellFocused } = useUIActions();
+  const wasFocusedRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (isThisShellFocused) {
+      wasFocusedRef.current = true;
+    } else if (wasFocusedRef.current) {
+      if (embeddedShellFocused) {
+        setEmbeddedShellFocused(false);
+      }
+      wasFocusedRef.current = false;
+    }
+  }, [isThisShellFocused, embeddedShellFocused, setEmbeddedShellFocused]);
 
   const headerRef = React.useRef<DOMElement>(null);
 
@@ -144,12 +163,20 @@ export const ShellToolMessage: React.FC<ShellToolMessageProps> = ({
           availableTerminalHeight={availableTerminalHeight}
           terminalWidth={terminalWidth}
           renderOutputAsMarkdown={renderOutputAsMarkdown}
+          hasFocus={isThisShellFocused}
+          maxLines={getShellMaxLines(
+            status,
+            isAlternateBuffer,
+            isThisShellFocused,
+            availableTerminalHeight,
+          )}
         />
         {isThisShellFocused && config && (
           <Box paddingLeft={STATUS_INDICATOR_WIDTH} marginTop={1}>
             <ShellInputPrompt
               activeShellPtyId={activeShellPtyId ?? null}
               focus={embeddedShellFocused}
+              scrollPageSize={availableTerminalHeight ?? ACTIVE_SHELL_MAX_LINES}
             />
           </Box>
         )}
@@ -157,3 +184,39 @@ export const ShellToolMessage: React.FC<ShellToolMessageProps> = ({
     </>
   );
 };
+
+/**
+ * Calculates the maximum number of lines to display for shell output.
+ *
+ * For completed processes (Success, Error, Canceled), it returns COMPLETED_SHELL_MAX_LINES.
+ * For active processes, it returns the available terminal height if in alternate buffer mode
+ * and focused. Otherwise, it returns ACTIVE_SHELL_MAX_LINES.
+ *
+ * This function ensures a finite number of lines is always returned to prevent performance issues.
+ */
+function getShellMaxLines(
+  status: ToolCallStatus,
+  isAlternateBuffer: boolean,
+  isThisShellFocused: boolean,
+  availableTerminalHeight: number | undefined,
+): number {
+  if (
+    status === ToolCallStatus.Success ||
+    status === ToolCallStatus.Error ||
+    status === ToolCallStatus.Canceled
+  ) {
+    return COMPLETED_SHELL_MAX_LINES;
+  }
+
+  if (availableTerminalHeight === undefined) {
+    return ACTIVE_SHELL_MAX_LINES;
+  }
+
+  const maxLinesBasedOnHeight = Math.max(1, availableTerminalHeight - 2);
+
+  if (isAlternateBuffer && isThisShellFocused) {
+    return maxLinesBasedOnHeight;
+  }
+
+  return Math.min(maxLinesBasedOnHeight, ACTIVE_SHELL_MAX_LINES);
+}

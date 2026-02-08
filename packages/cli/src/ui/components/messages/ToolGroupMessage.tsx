@@ -45,6 +45,9 @@ const isAskUserInProgress = (t: IndividualToolCallDisplay): boolean =>
   ].includes(t.status);
 
 // Main component renders the border and maps the tools using ToolMessage
+const TOOL_MESSAGE_HORIZONTAL_MARGIN = 4;
+const TOOL_CONFIRMATION_INTERNAL_PADDING = 4;
+
 export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
   toolCalls: allToolCalls,
   availableTerminalHeight,
@@ -151,6 +154,8 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
       )
     : undefined;
 
+  const contentWidth = terminalWidth - TOOL_MESSAGE_HORIZONTAL_MARGIN;
+
   return (
     // This box doesn't have a border even though it conceptually does because
     // we need to allow the sticky headers to render the borders themselves so
@@ -164,6 +169,7 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
         cause tearing.
       */
       width={terminalWidth}
+      paddingRight={TOOL_MESSAGE_HORIZONTAL_MARGIN}
     >
       {/* Show parallel execution header for multiple tools */}
       {isParallelExecution && (
@@ -193,7 +199,7 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
         const commonProps = {
           ...tool,
           availableTerminalHeight: availableTerminalHeightPerToolMessage,
-          terminalWidth,
+          terminalWidth: contentWidth,
           emphasis: isConfirming
             ? ('high' as const)
             : toolAwaitingApproval
@@ -213,7 +219,7 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
             key={tool.callId}
             flexDirection="column"
             minHeight={1}
-            width={terminalWidth}
+            width={contentWidth}
           >
             {isShellToolCall ? (
               <ShellToolMessage
@@ -248,7 +254,9 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
                     availableTerminalHeight={
                       availableTerminalHeightPerToolMessage
                     }
-                    terminalWidth={terminalWidth - 4}
+                    terminalWidth={
+                      contentWidth - TOOL_CONFIRMATION_INTERNAL_PADDING
+                    }
                   />
                 )}
               {tool.outputFile && (
@@ -270,7 +278,7 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
         (visibleToolCalls.length > 0 || borderBottomOverride !== undefined) && (
           <Box
             height={0}
-            width={terminalWidth}
+            width={contentWidth}
             borderLeft={true}
             borderRight={true}
             borderTop={false}
