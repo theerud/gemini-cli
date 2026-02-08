@@ -18,15 +18,15 @@ exports[`ToolMessage Sticky Header Regression > verifies that ShellToolMessage i
 
 exports[`ToolMessage Sticky Header Regression > verifies that multiple ToolMessages in a ToolGroupMessage in a ScrollableList have sticky headers 1`] = `
 "╭────────────────────────────────────────────────────────────────────────╮     █
-│ ✓  tool-1 Description for tool-1                                       │
-│                                                                        │
-│ c1-01                                                                  │
-│ c1-02                                                                  │"
+│ ⋮ Ran 2 tools in parallel                                              │
+╭────────────────────────────────────────────────────────────────────────╮
+│ • ✓  tool-1 Description for tool-1                                     │
+│                                                                        │"
 `;
 
 exports[`ToolMessage Sticky Header Regression > verifies that multiple ToolMessages in a ToolGroupMessage in a ScrollableList have sticky headers 2`] = `
 "╭────────────────────────────────────────────────────────────────────────╮
-│ ✓  tool-1 Description for tool-1                                       │     █
+│ • ✓  tool-1 Description for tool-1                                     │     █
 │────────────────────────────────────────────────────────────────────────│
 │ c1-06                                                                  │
 │ c1-07                                                                  │"
@@ -34,7 +34,7 @@ exports[`ToolMessage Sticky Header Regression > verifies that multiple ToolMessa
 
 exports[`ToolMessage Sticky Header Regression > verifies that multiple ToolMessages in a ToolGroupMessage in a ScrollableList have sticky headers 3`] = `
 "│                                                                        │
-│ ✓  tool-2 Description for tool-2                                       │
+│ • ✓  tool-2 Description for tool-2                                     │
 │────────────────────────────────────────────────────────────────────────│
 │ c2-10                                                                  │
 ╰────────────────────────────────────────────────────────────────────────╯     █"

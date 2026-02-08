@@ -56,10 +56,13 @@ describe('ApiAuthDialog', () => {
       cursor: [0, 0],
       visualCursor: [0, 0],
       viewportVisualLines: [''],
+      allVisualLines: [''],
+      visualScrollRow: 0,
       handleInput: vi.fn(),
       setText: vi.fn((newText) => {
         mockBuffer.text = newText;
         mockBuffer.viewportVisualLines = [newText];
+        mockBuffer.allVisualLines = [newText];
       }),
     } as unknown as TextBuffer;
     mockedUseTextBuffer.mockReturnValue(mockBuffer);

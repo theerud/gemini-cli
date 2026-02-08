@@ -111,7 +111,7 @@ describe('ToolMessage Sticky Header Regression', () => {
 
     // Scroll down so that tool-1's header should be stuck
     await act(async () => {
-      listRef?.scrollBy(5);
+      listRef?.scrollBy(7);
     });
 
     // tool-1 header should still be visible because it is sticky

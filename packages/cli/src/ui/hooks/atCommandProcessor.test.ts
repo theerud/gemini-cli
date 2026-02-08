@@ -16,6 +16,7 @@ import {
   ToolRegistry,
   COMMON_IGNORE_PATTERNS,
   GEMINI_IGNORE_FILE_NAME,
+  ApprovalMode,
   // DEFAULT_FILE_EXCLUDES,
 } from '@google/gemini-cli-core';
 import * as core from '@google/gemini-cli-core';
@@ -134,6 +135,7 @@ describe('handleAtCommand', () => {
         getClient: () => undefined,
       }),
       getMessageBus: () => mockMessageBus,
+      getApprovalMode: () => ApprovalMode.DEFAULT,
     } as unknown as Config;
 
     const registry = new ToolRegistry(mockConfig, mockMessageBus);

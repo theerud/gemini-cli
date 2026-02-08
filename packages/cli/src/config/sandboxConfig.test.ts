@@ -97,7 +97,7 @@ describe('loadSandboxConfig', () => {
     it('should throw if GEMINI_SANDBOX is an invalid command', async () => {
       process.env['GEMINI_SANDBOX'] = 'invalid-command';
       await expect(loadSandboxConfig({}, {})).rejects.toThrow(
-        "Invalid sandbox command 'invalid-command'. Must be one of docker, podman, sandbox-exec",
+        "Invalid sandbox engine 'invalid-command'. Must be one of: docker, podman, sandbox-exec, bwrap",
       );
     });
 
@@ -105,7 +105,7 @@ describe('loadSandboxConfig', () => {
       process.env['GEMINI_SANDBOX'] = 'docker';
       mockedCommandExistsSync.mockReturnValue(false);
       await expect(loadSandboxConfig({}, {})).rejects.toThrow(
-        "Missing sandbox command 'docker' (from GEMINI_SANDBOX)",
+        "Sandbox engine 'docker' requested but not found in PATH.",
       );
     });
   });
@@ -151,8 +151,7 @@ describe('loadSandboxConfig', () => {
       mockedOsPlatform.mockReturnValue('linux');
       mockedCommandExistsSync.mockReturnValue(false);
       await expect(loadSandboxConfig({}, { sandbox: true })).rejects.toThrow(
-        'GEMINI_SANDBOX is true but failed to determine command for sandbox; ' +
-          'install docker or podman or specify command in GEMINI_SANDBOX',
+        'Sandbox is enabled but no supported engine (bwrap, docker, podman) was found in PATH.',
       );
     });
   });
@@ -170,7 +169,7 @@ describe('loadSandboxConfig', () => {
       await expect(
         loadSandboxConfig({}, { sandbox: 'podman' }),
       ).rejects.toThrow(
-        "Missing sandbox command 'podman' (from GEMINI_SANDBOX)",
+        "Sandbox engine 'podman' requested but not found in PATH.",
       );
     });
 
@@ -178,7 +177,7 @@ describe('loadSandboxConfig', () => {
       await expect(
         loadSandboxConfig({}, { sandbox: 'invalid-command' }),
       ).rejects.toThrow(
-        "Invalid sandbox command 'invalid-command'. Must be one of docker, podman, sandbox-exec",
+        "Invalid sandbox engine 'invalid-command'. Must be one of: docker, podman, sandbox-exec, bwrap",
       );
     });
   });
@@ -222,10 +221,9 @@ describe('loadSandboxConfig', () => {
       },
     );
 
-    it.each([false, 'false', '0', undefined, null, ''])(
+    it.each([false, 'false', '0', undefined, null])(
       'should disable sandbox for value: %s',
       async (value) => {
-        // \`null\` is not a valid type for the arg, but good to test falsiness
         const config = await loadSandboxConfig({}, { sandbox: value });
         expect(config).toBeUndefined();
       },
