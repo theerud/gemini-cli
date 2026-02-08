@@ -1925,7 +1925,7 @@ describe('AppContainer State Management', () => {
       it('should focus shell input on Tab', async () => {
         await setupKeypressTest();
 
-        pressKey({ name: 'tab', shift: false });
+        pressKey('\t');
 
         expect(capturedUIState.embeddedShellFocused).toBe(true);
         unmount();
@@ -1935,11 +1935,11 @@ describe('AppContainer State Management', () => {
         await setupKeypressTest();
 
         // Focus first
-        pressKey({ name: 'tab', shift: false });
+        pressKey('\t');
         expect(capturedUIState.embeddedShellFocused).toBe(true);
 
         // Unfocus via Shift+Tab
-        pressKey({ name: 'tab', shift: true });
+        pressKey('\x1b[Z');
         expect(capturedUIState.embeddedShellFocused).toBe(false);
         unmount();
       });
@@ -1958,14 +1958,9 @@ describe('AppContainer State Management', () => {
 
         // Focus it
         act(() => {
-          handleGlobalKeypress({
-            name: 'tab',
-            shift: false,
-            alt: false,
-            ctrl: false,
-            cmd: false,
-          } as Key);
+          renderResult.stdin.write('\t');
         });
+        renderResult.rerender(getAppContainer());
         expect(capturedUIState.embeddedShellFocused).toBe(true);
 
         // Now mock activePtyId becoming null
@@ -1999,7 +1994,7 @@ describe('AppContainer State Management', () => {
         expect(capturedUIState.embeddedShellFocused).toBe(false);
 
         // Press Tab
-        pressKey({ name: 'tab', shift: false });
+        pressKey('\t');
 
         // Should be focused
         expect(capturedUIState.embeddedShellFocused).toBe(true);
@@ -2027,7 +2022,7 @@ describe('AppContainer State Management', () => {
         expect(capturedUIState.embeddedShellFocused).toBe(false);
 
         // Press Ctrl+B
-        pressKey({ name: 'b', ctrl: true });
+        pressKey('\x02');
 
         // Should have toggled (closed) the shell
         expect(mockToggleBackgroundShell).toHaveBeenCalled();
@@ -2056,7 +2051,7 @@ describe('AppContainer State Management', () => {
         });
 
         // Press Ctrl+B
-        pressKey({ name: 'b', ctrl: true });
+        pressKey('\x02');
 
         // Should have toggled (shown) the shell
         expect(mockToggleBackgroundShell).toHaveBeenCalled();
