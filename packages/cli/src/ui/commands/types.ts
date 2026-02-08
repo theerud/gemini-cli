@@ -93,6 +93,7 @@ export interface CommandContext {
     removeComponent: () => void;
     setApprovalMode: (mode: ApprovalMode) => Promise<void>;
     toggleBackgroundShell: () => void;
+    toggleShortcutsHelp: () => void;
   };
   // Session-specific data
   session: {

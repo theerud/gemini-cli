@@ -215,6 +215,7 @@ describe('useSlashCommandProcessor', () => {
             addConfirmUpdateExtensionRequest: vi.fn(),
             setApprovalMode: vi.fn(),
             toggleBackgroundShell: vi.fn(),
+            toggleShortcutsHelp: vi.fn(),
             setText: vi.fn(),
           },
           new Map(), // extensionsUpdateState

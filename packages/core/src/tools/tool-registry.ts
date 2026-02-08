@@ -26,6 +26,7 @@ import {
   TOOL_LEGACY_ALIASES,
   ENTER_PLAN_MODE_TOOL_NAME,
   EXIT_PLAN_MODE_TOOL_NAME,
+  getToolAliases,
 } from './tool-names.js';
 import { ApprovalMode } from '../policy/types.js';
 
@@ -437,7 +438,9 @@ export class ToolRegistry {
    * @returns All the tools that are not excluded.
    */
   private getActiveTools(): AnyDeclarativeTool[] {
-    const excludedTools = this.config.getExcludeTools() ?? new Set([]);
+    const excludedTools =
+      this.expandExcludeToolsWithAliases(this.config.getExcludeTools()) ??
+      new Set([]);
     const activeTools: AnyDeclarativeTool[] = [];
     for (const tool of this.allKnownTools.values()) {
       if (this.isActiveTool(tool, excludedTools)) {
@@ -445,6 +448,26 @@ export class ToolRegistry {
       }
     }
     return activeTools;
+  }
+
+  /**
+   * Expands an excludeTools set to include all legacy aliases.
+   * For example, if 'search_file_content' is excluded and it's an alias for
+   * 'grep_search', both names will be in the returned set.
+   */
+  private expandExcludeToolsWithAliases(
+    excludeTools: Set<string> | undefined,
+  ): Set<string> | undefined {
+    if (!excludeTools || excludeTools.size === 0) {
+      return excludeTools;
+    }
+    const expanded = new Set<string>();
+    for (const name of excludeTools) {
+      for (const alias of getToolAliases(name)) {
+        expanded.add(alias);
+      }
+    }
+    return expanded;
   }
 
   /**
@@ -456,7 +479,9 @@ export class ToolRegistry {
     tool: AnyDeclarativeTool,
     excludeTools?: Set<string>,
   ): boolean {
-    excludeTools ??= this.config.getExcludeTools() ?? new Set([]);
+    excludeTools ??=
+      this.expandExcludeToolsWithAliases(this.config.getExcludeTools()) ??
+      new Set([]);
     const normalizedClassName = tool.constructor.name.replace(/^_+/, '');
     const possibleNames = [tool.name, normalizedClassName];
     if (tool instanceof DiscoveredMCPTool) {

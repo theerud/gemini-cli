@@ -32,5 +32,6 @@ export function createNonInteractiveUI(): CommandContext['ui'] {
     removeComponent: () => {},
     setApprovalMode: async (_mode) => {},
     toggleBackgroundShell: () => {},
+    toggleShortcutsHelp: () => {},
   };
 }

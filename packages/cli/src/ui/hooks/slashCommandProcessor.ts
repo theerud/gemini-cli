@@ -85,6 +85,7 @@ interface SlashCommandProcessorActions {
   addConfirmUpdateExtensionRequest: (request: ConfirmationRequest) => void;
   setApprovalMode: (mode: ApprovalMode) => Promise<void>;
   toggleBackgroundShell: () => void;
+  toggleShortcutsHelp: () => void;
   setText: (text: string) => void;
 }
 
@@ -243,6 +244,7 @@ export const useSlashCommandProcessor = (
         removeComponent: () => setCustomDialog(null),
         setApprovalMode: actions.setApprovalMode,
         toggleBackgroundShell: actions.toggleBackgroundShell,
+        toggleShortcutsHelp: actions.toggleShortcutsHelp,
       },
       session: {
         stats: session.stats,
