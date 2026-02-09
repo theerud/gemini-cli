@@ -1293,7 +1293,9 @@ describe('handleAtCommand', () => {
         signal: abortController.signal,
       });
 
-      expect(readResource).toHaveBeenCalledWith(resourceUri);
+      expect(readResource).toHaveBeenCalledWith(resourceUri, {
+        signal: abortController.signal,
+      });
       const processedParts = Array.isArray(result.processedQuery)
         ? result.processedQuery
         : [];
