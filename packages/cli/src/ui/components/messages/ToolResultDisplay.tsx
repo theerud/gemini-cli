@@ -11,7 +11,11 @@ import { MarkdownDisplay } from '../../utils/MarkdownDisplay.js';
 import { AnsiOutputText, AnsiLineText } from '../AnsiOutput.js';
 import { MaxSizedBox } from '../shared/MaxSizedBox.js';
 import { theme } from '../../semantic-colors.js';
-import type { AnsiOutput, AnsiLine } from '@google/gemini-cli-core';
+import type {
+  AnsiOutput,
+  AnsiLine,
+  PresentedPlan,
+} from '@google/gemini-cli-core';
 import { useUIState } from '../../contexts/UIStateContext.js';
 import { tryParseJSON } from '../../../utils/jsonoutput.js';
 import { useAlternateBuffer } from '../../hooks/useAlternateBuffer.js';
@@ -120,16 +124,15 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({
     // If availableHeight is undefined, fallback to a safe default to prevents infinite loop
     // where Container grows -> List renders more -> Container grows.
     const limit = maxLines ?? availableHeight ?? ACTIVE_SHELL_MAX_LINES;
-    const listHeight = Math.min(
-      (truncatedResultDisplay as AnsiOutput).length,
-      limit,
-    );
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    const ansiOutput = truncatedResultDisplay as AnsiOutput;
+    const listHeight = Math.min(ansiOutput.length, limit);
 
     return (
       <Box width={childWidth} flexDirection="column" maxHeight={listHeight}>
         <ScrollableList
           width={childWidth}
-          data={truncatedResultDisplay as AnsiOutput}
+          data={ansiOutput}
           renderItem={renderVirtualizedAnsiLine}
           estimatedItemHeight={() => 1}
           keyExtractor={keyExtractor}
@@ -182,10 +185,12 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({
     typeof truncatedResultDisplay === 'object' &&
     'fileDiff' in truncatedResultDisplay
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    const diffResult = truncatedResultDisplay as FileDiffResult;
     content = (
       <DiffRenderer
-        diffContent={(truncatedResultDisplay as FileDiffResult).fileDiff}
-        filename={(truncatedResultDisplay as FileDiffResult).fileName}
+        diffContent={diffResult.fileDiff}
+        filename={diffResult.fileName}
         availableTerminalHeight={availableHeight}
         terminalWidth={childWidth}
       />
@@ -194,15 +199,11 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({
     typeof truncatedResultDisplay === 'object' &&
     'presentedPlan' in truncatedResultDisplay
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    const plan = truncatedResultDisplay as PresentedPlan;
     content = (
       <MarkdownDisplay
-        text={
-          (
-            truncatedResultDisplay as {
-              presentedPlan: { displayText: string };
-            }
-          ).presentedPlan.displayText
-        }
+        text={plan.presentedPlan.displayText}
         terminalWidth={childWidth}
         renderMarkdown={renderMarkdown}
         isPending={false}
@@ -213,9 +214,12 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({
       isAlternateBuffer ||
       (availableTerminalHeight === undefined && maxLines === undefined);
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    const ansiOutput = truncatedResultDisplay as AnsiOutput;
+
     content = (
       <AnsiOutputText
-        data={truncatedResultDisplay as AnsiOutput}
+        data={ansiOutput}
         availableTerminalHeight={
           isAlternateBuffer ? undefined : availableHeight
         }

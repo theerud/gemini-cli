@@ -37,13 +37,12 @@ vi.mock('@google/gemini-cli-core', async () => {
 describe('ShellInputPrompt', () => {
   const mockWriteToPty = vi.mocked(ShellExecutionService.writeToPty);
   const mockScrollPty = vi.mocked(ShellExecutionService.scrollPty);
-  const mockHandleWarning = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useUIActions).mockReturnValue({
-      handleWarning: mockHandleWarning,
-    } as Partial<UIActions> as UIActions);
+    vi.mocked(useUIActions).mockReturnValue(
+      {} as Partial<UIActions> as UIActions,
+    );
   });
 
   it('renders nothing', () => {

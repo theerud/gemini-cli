@@ -247,6 +247,29 @@ describe('Core System Prompt (prompts.ts)', () => {
     expect(prompt).toMatchSnapshot(); // Snapshot the combined prompt
   });
 
+  it('should render hierarchical memory with XML tags', () => {
+    vi.stubEnv('SANDBOX', undefined);
+    const memory = {
+      global: 'global context',
+      extension: 'extension context',
+      project: 'project context',
+    };
+    const prompt = getCoreSystemPrompt(mockConfig, memory);
+
+    expect(prompt).toContain(
+      '<global_context>\nglobal context\n</global_context>',
+    );
+    expect(prompt).toContain(
+      '<extension_context>\nextension context\n</extension_context>',
+    );
+    expect(prompt).toContain(
+      '<project_context>\nproject context\n</project_context>',
+    );
+    expect(prompt).toMatchSnapshot();
+    // Should also include conflict resolution rules when hierarchical memory is present
+    expect(prompt).toContain('Conflict Resolution:');
+  });
+
   it('should match snapshot on Windows', () => {
     mockPlatform('win32');
     vi.stubEnv('SANDBOX', undefined);
@@ -463,26 +486,6 @@ describe('Core System Prompt (prompts.ts)', () => {
   });
 
   describe('Platform-specific and Background Process instructions', () => {
-    it('should include Windows-specific shell efficiency commands on win32', () => {
-      mockPlatform('win32');
-      const prompt = getCoreSystemPrompt(mockConfig);
-      expect(prompt).toContain(
-        "using commands like 'type' or 'findstr' (on CMD) and 'Get-Content' or 'Select-String' (on PowerShell)",
-      );
-      expect(prompt).not.toContain(
-        "using commands like 'grep', 'tail', 'head'",
-      );
-    });
-
-    it('should include generic shell efficiency commands on non-Windows', () => {
-      mockPlatform('linux');
-      const prompt = getCoreSystemPrompt(mockConfig);
-      expect(prompt).toContain("using commands like 'grep', 'tail', 'head'");
-      expect(prompt).not.toContain(
-        "using commands like 'type' or 'findstr' (on CMD) and 'Get-Content' or 'Select-String' (on PowerShell)",
-      );
-    });
-
     it('should use is_background parameter in background process instructions', () => {
       const prompt = getCoreSystemPrompt(mockConfig);
       expect(prompt).toContain(

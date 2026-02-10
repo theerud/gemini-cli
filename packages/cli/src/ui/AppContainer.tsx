@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2025 Google LLC
+ * Copyright 2026 Google LLC
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -28,7 +28,10 @@ import {
   type HistoryItemToolGroup,
   AuthState,
   type ConfirmationRequest,
+  type PermissionConfirmationRequest,
+  type QuotaStats,
 } from './types.js';
+import { checkPermissions } from './hooks/atCommandProcessor.js';
 import { MessageType, StreamingState } from './types.js';
 import { ToolActionsProvider } from './contexts/ToolActionsContext.js';
 import { AskUserActionsProvider } from './contexts/AskUserActionsContext.js';
@@ -55,6 +58,7 @@ import {
   coreEvents,
   CoreEvent,
   refreshServerHierarchicalMemory,
+  flattenMemory,
   type MemoryChangedPayload,
   writeToStdout,
   disableMouseEvents,
@@ -88,7 +92,6 @@ import { calculatePromptWidths } from './components/InputPrompt.js';
 import { useApp, useStdout, useStdin } from 'ink';
 import { calculateMainAreaWidth } from './utils/ui-sizing.js';
 import ansiEscapes from 'ansi-escapes';
-import * as fs from 'node:fs';
 import { basename } from 'node:path';
 import { computeTerminalTitle } from '../utils/windowTitle.js';
 import { useTextBuffer } from './components/shared/text-buffer.js';
@@ -107,7 +110,7 @@ import { useShellInactivityStatus } from './hooks/useShellInactivityStatus.js';
 import { useFolderTrust } from './hooks/useFolderTrust.js';
 import { useIdeTrustListener } from './hooks/useIdeTrustListener.js';
 import { type IdeIntegrationNudgeResult } from './IdeIntegrationNudge.js';
-import { appEvents, AppEvent } from '../utils/events.js';
+import { appEvents, AppEvent, TransientMessageType } from '../utils/events.js';
 import { type UpdateObject } from './utils/updateCheck.js';
 import { setUpdateHandler } from '../utils/handleAutoUpdate.js';
 import { registerCleanup, runExitCleanup } from '../utils/cleanup.js';
@@ -145,6 +148,7 @@ import { useAskUser } from './hooks/useAskUser.js';
 import { NewAgentsChoice } from './components/NewAgentsNotification.js';
 import { isSlashCommand } from './utils/commandUtils.js';
 import { useTerminalTheme } from './hooks/useTerminalTheme.js';
+import { useTimedMessage } from './hooks/useTimedMessage.js';
 import { isITerm2 } from './utils/terminalUtils.js';
 
 function isToolExecuting(pendingHistoryItems: HistoryItemWithoutId[]) {
@@ -259,6 +263,7 @@ export const AppContainer = (props: AppContainerProps) => {
     clearRequest: clearAskUserRequest,
   } = useAskUser(config);
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
   const extensionManager = config.getExtensionLoader() as ExtensionManager;
   // We are in the interactive CLI, update how we request consent and settings.
   extensionManager.setRequestConsent((description) =>
@@ -330,6 +335,16 @@ export const AppContainer = (props: AppContainerProps) => {
   const [currentModel, setCurrentModel] = useState(config.getModel());
 
   const [userTier, setUserTier] = useState<UserTierId | undefined>(undefined);
+  const [quotaStats, setQuotaStats] = useState<QuotaStats | undefined>(() => {
+    const remaining = config.getQuotaRemaining();
+    const limit = config.getQuotaLimit();
+    const resetTime = config.getQuotaResetTime();
+    return remaining !== undefined ||
+      limit !== undefined ||
+      resetTime !== undefined
+      ? { remaining, limit, resetTime }
+      : undefined;
+  });
 
   const [isConfigInitialized, setConfigInitialized] = useState(false);
 
@@ -432,9 +447,23 @@ export const AppContainer = (props: AppContainerProps) => {
       setCurrentModel(config.getModel());
     };
 
+    const handleQuotaChanged = (payload: {
+      remaining: number | undefined;
+      limit: number | undefined;
+      resetTime?: string;
+    }) => {
+      setQuotaStats({
+        remaining: payload.remaining,
+        limit: payload.limit,
+        resetTime: payload.resetTime,
+      });
+    };
+
     coreEvents.on(CoreEvent.ModelChanged, handleModelChanged);
+    coreEvents.on(CoreEvent.QuotaChanged, handleQuotaChanged);
     return () => {
       coreEvents.off(CoreEvent.ModelChanged, handleModelChanged);
+      coreEvents.off(CoreEvent.QuotaChanged, handleQuotaChanged);
     };
   }, [config]);
 
@@ -477,15 +506,8 @@ export const AppContainer = (props: AppContainerProps) => {
 
   const staticAreaMaxItemHeight = Math.max(terminalHeight * 4, 100);
 
-  const isValidPath = useCallback((filePath: string): boolean => {
-    try {
-      return fs.existsSync(filePath) && fs.statSync(filePath).isFile();
-    } catch (_e) {
-      return false;
-    }
-  }, []);
-
   const getPreferredEditor = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
     () => settings.merged.general.preferredEditor as EditorType,
     [settings.merged.general.preferredEditor],
   );
@@ -495,7 +517,7 @@ export const AppContainer = (props: AppContainerProps) => {
     viewport: { height: 10, width: inputWidth },
     stdin,
     setRawMode,
-    isValidPath,
+    escapePastedPaths: true,
     shellModeActive,
     getPreferredEditor,
   });
@@ -860,6 +882,8 @@ Logging in with Google... Restarting Gemini CLI to continue.
 
   const [authConsentRequest, setAuthConsentRequest] =
     useState<ConfirmationRequest | null>(null);
+  const [permissionConfirmationRequest, setPermissionConfirmationRequest] =
+    useState<PermissionConfirmationRequest | null>(null);
 
   useEffect(() => {
     const handleConsentRequest = (payload: ConsentRequestPayload) => {
@@ -890,12 +914,14 @@ Logging in with Google... Restarting Gemini CLI to continue.
       const { memoryContent, fileCount } =
         await refreshServerHierarchicalMemory(config);
 
+      const flattenedMemory = flattenMemory(memoryContent);
+
       historyManager.addItem(
         {
           type: MessageType.INFO,
           text: `Memory refreshed successfully. ${
-            memoryContent.length > 0
-              ? `Loaded ${memoryContent.length} characters from ${fileCount} file(s).`
+            flattenedMemory.length > 0
+              ? `Loaded ${flattenedMemory.length} characters from ${fileCount} file(s).`
               : 'No memory content found.'
           }`,
         },
@@ -903,7 +929,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       );
       if (config.getDebugMode()) {
         debugLogger.log(
-          `[DEBUG] Refreshed memory content in config: ${memoryContent.substring(
+          `[DEBUG] Refreshed memory content in config: ${flattenedMemory.substring(
             0,
             200,
           )}...`,
@@ -1098,11 +1124,30 @@ Logging in with Google... Restarting Gemini CLI to continue.
   );
 
   const handleFinalSubmit = useCallback(
-    (submittedValue: string) => {
+    async (submittedValue: string) => {
       const isSlash = isSlashCommand(submittedValue.trim());
       const isIdle = streamingState === StreamingState.Idle;
 
       if (isSlash || (isIdle && isMcpReady)) {
+        if (!isSlash) {
+          const permissions = await checkPermissions(submittedValue, config);
+          if (permissions.length > 0) {
+            setPermissionConfirmationRequest({
+              files: permissions,
+              onComplete: (result) => {
+                setPermissionConfirmationRequest(null);
+                if (result.allowed) {
+                  permissions.forEach((p) =>
+                    config.getWorkspaceContext().addReadOnlyPath(p),
+                  );
+                }
+                void submitQuery(submittedValue);
+              },
+            });
+            addInput(submittedValue);
+            return;
+          }
+        }
         void submitQuery(submittedValue);
       } else {
         // Check messageQueue.length === 0 to only notify on the first queued item
@@ -1123,6 +1168,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       isMcpReady,
       streamingState,
       messageQueue.length,
+      config,
     ],
   );
 
@@ -1157,11 +1203,9 @@ Logging in with Google... Restarting Gemini CLI to continue.
   useLayoutEffect(() => {
     if (mainControlsRef.current) {
       const fullFooterMeasurement = measureElement(mainControlsRef.current);
-      if (
-        fullFooterMeasurement.height > 0 &&
-        fullFooterMeasurement.height !== controlsHeight
-      ) {
-        setControlsHeight(fullFooterMeasurement.height);
+      const roundedHeight = Math.round(fullFooterMeasurement.height);
+      if (roundedHeight > 0 && roundedHeight !== controlsHeight) {
+        setControlsHeight(roundedHeight);
       }
     }
   }, [buffer, terminalWidth, terminalHeight, controlsHeight]);
@@ -1241,7 +1285,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       !showPrivacyNotice &&
       geminiClient?.isInitialized?.()
     ) {
-      handleFinalSubmit(initialPrompt);
+      void handleFinalSubmit(initialPrompt);
       initialPromptSubmitted.current = true;
     }
   }, [
@@ -1289,7 +1333,11 @@ Logging in with Google... Restarting Gemini CLI to continue.
   >();
   const [showEscapePrompt, setShowEscapePrompt] = useState(false);
   const [showIdeRestartPrompt, setShowIdeRestartPrompt] = useState(false);
-  const [warningMessage, setWarningMessage] = useState<string | null>(null);
+
+  const [transientMessage, showTransientMessage] = useTimedMessage<{
+    text: string;
+    type: TransientMessageType;
+  }>(WARNING_PROMPT_DURATION_MS);
 
   const { isFolderTrustDialogOpen, handleFolderTrustSelect, isRestarting } =
     useFolderTrust(settings, setIsTrustedFolder, historyManager.addItem);
@@ -1301,41 +1349,42 @@ Logging in with Google... Restarting Gemini CLI to continue.
 
   useIncludeDirsTrust(config, isTrustedFolder, historyManager, setCustomDialog);
 
-  const warningTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const tabFocusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleWarning = useCallback((message: string) => {
-    setWarningMessage(message);
-    if (warningTimeoutRef.current) {
-      clearTimeout(warningTimeoutRef.current);
-    }
-    warningTimeoutRef.current = setTimeout(() => {
-      setWarningMessage(null);
-    }, WARNING_PROMPT_DURATION_MS);
-  }, []);
+  useEffect(() => {
+    const handleTransientMessage = (payload: {
+      message: string;
+      type: TransientMessageType;
+    }) => {
+      showTransientMessage({ text: payload.message, type: payload.type });
+    };
 
-  // Handle timeout cleanup on unmount
-  useEffect(
-    () => () => {
-      if (warningTimeoutRef.current) {
-        clearTimeout(warningTimeoutRef.current);
-      }
+    const handleSelectionWarning = () => {
+      showTransientMessage({
+        text: 'Press Ctrl-S to enter selection mode to copy text.',
+        type: TransientMessageType.Warning,
+      });
+    };
+    const handlePasteTimeout = () => {
+      showTransientMessage({
+        text: 'Paste Timed out. Possibly due to slow connection.',
+        type: TransientMessageType.Warning,
+      });
+    };
+
+    appEvents.on(AppEvent.TransientMessage, handleTransientMessage);
+    appEvents.on(AppEvent.SelectionWarning, handleSelectionWarning);
+    appEvents.on(AppEvent.PasteTimeout, handlePasteTimeout);
+
+    return () => {
+      appEvents.off(AppEvent.TransientMessage, handleTransientMessage);
+      appEvents.off(AppEvent.SelectionWarning, handleSelectionWarning);
+      appEvents.off(AppEvent.PasteTimeout, handlePasteTimeout);
       if (tabFocusTimeoutRef.current) {
         clearTimeout(tabFocusTimeoutRef.current);
       }
-    },
-    [],
-  );
-
-  useEffect(() => {
-    const handlePasteTimeout = () => {
-      handleWarning('Paste Timed out. Possibly due to slow connection.');
     };
-    appEvents.on(AppEvent.PasteTimeout, handlePasteTimeout);
-    return () => {
-      appEvents.off(AppEvent.PasteTimeout, handlePasteTimeout);
-    };
-  }, [handleWarning]);
+  }, [showTransientMessage]);
 
   useEffect(() => {
     if (ideNeedsRestart) {
@@ -1496,7 +1545,10 @@ Logging in with Google... Restarting Gemini CLI to continue.
         const undoMessage = isITerm2()
           ? 'Undo has been moved to Option + Z'
           : 'Undo has been moved to Alt/Option + Z or Cmd + Z';
-        handleWarning(undoMessage);
+        showTransientMessage({
+          text: undoMessage,
+          type: TransientMessageType.Warning,
+        });
         return true;
       } else if (keyMatchers[Command.SHOW_FULL_TODOS](key)) {
         setShowFullTodos((prev) => !prev);
@@ -1536,7 +1588,10 @@ Logging in with Google... Restarting Gemini CLI to continue.
             if (lastOutputTimeRef.current === capturedTime) {
               setEmbeddedShellFocused(false);
             } else {
-              handleWarning('Use Shift+Tab to unfocus');
+              showTransientMessage({
+                text: 'Use Shift+Tab to unfocus',
+                type: TransientMessageType.Warning,
+              });
             }
           }, 150);
           return false;
@@ -1615,7 +1670,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       setIsBackgroundShellListOpen,
       lastOutputTimeRef,
       tabFocusTimeoutRef,
-      handleWarning,
+      showTransientMessage,
     ],
   );
 
@@ -1740,6 +1795,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
     adminSettingsChanged ||
     !!commandConfirmationRequest ||
     !!authConsentRequest ||
+    !!permissionConfirmationRequest ||
     !!customDialog ||
     confirmUpdateExtensionRequests.length > 0 ||
     !!loopDetectionConfirmationRequest ||
@@ -1845,6 +1901,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       authConsentRequest,
       confirmUpdateExtensionRequests,
       loopDetectionConfirmationRequest,
+      permissionConfirmationRequest,
       geminiMdFileCount,
       streamingState,
       initError,
@@ -1879,9 +1936,12 @@ Logging in with Google... Restarting Gemini CLI to continue.
       queueErrorMessage,
       showApprovalModeIndicator,
       currentModel,
-      userTier,
-      proQuotaRequest,
-      validationRequest,
+      quota: {
+        userTier,
+        stats: quotaStats,
+        proQuotaRequest,
+        validationRequest,
+      },
       contextFileNames,
       errorCount,
       availableTerminalHeight,
@@ -1910,7 +1970,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       showDebugProfiler,
       customDialog,
       copyModeEnabled,
-      warningMessage,
+      transientMessage,
       bannerData,
       bannerVisible,
       terminalBackgroundColor: config.getTerminalBackground(),
@@ -1952,6 +2012,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       authConsentRequest,
       confirmUpdateExtensionRequests,
       loopDetectionConfirmationRequest,
+      permissionConfirmationRequest,
       geminiMdFileCount,
       streamingState,
       initError,
@@ -1986,6 +2047,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       queueErrorMessage,
       showApprovalModeIndicator,
       userTier,
+      quotaStats,
       proQuotaRequest,
       validationRequest,
       contextFileNames,
@@ -2020,7 +2082,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       apiKeyDefaultValue,
       authState,
       copyModeEnabled,
-      warningMessage,
+      transientMessage,
       bannerData,
       bannerVisible,
       config,
@@ -2078,7 +2140,6 @@ Logging in with Google... Restarting Gemini CLI to continue.
       handleApiKeyCancel,
       setBannerVisible,
       setShortcutsHelpVisible,
-      handleWarning,
       setEmbeddedShellFocused,
       setApprovalMode: handleApprovalModeChange,
       dismissBackgroundShell,
@@ -2158,7 +2219,6 @@ Logging in with Google... Restarting Gemini CLI to continue.
       handleApiKeyCancel,
       setBannerVisible,
       setShortcutsHelpVisible,
-      handleWarning,
       setEmbeddedShellFocused,
       handleApprovalModeChange,
       dismissBackgroundShell,
