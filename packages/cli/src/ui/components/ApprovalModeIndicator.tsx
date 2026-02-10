@@ -8,7 +8,6 @@ import type React from 'react';
 import { Box, Text } from 'ink';
 import { theme } from '../semantic-colors.js';
 import { ApprovalMode } from '@google/gemini-cli-core';
-import { useTerminalSize } from '../hooks/useTerminalSize.js';
 
 interface ApprovalModeIndicatorProps {
   approvalMode: ApprovalMode;
@@ -19,40 +18,33 @@ export const ApprovalModeIndicator: React.FC<ApprovalModeIndicatorProps> = ({
   approvalMode,
   isPlanEnabled,
 }) => {
-  const { columns: terminalWidth } = useTerminalSize();
-  const isCompact = terminalWidth < 100;
-
   let textColor = '';
   let textContent = '';
   let subText = '';
 
-  const cycleText = isCompact ? '[⇧]+[⇥]' : 'shift + tab';
-  const enterText = isCompact ? 'for' : 'to enter';
-  const modeSuffix = isCompact ? '' : ' mode';
-
   switch (approvalMode) {
     case ApprovalMode.AUTO_EDIT:
       textColor = theme.status.warning;
-      textContent = 'auto-edit';
-      subText = `${cycleText} ${enterText} default${modeSuffix}`;
+      textContent = 'auto-accept edits';
+      subText = 'shift+tab to manual';
       break;
     case ApprovalMode.PLAN:
       textColor = theme.status.success;
       textContent = 'plan';
-      subText = `${cycleText} ${enterText} auto-edit${modeSuffix}`;
+      subText = 'shift+tab to accept edits';
       break;
     case ApprovalMode.YOLO:
       textColor = theme.status.error;
       textContent = 'YOLO';
-      subText = `${cycleText} ${enterText} auto-edit${modeSuffix}`;
+      subText = 'ctrl+y';
       break;
     case ApprovalMode.DEFAULT:
     default:
       textColor = theme.text.accent;
       textContent = '';
       subText = isPlanEnabled
-        ? `${cycleText} ${enterText} plan${modeSuffix}`
-        : `${cycleText} ${enterText} auto-edit${modeSuffix}`;
+        ? 'shift+tab to plan'
+        : 'shift+tab to accept edits';
       break;
   }
 
