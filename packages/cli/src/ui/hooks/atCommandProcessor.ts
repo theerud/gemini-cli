@@ -403,6 +403,7 @@ async function readMcpResources(
       const display: IndividualToolCallDisplay = {
         callId: `mcp-resource-${resource.serverName}-${resource.uri}`,
         name: `resources/read (${resource.serverName})`,
+        toolName: 'mcp_resource_read',
         description: resource.uri,
         status: ToolCallStatus.Success,
         resultDisplay: `Successfully read resource ${resource.uri}`,
@@ -418,6 +419,7 @@ async function readMcpResources(
       const display: IndividualToolCallDisplay = {
         callId: `mcp-resource-${resource.serverName}-${resource.uri}`,
         name: `resources/read (${resource.serverName})`,
+        toolName: 'mcp_resource_read',
         description: resource.uri,
         status: ToolCallStatus.Error,
         resultDisplay: `Error reading resource ${resource.uri}: ${getErrorMessage(error)}`,
