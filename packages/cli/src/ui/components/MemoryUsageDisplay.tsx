@@ -9,9 +9,15 @@ import { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 import { theme } from '../semantic-colors.js';
 import process from 'node:process';
-import { formatBytes } from '../utils/formatters.js';
+import { formatBytes, formatBytesCompact } from '../utils/formatters.js';
 
-export const MemoryUsageDisplay: React.FC = () => {
+interface MemoryUsageDisplayProps {
+  terse?: boolean;
+}
+
+export const MemoryUsageDisplay: React.FC<MemoryUsageDisplayProps> = ({
+  terse,
+}) => {
   const [memoryUsage, setMemoryUsage] = useState<string>('');
   const [memoryUsageColor, setMemoryUsageColor] = useState<string>(
     theme.text.secondary,
@@ -20,7 +26,7 @@ export const MemoryUsageDisplay: React.FC = () => {
   useEffect(() => {
     const updateMemory = () => {
       const usage = process.memoryUsage().rss;
-      setMemoryUsage(formatBytes(usage));
+      setMemoryUsage(terse ? formatBytesCompact(usage) : formatBytes(usage));
       setMemoryUsageColor(
         usage >= 2 * 1024 * 1024 * 1024
           ? theme.status.error
@@ -30,11 +36,11 @@ export const MemoryUsageDisplay: React.FC = () => {
     const intervalId = setInterval(updateMemory, 2000);
     updateMemory(); // Initial update
     return () => clearInterval(intervalId);
-  }, []);
+  }, [terse]);
 
   return (
     <Box>
-      <Text color={theme.text.secondary}> | </Text>
+      <Text color={theme.text.secondary}>{terse ? ' ' : ' | '}</Text>
       <Text color={memoryUsageColor}>{memoryUsage}</Text>
     </Box>
   );

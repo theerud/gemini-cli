@@ -207,7 +207,7 @@ describe('<Footer />', () => {
       }),
     });
     expect(lastFrame()).toContain(defaultProps.model);
-    expect(lastFrame()).toMatch(/\(\d+%\)/);
+    expect(lastFrame()).toMatch(/\d+%/);
   });
 
   describe('sandbox and trust info', () => {

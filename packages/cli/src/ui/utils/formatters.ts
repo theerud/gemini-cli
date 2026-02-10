@@ -20,6 +20,16 @@ export const formatBytes = (bytes: number): string => {
   return `${gb.toFixed(2)} GB`;
 };
 
+export const formatBytesCompact = (bytes: number): string => {
+  if (bytes < 1024 * 1024) {
+    return `${Math.round(bytes / 1024)}KB`;
+  }
+  if (bytes < 1024 * 1024 * 1024) {
+    return `${Math.round(bytes / (1024 * 1024))}MB`;
+  }
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)}GB`;
+};
+
 /**
  * Formats a duration in milliseconds into a concise, human-readable string (e.g., "1h 5s").
  * It omits any time units that are zero.

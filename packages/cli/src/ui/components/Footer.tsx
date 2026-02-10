@@ -68,6 +68,7 @@ export const Footer: React.FC = () => {
   const hideModelInfo = settings.merged.ui.footer.hideModelInfo;
   const hideContextPercentage = settings.merged.ui.footer.hideContextPercentage;
 
+  const isCompact = terminalWidth < 100;
   const pathLength = Math.max(20, Math.floor(terminalWidth * 0.25));
   const displayPath = shortenPath(tildeifyPath(targetDir), pathLength);
 
@@ -129,15 +130,17 @@ export const Footer: React.FC = () => {
             </Text>
           ) : process.env['SANDBOX'] === 'sandbox-exec' ? (
             <Text color={theme.status.warning}>
-              macOS Seatbelt{' '}
-              <Text color={theme.text.secondary}>
-                ({process.env['SEATBELT_PROFILE']})
-              </Text>
+              {isCompact ? '' : 'macOS '}Seatbelt{' '}
+              {!isCompact && (
+                <Text color={theme.text.secondary}>
+                  ({process.env['SEATBELT_PROFILE']})
+                </Text>
+              )}
             </Text>
           ) : (
             <Text color={theme.status.error}>
               no sandbox
-              {terminalWidth >= 100 && (
+              {!isCompact && (
                 <Text color={theme.text.secondary}> (see /docs)</Text>
               )}
             </Text>
@@ -151,7 +154,7 @@ export const Footer: React.FC = () => {
           <Box alignItems="center">
             <Text color={theme.text.accent}>
               {getDisplayString(model)}
-              <Text color={theme.text.secondary}> /model</Text>
+              {!isCompact && <Text color={theme.text.secondary}> /model</Text>}
               {!hideContextPercentage && (
                 <>
                   {' '}
@@ -174,7 +177,7 @@ export const Footer: React.FC = () => {
                 </>
               )}
             </Text>
-            {showMemoryUsage && <MemoryUsageDisplay />}
+            {showMemoryUsage && <MemoryUsageDisplay terse={isCompact} />}
           </Box>
           <Box alignItems="center">
             {corgiMode && (

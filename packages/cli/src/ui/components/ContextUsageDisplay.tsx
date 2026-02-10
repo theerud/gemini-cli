@@ -20,12 +20,15 @@ export const ContextUsageDisplay = ({
   const percentage = promptTokenCount / tokenLimit(model);
   const percentageLeft = ((1 - percentage) * 100).toFixed(0);
 
-  const label = terminalWidth < 100 ? '%' : '% context left';
+  const isCompact = terminalWidth < 100;
+  const label = isCompact ? '%' : '% context left';
 
   return (
     <Text color={theme.text.secondary}>
-      ({percentageLeft}
-      {label})
+      {isCompact ? '' : '('}
+      {percentageLeft}
+      {label}
+      {isCompact ? '' : ')'}
     </Text>
   );
 };
