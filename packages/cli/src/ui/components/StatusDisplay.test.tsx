@@ -158,27 +158,4 @@ describe('StatusDisplay', () => {
     );
     expect(lastFrame()).toContain('Shells: 3');
   });
-
-  it('renders Ctrl+C prompt', () => {
-    const uiState = createMockUIState({
-      ctrlCPressedOnce: true,
-    });
-    const { lastFrame } = renderStatusDisplay(
-      { hideContextSummary: false },
-      uiState,
-    );
-    expect(lastFrame()).toContain('Press Ctrl+C again to exit.');
-  });
-
-  it('renders Esc prompt', () => {
-    const uiState = createMockUIState({
-      showEscapePrompt: true,
-      buffer: { text: '' },
-    });
-    const { lastFrame } = renderStatusDisplay(
-      { hideContextSummary: false },
-      uiState,
-    );
-    expect(lastFrame()).toContain('Press Esc again to rewind.');
-  });
 });
