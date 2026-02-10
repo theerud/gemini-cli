@@ -16,6 +16,13 @@ import type { Config } from '@google/gemini-cli-core';
 import type { LoadedSettings } from '../../config/settings.js';
 import { createMockSettings } from '../../test-utils/settings.js';
 import type { TextBuffer } from './shared/text-buffer.js';
+import * as useTerminalSize from '../hooks/useTerminalSize.js';
+
+vi.mock('../hooks/useTerminalSize.js', () => ({
+  useTerminalSize: vi.fn(() => ({ columns: 120, rows: 24 })),
+}));
+
+const useTerminalSizeMock = vi.mocked(useTerminalSize.useTerminalSize);
 
 // Mock child components to simplify testing
 vi.mock('./ContextSummaryDisplay.js', () => ({
@@ -262,5 +269,32 @@ describe('StatusDisplay', () => {
       uiState,
     );
     expect(lastFrame()).toContain('Shells: 3');
+  });
+
+  it('renders shorter Ctrl+C prompt in compact mode', () => {
+    useTerminalSizeMock.mockReturnValue({ columns: 80, rows: 24 });
+    const uiState = createMockUIState({
+      ctrlCPressedOnce: true,
+    });
+    const { lastFrame } = renderStatusDisplay(
+      { hideContextSummary: false },
+      uiState,
+    );
+    expect(lastFrame()).toContain('Ctrl+C again to exit.');
+    expect(lastFrame()).not.toContain('Press ');
+  });
+
+  it('renders shorter Esc prompt in compact mode', () => {
+    useTerminalSizeMock.mockReturnValue({ columns: 80, rows: 24 });
+    const uiState = createMockUIState({
+      showEscapePrompt: true,
+      buffer: { text: '' },
+    });
+    const { lastFrame } = renderStatusDisplay(
+      { hideContextSummary: false },
+      uiState,
+    );
+    expect(lastFrame()).toContain('Esc again to rewind.');
+    expect(lastFrame()).not.toContain('Press ');
   });
 });

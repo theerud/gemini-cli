@@ -13,6 +13,7 @@ import { useSettings } from '../contexts/SettingsContext.js';
 import { useConfig } from '../contexts/ConfigContext.js';
 import { ContextSummaryDisplay } from './ContextSummaryDisplay.js';
 import { HookStatusDisplay } from './HookStatusDisplay.js';
+import { useTerminalSize } from '../hooks/useTerminalSize.js';
 
 interface StatusDisplayProps {
   hideContextSummary: boolean;
@@ -24,6 +25,8 @@ export const StatusDisplay: React.FC<StatusDisplayProps> = ({
   const uiState = useUIState();
   const settings = useSettings();
   const config = useConfig();
+  const { columns: terminalWidth } = useTerminalSize();
+  const isCompact = terminalWidth < 100;
 
   if (process.env['GEMINI_SYSTEM_MD']) {
     return <Text color={theme.status.error}>|⌐■_■|</Text>;
@@ -31,7 +34,9 @@ export const StatusDisplay: React.FC<StatusDisplayProps> = ({
 
   if (uiState.ctrlCPressedOnce) {
     return (
-      <Text color={theme.status.warning}>Press Ctrl+C again to exit.</Text>
+      <Text color={theme.status.warning}>
+        {isCompact ? '' : 'Press '}Ctrl+C again to exit.
+      </Text>
     );
   }
 
@@ -46,7 +51,9 @@ export const StatusDisplay: React.FC<StatusDisplayProps> = ({
 
   if (uiState.ctrlDPressedOnce) {
     return (
-      <Text color={theme.status.warning}>Press Ctrl+D again to exit.</Text>
+      <Text color={theme.status.warning}>
+        {isCompact ? '' : 'Press '}Ctrl+D again to exit.
+      </Text>
     );
   }
 
@@ -60,7 +67,8 @@ export const StatusDisplay: React.FC<StatusDisplayProps> = ({
 
     return (
       <Text color={theme.text.secondary}>
-        Press Esc again to {isPromptEmpty ? 'rewind' : 'clear prompt'}.
+        {isCompact ? '' : 'Press '}Esc again to{' '}
+        {isPromptEmpty ? 'rewind' : 'clear prompt'}.
       </Text>
     );
   }

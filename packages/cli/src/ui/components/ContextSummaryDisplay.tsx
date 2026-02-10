@@ -32,6 +32,7 @@ export const ContextSummaryDisplay: React.FC<ContextSummaryDisplayProps> = ({
 }) => {
   const { columns: terminalWidth } = useTerminalSize();
   const isNarrow = isNarrowWidth(terminalWidth);
+  const isCompact = terminalWidth < 100;
   const mcpServerCount = Object.keys(mcpServers || {}).length;
   const blockedMcpServerCount = blockedMcpServers?.length || 0;
   const openFileCount = ideContext?.workspaceState?.openFiles?.length ?? 0;
@@ -51,6 +52,9 @@ export const ContextSummaryDisplay: React.FC<ContextSummaryDisplayProps> = ({
     if (openFileCount === 0) {
       return '';
     }
+    if (isCompact) {
+      return `files: ${openFileCount} (ctrl+g)`;
+    }
     return `${openFileCount} open file${
       openFileCount > 1 ? 's' : ''
     } (ctrl+g to view)`;
@@ -59,6 +63,9 @@ export const ContextSummaryDisplay: React.FC<ContextSummaryDisplayProps> = ({
   const geminiMdText = (() => {
     if (geminiMdFileCount === 0) {
       return '';
+    }
+    if (isCompact) {
+      return `GEMINI.md: ${geminiMdFileCount}`;
     }
     const allNamesTheSame = new Set(contextFileNames).size < 2;
     const name = allNamesTheSame ? contextFileNames[0] : 'context';
@@ -74,14 +81,18 @@ export const ContextSummaryDisplay: React.FC<ContextSummaryDisplayProps> = ({
 
     const parts = [];
     if (mcpServerCount > 0) {
-      parts.push(
-        `${mcpServerCount} MCP server${mcpServerCount > 1 ? 's' : ''}`,
-      );
+      if (isCompact) {
+        parts.push(`MCPs: ${mcpServerCount}`);
+      } else {
+        parts.push(
+          `${mcpServerCount} MCP server${mcpServerCount > 1 ? 's' : ''}`,
+        );
+      }
     }
 
     if (blockedMcpServerCount > 0) {
       let blockedText = `${blockedMcpServerCount} Blocked`;
-      if (mcpServerCount === 0) {
+      if (mcpServerCount === 0 && !isCompact) {
         blockedText += ` MCP server${blockedMcpServerCount > 1 ? 's' : ''}`;
       }
       parts.push(blockedText);
@@ -93,12 +104,18 @@ export const ContextSummaryDisplay: React.FC<ContextSummaryDisplayProps> = ({
     if (skillCount === 0) {
       return '';
     }
+    if (isCompact) {
+      return `skills: ${skillCount}`;
+    }
     return `${skillCount} skill${skillCount > 1 ? 's' : ''}`;
   })();
 
   const backgroundText = (() => {
     if (backgroundProcessCount === 0) {
       return '';
+    }
+    if (isCompact) {
+      return `bg: ${backgroundProcessCount}`;
     }
     return `${backgroundProcessCount} Background process${
       backgroundProcessCount > 1 ? 'es' : ''

@@ -106,6 +106,23 @@ describe('<ContextSummaryDisplay />', () => {
     expect(narrowFrame()!.split('\n').length).toBe(4);
     unmountNarrow();
   });
+
+  it('should render compact text on medium width (80-100)', () => {
+    const props = {
+      ...baseProps,
+      geminiMdFileCount: 3,
+      contextFileNames: ['GEMINI.md'],
+      mcpServers: { s1: { command: 'test' }, s2: { command: 'test' } },
+      skillCount: 5,
+    };
+    const { lastFrame, unmount } = renderWithWidth(90, props);
+    const output = lastFrame();
+    expect(output).toContain('GEMINI.md: 3');
+    expect(output).toContain('MCPs: 2');
+    expect(output).toContain('skills: 5');
+    unmount();
+  });
+
   it('should not render empty parts', () => {
     const props = {
       ...baseProps,
