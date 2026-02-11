@@ -25,10 +25,8 @@ export const ContextUsageDisplay = ({
 
   return (
     <Text color={theme.text.secondary}>
-      {isCompact ? '' : '('}
       {percentageLeft}
       {label}
-      {isCompact ? '' : ')'}
     </Text>
   );
 };
