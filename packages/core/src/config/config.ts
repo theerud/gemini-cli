@@ -384,7 +384,9 @@ export interface ConfigParameters {
   question?: string;
 
   coreTools?: string[];
+  /** @deprecated Use Policy Engine instead */
   allowedTools?: string[];
+  /** @deprecated Use Policy Engine instead */
   excludeTools?: string[];
   toolDiscoveryCommand?: string;
   toolCallCommand?: string;
@@ -517,7 +519,9 @@ export class Config {
   private readonly question: string | undefined;
 
   private readonly coreTools: string[] | undefined;
+  /** @deprecated Use Policy Engine instead */
   private readonly allowedTools: string[] | undefined;
+  /** @deprecated Use Policy Engine instead */
   private readonly excludeTools: string[] | undefined;
   private readonly toolDiscoveryCommand: string | undefined;
   private readonly toolCallCommand: string | undefined;
@@ -904,6 +908,10 @@ export class Config {
     this.modelConfigService = new ModelConfigService(
       modelConfigServiceConfig ?? DEFAULT_MODEL_CONFIGS,
     );
+  }
+
+  isInitialized(): boolean {
+    return this.initialized;
   }
 
   /**
@@ -1484,11 +1492,12 @@ export class Config {
 
   /**
    * All the excluded tools from static configuration, loaded extensions, or
-   * other sources.
+   * other sources (like the Policy Engine).
    *
    * May change over time.
    */
   getExcludeTools(): Set<string> | undefined {
+    // Right now this is present for backward compatibility with settings.json exclude
     const excludeToolsSet = new Set([...(this.excludeTools ?? [])]);
     for (const extension of this.getExtensionLoader().getExtensions()) {
       if (!extension.isActive) {
@@ -1498,6 +1507,12 @@ export class Config {
         excludeToolsSet.add(tool);
       }
     }
+
+    const policyExclusions = this.policyEngine.getExcludedTools();
+    for (const tool of policyExclusions) {
+      excludeToolsSet.add(tool);
+    }
+
     return excludeToolsSet;
   }
 

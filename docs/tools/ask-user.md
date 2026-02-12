@@ -1,61 +1,95 @@
-# Ask User tool (`ask_user`)
+# Ask User Tool
 
-This document describes the `ask_user` tool for the Gemini CLI.
+The `ask_user` tool allows the agent to ask you one or more questions to gather
+preferences, clarify requirements, or make decisions. It supports multiple
+question types including multiple-choice, free-form text, and Yes/No
+confirmation.
 
-## Description
+## `ask_user` (Ask User)
 
-The `ask_user` tool allows the Gemini agent to ask you structured questions
-during execution. This enables the agent to pause its workflow and gather your
-input, preferences, or decisions before proceeding.
+- **Tool name:** `ask_user`
+- **Display name:** Ask User
+- **File:** `ask-user.ts`
+- **Parameters:**
+  - `questions` (array of objects, required): A list of 1 to 4 questions to ask.
+    Each question object has the following properties:
+    - `question` (string, required): The complete question text.
+    - `header` (string, required): A short label (max 16 chars) displayed as a
+      chip/tag (e.g., "Auth", "Database").
+    - `type` (string, optional): The type of question. Defaults to `'choice'`.
+      - `'choice'`: Multiple-choice with options (supports multi-select).
+      - `'text'`: Free-form text input.
+      - `'yesno'`: Yes/No confirmation.
+    - `options` (array of objects, optional): Required for `'choice'` type. 2-4
+      selectable options.
+      - `label` (string, required): Display text (1-5 words).
+      - `description` (string, required): Brief explanation.
+    - `multiSelect` (boolean, optional): For `'choice'` type, allows selecting
+      multiple options.
+    - `placeholder` (string, optional): Hint text for input fields.
 
-### Arguments
+- **Behavior:**
+  - Presents an interactive dialog to the user with the specified questions.
+  - Pauses execution until the user provides answers or dismisses the dialog.
+  - Returns the user's answers to the model.
 
-`ask_user` takes one argument:
+- **Output (`llmContent`):** A JSON string containing the user's answers,
+  indexed by question position (e.g.,
+  `{"answers":{"0": "Option A", "1": "Some text"}}`).
 
-- `questions` (array of objects, required): A list of 1-4 questions to ask. Each
-  question object includes:
-  - `question` (string): The text of the question.
-  - `header` (string, optional): A short label or category for the question.
-  - `multiSelect` (boolean): Whether you can select multiple options.
-  - `options` (array of objects): The available choices. Each option has:
-    - `label` (string): The text to display.
-    - `description` (string, optional): Additional context for the option.
+- **Confirmation:** Yes. The tool inherently involves user interaction.
 
-### Usage
+## Usage Examples
 
-The agent uses this tool when it encounters ambiguity or needs you to make a
-choice. For example:
+### Multiple Choice Question
 
-- "Which testing framework do you prefer?"
-- "Should I implement this feature using option A or option B?"
-- "Which of these files should I update?"
-
-When the tool is called, the CLI displays an interactive form where you can
-select one or more options. You can also always choose "Other..." to provide a
-custom text response.
-
-## Behavior
-
-- **Interactive:** Execution pauses while you answer the questions.
-- **Guided:** The agent provides structured choices to guide your decision, but
-  you retain flexibility with the "Other" option.
-- **Multiple Questions:** The agent can ask up to 4 related questions in a
-  single interaction to minimize interruptions.
-
-Usage example (internal representation):
-
-```javascript
-ask_user({
-  questions: [
+```json
+{
+  "questions": [
     {
-      question: 'Which library should we use for date formatting?',
-      header: 'Library',
-      multiSelect: false,
-      options: [
-        { label: 'date-fns', description: 'Modern, lightweight' },
-        { label: 'moment', description: 'Legacy, feature-rich' },
-      ],
-    },
-  ],
-});
+      "header": "Database",
+      "question": "Which database would you like to use?",
+      "type": "choice",
+      "options": [
+        {
+          "label": "PostgreSQL",
+          "description": "Powerful, open source object-relational database system."
+        },
+        {
+          "label": "SQLite",
+          "description": "C-library that implements a SQL database engine."
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Text Input Question
+
+```json
+{
+  "questions": [
+    {
+      "header": "Project Name",
+      "question": "What is the name of your new project?",
+      "type": "text",
+      "placeholder": "e.g., my-awesome-app"
+    }
+  ]
+}
+```
+
+### Yes/No Question
+
+```json
+{
+  "questions": [
+    {
+      "header": "Deploy",
+      "question": "Do you want to deploy the application now?",
+      "type": "yesno"
+    }
+  ]
+}
 ```
