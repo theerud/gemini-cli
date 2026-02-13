@@ -47,6 +47,12 @@ import { EDIT_TOOL_NAME, READ_FILE_TOOL_NAME } from './tool-names.js';
 import { debugLogger } from '../utils/debugLogger.js';
 import { EDIT_DEFINITION } from './definitions/coreTools.js';
 import { resolveToolDeclaration } from './definitions/resolver.js';
+import {
+  computeLineHash,
+  HASHLINE_REGEX,
+  stripHashline,
+} from '../utils/hashline.js';
+
 interface ReplacementContext {
   params: EditToolParams;
   currentContent: string;
@@ -262,6 +268,115 @@ async function calculateRegexReplacement(
   };
 }
 
+async function calculateHashlineReplacement(
+  context: ReplacementContext,
+): Promise<ReplacementResult | null> {
+  const { currentContent, params } = context;
+  const { old_string, new_string } = params;
+
+  const normalizedSearch = old_string.replace(/\r\n/g, '\n');
+  const searchLines = normalizedSearch.split('\n');
+
+  // Verify that the search string starts with a hashline prefix
+  if (!HASHLINE_REGEX.test(searchLines[0])) {
+    return null;
+  }
+
+  const sourceLines = currentContent.split('\n');
+  const searchAnchors = searchLines.map((line) => {
+    const match = line.match(HASHLINE_REGEX);
+    if (!match) return null;
+    return {
+      lineNum: parseInt(match[1], 10),
+      hash: match[2],
+      content: line.substring(match[0].length).trim(),
+    };
+  });
+
+  // If any line in the block doesn't have a hashline, we can't use this strategy
+  if (searchAnchors.some((anchor) => anchor === null)) {
+    return null;
+  }
+
+  // Find the anchor points in the source file
+  // 1. Try the exact line numbers first (relocation logic)
+  let bestStartLine = -1;
+  const firstAnchor = searchAnchors[0]!;
+
+  // Check original position
+  const originalIdx = firstAnchor.lineNum - 1;
+  if (
+    originalIdx >= 0 &&
+    originalIdx < sourceLines.length &&
+    computeLineHash(sourceLines[originalIdx]) === firstAnchor.hash &&
+    sourceLines[originalIdx].trim() === firstAnchor.content
+  ) {
+    bestStartLine = originalIdx;
+  } else {
+    // 2. Relocate: Scan the file for a line that matches the first anchor's hash and content
+    for (let i = 0; i < sourceLines.length; i++) {
+      if (
+        computeLineHash(sourceLines[i]) === firstAnchor.hash &&
+        sourceLines[i].trim() === firstAnchor.content
+      ) {
+        // Found a potential starting line, verify the rest of the block
+        let allMatch = true;
+        for (let j = 1; j < searchAnchors.length; j++) {
+          const nextIdx = i + j;
+          const nextAnchor = searchAnchors[j]!;
+          if (
+            nextIdx >= sourceLines.length ||
+            computeLineHash(sourceLines[nextIdx]) !== nextAnchor.hash ||
+            sourceLines[nextIdx].trim() !== nextAnchor.content
+          ) {
+            allMatch = false;
+            break;
+          }
+        }
+        if (allMatch) {
+          bestStartLine = i;
+          break;
+        }
+      }
+    }
+  }
+
+  if (bestStartLine === -1) {
+    return null;
+  }
+
+  // Perform replacement
+  const firstLineInMatch = sourceLines[bestStartLine];
+  const indentationMatch = firstLineInMatch.match(/^([ \t]*)/);
+  const indentation = indentationMatch ? indentationMatch[1] : '';
+
+  const normalizedReplace = new_string.replace(/\r\n/g, '\n');
+  const replaceLines = normalizedReplace.split('\n');
+  // Strip hashline prefixes from replacement lines if the model accidentally included them
+  const cleanedReplaceLines = replaceLines.map((line) => stripHashline(line));
+
+  const newBlockWithIndent = cleanedReplaceLines.map(
+    (line) => `${indentation}${line}`,
+  );
+
+  const newSourceLines = [...sourceLines];
+  newSourceLines.splice(
+    bestStartLine,
+    searchAnchors.length,
+    ...newBlockWithIndent,
+  );
+
+  let modifiedCode = newSourceLines.join('\n');
+  modifiedCode = restoreTrailingNewline(currentContent, modifiedCode);
+
+  return {
+    newContent: modifiedCode,
+    occurrences: 1,
+    finalOldString: normalizedSearch,
+    finalNewString: normalizedReplace,
+  };
+}
+
 export async function calculateReplacement(
   config: Config,
   context: ReplacementContext,
@@ -278,6 +393,15 @@ export async function calculateReplacement(
       finalOldString: normalizedSearch,
       finalNewString: normalizedReplace,
     };
+  }
+
+  if (config.getHashlineEditMode()) {
+    const hashlineResult = await calculateHashlineReplacement(context);
+    if (hashlineResult) {
+      const event = new EditStrategyEvent('hashline');
+      logEditStrategy(config, event);
+      return hashlineResult;
+    }
   }
 
   const exactResult = await calculateExactReplacement(context);

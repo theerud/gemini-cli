@@ -63,6 +63,7 @@ export interface OperationalGuidelinesOptions {
   interactive: boolean;
   isGemini3: boolean;
   interactiveShellEnabled: boolean;
+  hashlineEditMode: boolean;
 }
 
 export type SandboxMode = 'macos-seatbelt' | 'generic' | 'outside';
@@ -303,7 +304,20 @@ export function renderOperationalGuidelines(
 ## Interaction Details
 - **Help Command:** The user can use '/help' to display help information.
 - **Feedback:** To report a bug or provide feedback, please use the /bug command.
+
+${renderHashlineGuidelines(options.hashlineEditMode)}
 `.trim();
+}
+
+function renderHashlineGuidelines(enabled: boolean): string {
+  if (!enabled) return '';
+  return `
+## Hashline Edit Mode (Experimental)
+The system is currently in **Hashline Edit Mode**. You MUST follow these precision requirements:
+- **Mandatory Anchors:** Every line you read using \`${READ_FILE_TOOL_NAME}\` is prefixed with \`LINE:HA|\`. You MUST include these exact prefixes in your \`old_string\` when calling \`${EDIT_TOOL_NAME}\`.
+- **Machine Precision:** These hashes are high-priority anchors. They allow the system to apply your changes even if whitespace or line numbers have shifted.
+- **Copy Verbatim:** Copy the \`LINE:HA|\` prefix exactly from the read output. Do not guess, truncate, or fabricate hashes.
+- **Replacement Content:** Do NOT include hashline prefixes in your \`new_string\`. The \`new_string\` should contain only the final code.`.trim();
 }
 
 export function renderSandbox(mode?: SandboxMode): string {

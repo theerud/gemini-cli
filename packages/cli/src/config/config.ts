@@ -838,6 +838,7 @@ export async function loadCliConfig(
     model: resolvedModel,
     maxSessionTurns: settings.model?.maxSessionTurns,
     experimentalZedIntegration: argv.experimentalAcp || false,
+    hashlineEditMode: settings.experimental?.hashlineEditMode,
     listExtensions: argv.listExtensions || false,
     listSessions: argv.listSessions || false,
     deleteSession: argv.deleteSession,

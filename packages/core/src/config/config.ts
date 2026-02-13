@@ -421,6 +421,7 @@ export interface ConfigParameters {
   disableLoopDetection?: boolean;
   maxSessionTurns?: number;
   experimentalZedIntegration?: boolean;
+  hashlineEditMode?: boolean;
   listSessions?: boolean;
   deleteSession?: string;
   listExtensions?: boolean;
@@ -603,6 +604,7 @@ export class Config {
     | Record<string, SummarizeToolOutputSettings>
     | undefined;
   private readonly experimentalZedIntegration: boolean = false;
+  private readonly hashlineEditMode: boolean = false;
   private readonly loadMemoryFromIncludeDirectories: boolean = false;
   private readonly importFormat: 'tree' | 'flat';
   private readonly discoveryMaxDirs: number;
@@ -777,6 +779,7 @@ export class Config {
     this.maxSessionTurns = params.maxSessionTurns ?? -1;
     this.experimentalZedIntegration =
       params.experimentalZedIntegration ?? false;
+    this.hashlineEditMode = params.hashlineEditMode ?? false;
     this.listSessions = params.listSessions ?? false;
     this.deleteSession = params.deleteSession;
     this.listExtensions = params.listExtensions ?? false;
@@ -1928,6 +1931,10 @@ export class Config {
 
   getExperimentalZedIntegration(): boolean {
     return this.experimentalZedIntegration;
+  }
+
+  getHashlineEditMode(): boolean {
+    return this.hashlineEditMode;
   }
 
   getListExtensions(): boolean {

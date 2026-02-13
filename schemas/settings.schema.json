@@ -1544,6 +1544,13 @@
           "markdownDescription": "Enable planning features (Plan Mode and tools).\n\n- Category: `Experimental`\n- Requires restart: `yes`\n- Default: `false`",
           "default": false,
           "type": "boolean"
+        },
+        "hashlineEditMode": {
+          "title": "Hashline Edit Mode",
+          "description": "Enable experimental hashline-based edit mode for higher precision and reduced token waste.",
+          "markdownDescription": "Enable experimental hashline-based edit mode for higher precision and reduced token waste.\n\n- Category: `Experimental`\n- Requires restart: `yes`\n- Default: `false`",
+          "default": false,
+          "type": "boolean"
         }
       },
       "additionalProperties": false
