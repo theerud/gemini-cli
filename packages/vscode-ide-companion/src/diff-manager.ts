@@ -243,10 +243,9 @@ export class DiffManager {
     // Find and close the tab corresponding to the diff view
     for (const tabGroup of vscode.window.tabGroups.all) {
       for (const tab of tabGroup.tabs) {
-        const input = tab.input;
         if (
-          input instanceof vscode.TabInputTextDiff &&
-          input.modified.toString() === rightDocUri.toString()
+          tab.input instanceof vscode.TabInputTextDiff &&
+          tab.input.modified.toString() === rightDocUri.toString()
         ) {
           await vscode.window.tabGroups.close(tab);
           return;

@@ -27,6 +27,7 @@ import type {
   AnyToolInvocation,
 } from '@google/gemini-cli-core';
 import {
+  CoreToolCallStatus,
   ApprovalMode,
   AuthType,
   GeminiEventType as ServerGeminiEventType,
@@ -345,14 +346,14 @@ describe('useGeminiStream', () => {
           mockCancelAllToolCalls(...args);
           lastToolCalls = lastToolCalls.map((tc) => {
             if (
-              tc.status === 'awaiting_approval' ||
-              tc.status === 'executing' ||
-              tc.status === 'scheduled' ||
-              tc.status === 'validating'
+              tc.status === CoreToolCallStatus.AwaitingApproval ||
+              tc.status === CoreToolCallStatus.Executing ||
+              tc.status === CoreToolCallStatus.Scheduled ||
+              tc.status === CoreToolCallStatus.Validating
             ) {
               return {
                 ...tc,
-                status: 'cancelled',
+                status: CoreToolCallStatus.Cancelled,
                 response: {
                   callId: tc.request.callId,
                   responseParts: [],
@@ -408,7 +409,8 @@ describe('useGeminiStream', () => {
     toolName: string,
     callId: string,
     confirmationType: 'edit' | 'info',
-    status: TrackedToolCall['status'] = 'awaiting_approval',
+    status: TrackedToolCall['status'] = CoreToolCallStatus.AwaitingApproval,
+    mockOnConfirm: Mock = vi.fn(),
   ): TrackedWaitingToolCall => ({
     request: {
       callId,
@@ -417,7 +419,7 @@ describe('useGeminiStream', () => {
       isClientInitiated: false,
       prompt_id: 'prompt-id-1',
     },
-    status: status as 'awaiting_approval',
+    status: status as CoreToolCallStatus.AwaitingApproval,
     responseSubmittedToGemini: false,
     confirmationDetails:
       confirmationType === 'edit'
@@ -429,11 +431,13 @@ describe('useGeminiStream', () => {
             fileDiff: 'fake diff',
             originalContent: 'old',
             newContent: 'new',
+            onConfirm: mockOnConfirm,
           }
         : {
             type: 'info',
             title: `${toolName} confirmation`,
             prompt: `Execute ${toolName}?`,
+            onConfirm: mockOnConfirm,
           },
     tool: {
       name: toolName,
@@ -504,7 +508,7 @@ describe('useGeminiStream', () => {
           isClientInitiated: false,
           prompt_id: 'prompt-id-1',
         },
-        status: 'success',
+        status: CoreToolCallStatus.Success,
         responseSubmittedToGemini: false,
         response: {
           callId: 'call1',
@@ -532,7 +536,7 @@ describe('useGeminiStream', () => {
           args: {},
           prompt_id: 'prompt-id-1',
         },
-        status: 'executing',
+        status: CoreToolCallStatus.Executing,
         responseSubmittedToGemini: false,
         tool: {
           name: 'tool2',
@@ -570,7 +574,7 @@ describe('useGeminiStream', () => {
           isClientInitiated: false,
           prompt_id: 'prompt-id-2',
         },
-        status: 'success',
+        status: CoreToolCallStatus.Success,
         responseSubmittedToGemini: false,
         response: {
           callId: 'call1',
@@ -592,7 +596,7 @@ describe('useGeminiStream', () => {
           isClientInitiated: false,
           prompt_id: 'prompt-id-2',
         },
-        status: 'error',
+        status: CoreToolCallStatus.Error,
         responseSubmittedToGemini: false,
         response: {
           callId: 'call2',
@@ -679,10 +683,10 @@ describe('useGeminiStream', () => {
           isClientInitiated: false,
           prompt_id: 'prompt-id-3',
         },
-        status: 'cancelled',
+        status: CoreToolCallStatus.Cancelled,
         response: {
           callId: '1',
-          responseParts: [{ text: 'cancelled' }],
+          responseParts: [{ text: CoreToolCallStatus.Cancelled }],
           errorType: undefined, // FIX: Added missing property
         },
         responseSubmittedToGemini: false,
@@ -748,7 +752,7 @@ describe('useGeminiStream', () => {
       expect(mockMarkToolsAsSubmitted).toHaveBeenCalledWith(['1']);
       expect(client.addHistory).toHaveBeenCalledWith({
         role: 'user',
-        parts: [{ text: 'cancelled' }],
+        parts: [{ text: CoreToolCallStatus.Cancelled }],
       });
       // Ensure we do NOT call back to the API
       expect(mockSendMessageStream).not.toHaveBeenCalled();
@@ -765,7 +769,7 @@ describe('useGeminiStream', () => {
           isClientInitiated: false,
           prompt_id: 'prompt-id-stop',
         },
-        status: 'error',
+        status: CoreToolCallStatus.Error,
         response: {
           callId: 'stop-call',
           responseParts: [{ text: 'error occurred' }],
@@ -829,7 +833,7 @@ describe('useGeminiStream', () => {
       invocation: {
         getDescription: () => `Mock description`,
       } as unknown as AnyToolInvocation,
-      status: 'cancelled',
+      status: CoreToolCallStatus.Cancelled,
       response: {
         callId: 'cancel-1',
         responseParts: [
@@ -858,7 +862,7 @@ describe('useGeminiStream', () => {
       invocation: {
         getDescription: () => `Mock description`,
       } as unknown as AnyToolInvocation,
-      status: 'cancelled',
+      status: CoreToolCallStatus.Cancelled,
       response: {
         callId: 'cancel-2',
         responseParts: [
@@ -958,7 +962,7 @@ describe('useGeminiStream', () => {
           isClientInitiated: false,
           prompt_id: 'prompt-id-4',
         },
-        status: 'executing',
+        status: CoreToolCallStatus.Executing,
         responseSubmittedToGemini: false,
         tool: {
           name: 'tool1',
@@ -976,7 +980,7 @@ describe('useGeminiStream', () => {
     const completedToolCalls: TrackedToolCall[] = [
       {
         ...(initialToolCalls[0] as TrackedExecutingToolCall),
-        status: 'success',
+        status: CoreToolCallStatus.Success,
         response: {
           callId: 'call1',
           responseParts: toolCallResponseParts,
@@ -1282,7 +1286,7 @@ describe('useGeminiStream', () => {
       const toolCalls: TrackedToolCall[] = [
         {
           request: { callId: 'call1', name: 'tool1', args: {} },
-          status: 'executing',
+          status: CoreToolCallStatus.Executing,
           responseSubmittedToGemini: false,
           tool: {
             name: 'tool1',
@@ -1322,7 +1326,7 @@ describe('useGeminiStream', () => {
             isClientInitiated: false,
             prompt_id: 'prompt-id-1',
           },
-          status: 'awaiting_approval',
+          status: CoreToolCallStatus.AwaitingApproval,
           responseSubmittedToGemini: false,
           tool: {
             name: 'some_tool',
@@ -1634,7 +1638,7 @@ describe('useGeminiStream', () => {
           isClientInitiated: true,
           prompt_id: 'prompt-id-6',
         },
-        status: 'success',
+        status: CoreToolCallStatus.Success,
         responseSubmittedToGemini: false,
         response: {
           callId: 'save-mem-call-1',
@@ -1879,7 +1883,7 @@ describe('useGeminiStream', () => {
             isClientInitiated: false,
             prompt_id: 'prompt-id-1',
           },
-          status: 'awaiting_approval',
+          status: CoreToolCallStatus.AwaitingApproval,
           responseSubmittedToGemini: false,
           // No confirmationDetails
           tool: {
@@ -1904,8 +1908,15 @@ describe('useGeminiStream', () => {
     });
 
     it('should only process tool calls with awaiting_approval status', async () => {
+      const mockOnConfirmAwaiting = vi.fn().mockResolvedValue(undefined);
       const mixedStatusToolCalls: TrackedToolCall[] = [
-        createMockToolCall('replace', 'call1', 'edit'),
+        createMockToolCall(
+          'replace',
+          'call1',
+          'edit',
+          CoreToolCallStatus.AwaitingApproval,
+          mockOnConfirmAwaiting,
+        ),
         {
           request: {
             callId: 'call2',
@@ -1914,7 +1925,7 @@ describe('useGeminiStream', () => {
             isClientInitiated: false,
             prompt_id: 'prompt-id-1',
           },
-          status: 'executing',
+          status: CoreToolCallStatus.Executing,
           responseSubmittedToGemini: false,
           tool: {
             name: 'write_file',
@@ -2210,7 +2221,7 @@ describe('useGeminiStream', () => {
       // were added to history during the await scheduleToolCalls(...) block.
       const tools = requests.map((r: any) => ({
         request: r,
-        status: 'success',
+        status: CoreToolCallStatus.Success,
         tool: { displayName: r.name, name: r.name },
         invocation: { getDescription: () => 'desc' },
         response: { responseParts: [], resultDisplay: 'done' },
@@ -2685,7 +2696,7 @@ describe('useGeminiStream', () => {
       const newToolCalls: TrackedToolCall[] = [
         {
           request: { callId: 'call1', name: 'tool1', args: {} },
-          status: 'executing',
+          status: CoreToolCallStatus.Executing,
           tool: {
             name: 'tool1',
             displayName: 'tool1',
@@ -2813,7 +2824,7 @@ describe('useGeminiStream', () => {
       await waitFor(() => {
         expect(mockAddItem).toHaveBeenCalledWith(
           expect.objectContaining({
-            type: 'error',
+            type: CoreToolCallStatus.Error,
           }),
           expect.any(Number),
         );
