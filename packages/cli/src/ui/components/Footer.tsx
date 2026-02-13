@@ -70,7 +70,13 @@ export const Footer: React.FC = () => {
   const displayPath = shortenPath(tildeifyPath(targetDir), pathLength);
 
   const justifyContent = hideCWD && hideModelInfo ? 'center' : 'space-between';
-  const displayVimMode = vimEnabled ? vimMode : undefined;
+  const displayVimMode = vimEnabled
+    ? isCompact
+      ? vimMode === 'NORMAL'
+        ? 'N'
+        : 'I'
+      : vimMode
+    : undefined;
 
   const showDebugProfiler = debugMode || isDevelopment;
 
