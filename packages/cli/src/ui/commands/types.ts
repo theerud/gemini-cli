@@ -15,7 +15,6 @@ import type {
   GitService,
   Logger,
   CommandActionReturn,
-  ApprovalMode,
   AgentDefinition,
 } from '@google/gemini-cli-core';
 import type { LoadedSettings } from '../../config/settings.js';
@@ -91,7 +90,6 @@ export interface CommandContext {
      */
     setConfirmationRequest: (value: ConfirmationRequest) => void;
     removeComponent: () => void;
-    setApprovalMode: (mode: ApprovalMode) => Promise<void>;
     toggleBackgroundShell: () => void;
     toggleShortcutsHelp: () => void;
   };

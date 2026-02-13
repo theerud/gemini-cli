@@ -9,7 +9,6 @@ import type {
   GeminiCLIExtension,
   MCPServerConfig,
   ThoughtSummary,
-  ToolCallConfirmationDetails,
   SerializableConfirmationDetails,
   ToolResultDisplay,
   RetrieveUserQuotaResponse,
@@ -64,10 +63,7 @@ export interface ToolCallEvent {
   name: string;
   args: Record<string, never>;
   resultDisplay: ToolResultDisplay | undefined;
-  confirmationDetails:
-    | ToolCallConfirmationDetails
-    | SerializableConfirmationDetails
-    | undefined;
+  confirmationDetails: SerializableConfirmationDetails | undefined;
   correlationId?: string;
 }
 
@@ -80,10 +76,7 @@ export interface IndividualToolCallDisplay {
   description: string;
   resultDisplay: ToolResultDisplay | undefined;
   status: ToolCallStatus;
-  confirmationDetails:
-    | ToolCallConfirmationDetails
-    | SerializableConfirmationDetails
-    | undefined;
+  confirmationDetails: SerializableConfirmationDetails | undefined;
   renderOutputAsMarkdown?: boolean;
   ptyId?: number;
   outputFile?: string;

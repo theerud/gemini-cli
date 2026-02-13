@@ -14,7 +14,7 @@ import { ShellToolMessage } from './ShellToolMessage.js';
 import { theme } from '../../semantic-colors.js';
 import { useConfig } from '../../contexts/ConfigContext.js';
 import { isShellTool, isThisShellFocused } from './ToolShared.js';
-import { ASK_USER_DISPLAY_NAME } from '@google/gemini-cli-core';
+import { shouldHideAskUserTool } from '@google/gemini-cli-core';
 import { ShowMoreLines } from '../ShowMoreLines.js';
 import { useUIState } from '../../contexts/UIStateContext.js';
 
@@ -30,18 +30,6 @@ interface ToolGroupMessageProps {
   borderBottom?: boolean;
 }
 
-// Bullet character for parallel tool visualization
-const PARALLEL_BULLET = '•';
-
-// Helper to identify Ask User tools that are in progress (have their own dialog UI)
-const isAskUserInProgress = (t: IndividualToolCallDisplay): boolean =>
-  t.name === ASK_USER_DISPLAY_NAME &&
-  [
-    ToolCallStatus.Pending,
-    ToolCallStatus.Executing,
-    ToolCallStatus.Confirming,
-  ].includes(t.status);
-
 // Main component renders the border and maps the tools using ToolMessage
 const TOOL_MESSAGE_HORIZONTAL_MARGIN = 4;
 
@@ -54,9 +42,12 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
   borderTop: borderTopOverride,
   borderBottom: borderBottomOverride,
 }) => {
-  // Filter out in-progress Ask User tools (they have their own AskUserDialog UI)
+  // Filter out Ask User tools that should be hidden (e.g. in-progress or errors without result)
   const toolCalls = useMemo(
-    () => allToolCalls.filter((t) => !isAskUserInProgress(t)),
+    () =>
+      allToolCalls.filter(
+        (t) => !shouldHideAskUserTool(t.name, t.status, !!t.resultDisplay),
+      ),
     [allToolCalls],
   );
 
@@ -105,12 +96,6 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
 
   const staticHeight = /* border */ 2 + /* marginBottom */ 1;
 
-  // Check if this is a parallel execution (multiple tools in the same group)
-  const isParallelExecution = visibleToolCalls.length > 1;
-  const executingCount = visibleToolCalls.filter(
-    (t) => t.status === ToolCallStatus.Executing,
-  ).length;
-
   // If all tools are filtered out (e.g., in-progress AskUser tools, confirming tools),
   // only render if we need to close a border from previous
   // tool groups. borderBottomOverride=true means we must render the closing border;
@@ -154,28 +139,8 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
       width={terminalWidth}
       paddingRight={TOOL_MESSAGE_HORIZONTAL_MARGIN}
     >
-      {/* Show parallel execution header for multiple tools */}
-      {isParallelExecution && (
-        <Box
-          paddingLeft={1}
-          borderStyle="round"
-          borderColor={borderColor}
-          borderDimColor={borderDimColor}
-          borderLeft={true}
-          borderRight={true}
-          borderTop={true}
-          borderBottom={false}
-        >
-          <Text color={theme.text.accent}>
-            {executingCount > 0
-              ? `⋮ Running ${visibleToolCalls.length} tools in parallel...`
-              : `⋮ Ran ${visibleToolCalls.length} tools in parallel`}
-          </Text>
-        </Box>
-      )}
       {visibleToolCalls.map((tool, index) => {
         const isFirst = index === 0;
-        const treeConnector = isParallelExecution ? PARALLEL_BULLET : '';
         const isShellToolCall = isShellTool(tool.name);
 
         const commonProps = {
@@ -189,7 +154,6 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
               : isFirst,
           borderColor,
           borderDimColor,
-          treeConnector,
         };
 
         return (

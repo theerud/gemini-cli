@@ -33,7 +33,6 @@ import type { DOMElement } from 'ink';
 import type { SessionStatsState } from '../contexts/SessionContext.js';
 import type { ExtensionUpdateState } from '../state/extensions.js';
 import type { UpdateObject } from '../utils/updateCheck.js';
-import { type AskUserState } from '../hooks/useAskUser.js';
 
 export interface ProQuotaDialogRequest {
   failedModel: string;
@@ -96,7 +95,6 @@ export interface UIState {
   authConsentRequest: ConfirmationRequest | null;
   confirmUpdateExtensionRequests: ConfirmationRequest[];
   loopDetectionConfirmationRequest: LoopDetectionConfirmationRequest | null;
-  askUserRequest: AskUserState | null;
   permissionConfirmationRequest: PermissionConfirmationRequest | null;
   geminiMdFileCount: number;
   streamingState: StreamingState;
@@ -122,6 +120,7 @@ export interface UIState {
   ctrlDPressedOnce: boolean;
   showEscapePrompt: boolean;
   shortcutsHelpVisible: boolean;
+  cleanUiDetailsVisible: boolean;
   elapsedTime: number;
   currentLoadingPhrase: string | undefined;
   historyRemountKey: number;

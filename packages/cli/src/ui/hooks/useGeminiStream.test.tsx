@@ -32,6 +32,7 @@ import {
   GeminiEventType as ServerGeminiEventType,
   ToolErrorType,
   ToolConfirmationOutcome,
+  MessageBusType,
   tokenLimit,
   debugLogger,
   coreEvents,
@@ -49,6 +50,11 @@ const mockSendMessageStream = vi
   .fn()
   .mockReturnValue((async function* () {})());
 const mockStartChat = vi.fn();
+const mockMessageBus = {
+  publish: vi.fn(),
+  subscribe: vi.fn(),
+  unsubscribe: vi.fn(),
+};
 
 const MockedGeminiClientClass = vi.hoisted(() =>
   vi.fn().mockImplementation(function (this: any, _config: any) {
@@ -252,6 +258,7 @@ describe('useGeminiStream', () => {
     isJitContextEnabled: vi.fn(() => false),
     getGlobalMemory: vi.fn(() => ''),
     getUserMemory: vi.fn(() => ''),
+    getMessageBus: vi.fn(() => mockMessageBus),
     getIdeMode: vi.fn(() => false),
     getEnableHooks: vi.fn(() => false),
   } as unknown as Config;
@@ -401,7 +408,6 @@ describe('useGeminiStream', () => {
     toolName: string,
     callId: string,
     confirmationType: 'edit' | 'info',
-    mockOnConfirm: Mock,
     status: TrackedToolCall['status'] = 'awaiting_approval',
   ): TrackedWaitingToolCall => ({
     request: {
@@ -418,7 +424,6 @@ describe('useGeminiStream', () => {
         ? {
             type: 'edit',
             title: 'Confirm Edit',
-            onConfirm: mockOnConfirm,
             fileName: 'file.txt',
             filePath: '/test/file.txt',
             fileDiff: 'fake diff',
@@ -428,7 +433,6 @@ describe('useGeminiStream', () => {
         : {
             type: 'info',
             title: `${toolName} confirmation`,
-            onConfirm: mockOnConfirm,
             prompt: `Execute ${toolName}?`,
           },
     tool: {
@@ -440,6 +444,7 @@ describe('useGeminiStream', () => {
     invocation: {
       getDescription: () => 'Mock description',
     } as unknown as AnyToolInvocation,
+    correlationId: `corr-${callId}`,
   });
 
   // Helper to render hook with default parameters - reduces boilerplate
@@ -1767,10 +1772,9 @@ describe('useGeminiStream', () => {
 
   describe('handleApprovalModeChange', () => {
     it('should auto-approve all pending tool calls when switching to YOLO mode', async () => {
-      const mockOnConfirm = vi.fn().mockResolvedValue(undefined);
       const awaitingApprovalToolCalls: TrackedToolCall[] = [
-        createMockToolCall('replace', 'call1', 'edit', mockOnConfirm),
-        createMockToolCall('read_file', 'call2', 'info', mockOnConfirm),
+        createMockToolCall('replace', 'call1', 'edit'),
+        createMockToolCall('read_file', 'call2', 'info'),
       ];
 
       const { result } = renderTestHook(awaitingApprovalToolCalls);
@@ -1780,21 +1784,27 @@ describe('useGeminiStream', () => {
       });
 
       // Both tool calls should be auto-approved
-      expect(mockOnConfirm).toHaveBeenCalledTimes(2);
-      expect(mockOnConfirm).toHaveBeenCalledWith(
-        ToolConfirmationOutcome.ProceedOnce,
+      expect(mockMessageBus.publish).toHaveBeenCalledTimes(2);
+      expect(mockMessageBus.publish).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: MessageBusType.TOOL_CONFIRMATION_RESPONSE,
+          correlationId: 'corr-call1',
+          outcome: ToolConfirmationOutcome.ProceedOnce,
+        }),
+      );
+      expect(mockMessageBus.publish).toHaveBeenCalledWith(
+        expect.objectContaining({
+          correlationId: 'corr-call2',
+          outcome: ToolConfirmationOutcome.ProceedOnce,
+        }),
       );
     });
 
     it('should only auto-approve edit tools when switching to AUTO_EDIT mode', async () => {
-      const mockOnConfirmReplace = vi.fn().mockResolvedValue(undefined);
-      const mockOnConfirmWrite = vi.fn().mockResolvedValue(undefined);
-      const mockOnConfirmRead = vi.fn().mockResolvedValue(undefined);
-
       const awaitingApprovalToolCalls: TrackedToolCall[] = [
-        createMockToolCall('replace', 'call1', 'edit', mockOnConfirmReplace),
-        createMockToolCall('write_file', 'call2', 'edit', mockOnConfirmWrite),
-        createMockToolCall('read_file', 'call3', 'info', mockOnConfirmRead),
+        createMockToolCall('replace', 'call1', 'edit'),
+        createMockToolCall('write_file', 'call2', 'edit'),
+        createMockToolCall('read_file', 'call3', 'info'),
       ];
 
       const { result } = renderTestHook(awaitingApprovalToolCalls);
@@ -1804,21 +1814,21 @@ describe('useGeminiStream', () => {
       });
 
       // Only replace and write_file should be auto-approved
-      expect(mockOnConfirmReplace).toHaveBeenCalledWith(
-        ToolConfirmationOutcome.ProceedOnce,
+      expect(mockMessageBus.publish).toHaveBeenCalledTimes(2);
+      expect(mockMessageBus.publish).toHaveBeenCalledWith(
+        expect.objectContaining({ correlationId: 'corr-call1' }),
       );
-      expect(mockOnConfirmWrite).toHaveBeenCalledWith(
-        ToolConfirmationOutcome.ProceedOnce,
+      expect(mockMessageBus.publish).toHaveBeenCalledWith(
+        expect.objectContaining({ correlationId: 'corr-call2' }),
       );
-
-      // read_file should not be auto-approved
-      expect(mockOnConfirmRead).not.toHaveBeenCalled();
+      expect(mockMessageBus.publish).not.toHaveBeenCalledWith(
+        expect.objectContaining({ correlationId: 'corr-call3' }),
+      );
     });
 
     it('should not auto-approve any tools when switching to REQUIRE_CONFIRMATION mode', async () => {
-      const mockOnConfirm = vi.fn().mockResolvedValue(undefined);
       const awaitingApprovalToolCalls: TrackedToolCall[] = [
-        createMockToolCall('replace', 'call1', 'edit', mockOnConfirm),
+        createMockToolCall('replace', 'call1', 'edit'),
       ];
 
       const { result } = renderTestHook(awaitingApprovalToolCalls);
@@ -1828,21 +1838,19 @@ describe('useGeminiStream', () => {
       });
 
       // No tools should be auto-approved
-      expect(mockOnConfirm).not.toHaveBeenCalled();
+      expect(mockMessageBus.publish).not.toHaveBeenCalled();
     });
 
     it('should handle errors gracefully when auto-approving tool calls', async () => {
       const debuggerSpy = vi
         .spyOn(debugLogger, 'warn')
         .mockImplementation(() => {});
-      const mockOnConfirmSuccess = vi.fn().mockResolvedValue(undefined);
-      const mockOnConfirmError = vi
-        .fn()
-        .mockRejectedValue(new Error('Approval failed'));
+
+      mockMessageBus.publish.mockRejectedValueOnce(new Error('Bus error'));
 
       const awaitingApprovalToolCalls: TrackedToolCall[] = [
-        createMockToolCall('replace', 'call1', 'edit', mockOnConfirmSuccess),
-        createMockToolCall('write_file', 'call2', 'edit', mockOnConfirmError),
+        createMockToolCall('replace', 'call1', 'edit'),
+        createMockToolCall('write_file', 'call2', 'edit'),
       ];
 
       const { result } = renderTestHook(awaitingApprovalToolCalls);
@@ -1851,13 +1859,10 @@ describe('useGeminiStream', () => {
         await result.current.handleApprovalModeChange(ApprovalMode.YOLO);
       });
 
-      // Both confirmation methods should be called
-      expect(mockOnConfirmSuccess).toHaveBeenCalled();
-      expect(mockOnConfirmError).toHaveBeenCalled();
-
-      // Error should be logged
+      // Both should be attempted despite first error
+      expect(mockMessageBus.publish).toHaveBeenCalledTimes(2);
       expect(debuggerSpy).toHaveBeenCalledWith(
-        'Failed to auto-approve tool call call2:',
+        'Failed to auto-approve tool call call1:',
         expect.any(Error),
       );
 
@@ -1886,6 +1891,7 @@ describe('useGeminiStream', () => {
           invocation: {
             getDescription: () => 'Mock description',
           } as unknown as AnyToolInvocation,
+          correlationId: 'corr-1',
         } as unknown as TrackedWaitingToolCall,
       ];
 
@@ -1897,83 +1903,9 @@ describe('useGeminiStream', () => {
       });
     });
 
-    it('should skip tool calls without onConfirm method in confirmationDetails', async () => {
-      const awaitingApprovalToolCalls: TrackedToolCall[] = [
-        {
-          request: {
-            callId: 'call1',
-            name: 'replace',
-            args: { old_string: 'old', new_string: 'new' },
-            isClientInitiated: false,
-            prompt_id: 'prompt-id-1',
-          },
-          status: 'awaiting_approval',
-          responseSubmittedToGemini: false,
-          confirmationDetails: {
-            type: 'edit',
-            title: 'Confirm Edit',
-            // No onConfirm method
-            fileName: 'file.txt',
-            filePath: '/test/file.txt',
-            fileDiff: 'fake diff',
-            originalContent: 'old',
-            newContent: 'new',
-          } as any,
-          tool: {
-            name: 'replace',
-            displayName: 'replace',
-            description: 'Replace text',
-            build: vi.fn(),
-          } as any,
-          invocation: {
-            getDescription: () => 'Mock description',
-          } as unknown as AnyToolInvocation,
-        } as TrackedWaitingToolCall,
-      ];
-
-      const { result } = renderTestHook(awaitingApprovalToolCalls);
-
-      // Should not throw an error
-      await act(async () => {
-        await result.current.handleApprovalModeChange(ApprovalMode.YOLO);
-      });
-    });
-
     it('should only process tool calls with awaiting_approval status', async () => {
-      const mockOnConfirmAwaiting = vi.fn().mockResolvedValue(undefined);
-      const mockOnConfirmExecuting = vi.fn().mockResolvedValue(undefined);
-
       const mixedStatusToolCalls: TrackedToolCall[] = [
-        {
-          request: {
-            callId: 'call1',
-            name: 'replace',
-            args: { old_string: 'old', new_string: 'new' },
-            isClientInitiated: false,
-            prompt_id: 'prompt-id-1',
-          },
-          status: 'awaiting_approval',
-          responseSubmittedToGemini: false,
-          confirmationDetails: {
-            type: 'edit',
-            title: 'Confirm Edit',
-            onConfirm: mockOnConfirmAwaiting,
-            fileName: 'file.txt',
-            filePath: '/test/file.txt',
-            fileDiff: 'fake diff',
-            originalContent: 'old',
-            newContent: 'new',
-          },
-          tool: {
-            name: 'replace',
-            displayName: 'replace',
-            description: 'Replace text',
-            build: vi.fn(),
-          } as any,
-          invocation: {
-            getDescription: () => 'Mock description',
-          } as unknown as AnyToolInvocation,
-        } as TrackedWaitingToolCall,
+        createMockToolCall('replace', 'call1', 'edit'),
         {
           request: {
             callId: 'call2',
@@ -1995,6 +1927,7 @@ describe('useGeminiStream', () => {
           } as unknown as AnyToolInvocation,
           startTime: Date.now(),
           liveOutput: 'Writing...',
+          correlationId: 'corr-call2',
         } as TrackedExecutingToolCall,
       ];
 
@@ -2004,9 +1937,14 @@ describe('useGeminiStream', () => {
         await result.current.handleApprovalModeChange(ApprovalMode.YOLO);
       });
 
-      // Only the awaiting_approval tool should be processed
-      expect(mockOnConfirmAwaiting).toHaveBeenCalledTimes(1);
-      expect(mockOnConfirmExecuting).not.toHaveBeenCalled();
+      // Only the awaiting_approval tool should be processed.
+      expect(mockMessageBus.publish).toHaveBeenCalledTimes(1);
+      expect(mockMessageBus.publish).toHaveBeenCalledWith(
+        expect.objectContaining({ correlationId: 'corr-call1' }),
+      );
+      expect(mockMessageBus.publish).not.toHaveBeenCalledWith(
+        expect.objectContaining({ correlationId: 'corr-call2' }),
+      );
     });
   });
 

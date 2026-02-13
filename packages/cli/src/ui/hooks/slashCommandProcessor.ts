@@ -15,7 +15,6 @@ import { type PartListUnion } from '@google/genai';
 import process from 'node:process';
 import type { UseHistoryManagerReturn } from './useHistoryManager.js';
 import type {
-  ApprovalMode,
   Config,
   ExtensionsStartingEvent,
   ExtensionsStoppingEvent,
@@ -83,7 +82,6 @@ interface SlashCommandProcessorActions {
   toggleDebugProfiler: () => void;
   dispatchExtensionStateUpdate: (action: ExtensionUpdateAction) => void;
   addConfirmUpdateExtensionRequest: (request: ConfirmationRequest) => void;
-  setApprovalMode: (mode: ApprovalMode) => Promise<void>;
   toggleBackgroundShell: () => void;
   toggleShortcutsHelp: () => void;
   setText: (text: string) => void;
@@ -242,7 +240,6 @@ export const useSlashCommandProcessor = (
           actions.addConfirmUpdateExtensionRequest,
         setConfirmationRequest,
         removeComponent: () => setCustomDialog(null),
-        setApprovalMode: actions.setApprovalMode,
         toggleBackgroundShell: actions.toggleBackgroundShell,
         toggleShortcutsHelp: actions.toggleShortcutsHelp,
       },
@@ -332,6 +329,11 @@ export const useSlashCommandProcessor = (
         ],
         controller.signal,
       );
+
+      if (controller.signal.aborted) {
+        return;
+      }
+
       setCommands(commandService.getCommands());
     })();
 

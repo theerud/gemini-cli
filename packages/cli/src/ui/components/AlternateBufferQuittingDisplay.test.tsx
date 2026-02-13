@@ -186,7 +186,6 @@ describe('AlternateBufferQuittingDisplay', () => {
               type: 'info',
               title: 'Confirm Tool',
               prompt: 'Confirm this action?',
-              onConfirm: async () => {},
             },
           },
         ],
