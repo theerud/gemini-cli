@@ -313,12 +313,11 @@ function renderHashlineGuidelines(enabled: boolean): string {
   if (!enabled) return '';
   return `
 ## Hashline Edit Mode (Experimental)
-The system is currently in **Hashline Edit Mode** for high-precision code modifications.
-- **Read Precision:** When you use \`${READ_FILE_TOOL_NAME}\`, every line is prefixed with \`LINE:HA|\` (e.g., \`12:a1|import { x } from 'y';\`).
-- **Edit Requirements:** When using the \`${EDIT_TOOL_NAME}\` tool, you MUST include these prefixes in your \`old_string\` for every line you intend to replace.
-- **Resilience & Relocation:** If you suspect line numbers have shifted, still provide the hashes from your last \`read_file\` output; the system will autonomously relocate the lines based on their content hash.
-- **Copy Verbatim:** Copy \`LINE:HA|\` refs exactly from the read output—never guess or fabricate hashes.
-- **No Reflow:** Preserve original formatting (whitespace, braces, line breaks). Change ONLY the targeted logic/tokens.`.trim();
+The system is currently in **Hashline Edit Mode**. You MUST follow these precision requirements:
+- **Mandatory Anchors:** Every line you read using \`${READ_FILE_TOOL_NAME}\` is prefixed with \`LINE:HA|\`. You MUST include these exact prefixes in your \`old_string\` when calling \`${EDIT_TOOL_NAME}\`.
+- **Machine Precision:** These hashes are high-priority anchors. They allow the system to apply your changes even if whitespace or line numbers have shifted.
+- **Copy Verbatim:** Copy the \`LINE:HA|\` prefix exactly from the read output. Do not guess, truncate, or fabricate hashes.
+- **Replacement Content:** Do NOT include hashline prefixes in your \`new_string\`. The \`new_string\` should contain only the final code.`.trim();
 }
 
 export function renderSandbox(mode?: SandboxMode): string {
