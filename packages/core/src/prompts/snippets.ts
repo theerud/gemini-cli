@@ -63,6 +63,7 @@ export interface OperationalGuidelinesOptions {
   interactive: boolean;
   isGemini3: boolean;
   interactiveShellEnabled: boolean;
+  hashlineEditMode: boolean;
 }
 
 export type SandboxMode = 'macos-seatbelt' | 'generic' | 'outside';
@@ -303,7 +304,21 @@ export function renderOperationalGuidelines(
 ## Interaction Details
 - **Help Command:** The user can use '/help' to display help information.
 - **Feedback:** To report a bug or provide feedback, please use the /bug command.
+
+${renderHashlineGuidelines(options.hashlineEditMode)}
 `.trim();
+}
+
+function renderHashlineGuidelines(enabled: boolean): string {
+  if (!enabled) return '';
+  return `
+## Hashline Edit Mode (Experimental)
+The system is currently in **Hashline Edit Mode** for high-precision code modifications.
+- **Read Precision:** When you use \`${READ_FILE_TOOL_NAME}\`, every line is prefixed with \`LINE:HA|\` (e.g., \`12:a1|import { x } from 'y';\`).
+- **Edit Requirements:** When using the \`${EDIT_TOOL_NAME}\` tool, you MUST include these prefixes in your \`old_string\` for every line you intend to replace.
+- **Resilience & Relocation:** If you suspect line numbers have shifted, still provide the hashes from your last \`read_file\` output; the system will autonomously relocate the lines based on their content hash.
+- **Copy Verbatim:** Copy \`LINE:HA|\` refs exactly from the read output—never guess or fabricate hashes.
+- **No Reflow:** Preserve original formatting (whitespace, braces, line breaks). Change ONLY the targeted logic/tokens.`.trim();
 }
 
 export function renderSandbox(mode?: SandboxMode): string {

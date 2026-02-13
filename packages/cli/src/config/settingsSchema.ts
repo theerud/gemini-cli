@@ -1605,6 +1605,16 @@ const SETTINGS_SCHEMA = {
         description: 'Enable planning features (Plan Mode and tools).',
         showInDialog: true,
       },
+      hashlineEditMode: {
+        type: 'boolean',
+        label: 'Hashline Edit Mode',
+        category: 'Experimental',
+        requiresRestart: true,
+        default: false,
+        description:
+          'Enable experimental hashline-based edit mode for higher precision and reduced token waste.',
+        showInDialog: true,
+      },
     },
   },
 

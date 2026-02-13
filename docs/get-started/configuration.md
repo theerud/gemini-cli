@@ -928,6 +928,12 @@ their corresponding top-level category object in your `settings.json` file.
   - **Default:** `false`
   - **Requires restart:** Yes
 
+- **`experimental.hashlineEditMode`** (boolean):
+  - **Description:** Enable experimental hashline-based edit mode for higher
+    precision and reduced token waste.
+  - **Default:** `false`
+  - **Requires restart:** Yes
+
 #### `skills`
 
 - **`skills.enabled`** (boolean):
