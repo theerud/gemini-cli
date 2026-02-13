@@ -28,6 +28,13 @@ const MIN_LINES_SHOWN = 2; // show at least this many lines
 // outputs that will get truncated further MaxSizedBox anyway.
 const MAXIMUM_RESULT_DISPLAY_CHARACTERS = 20000;
 
+// Regex to match hashline prefixes like "12:a1|"
+const HASHLINE_REGEX = /^(\d+):([0-9a-z]{2})\|/gm;
+
+function stripHashlines(text: string): string {
+  return text.replace(HASHLINE_REGEX, '');
+}
+
 export interface ToolResultDisplayProps {
   resultDisplay: string | object | undefined;
   availableTerminalHeight?: number;
@@ -84,19 +91,21 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({
   const truncatedResultDisplay = React.useMemo(() => {
     // Only truncate string output if not in alternate buffer mode to ensure
     // we can scroll through the full output.
-    if (typeof resultDisplay === 'string' && !isAlternateBuffer) {
-      let text = resultDisplay;
-      if (text.length > MAXIMUM_RESULT_DISPLAY_CHARACTERS) {
-        text = '...' + text.slice(-MAXIMUM_RESULT_DISPLAY_CHARACTERS);
-      }
-      if (maxLines) {
-        const hasTrailingNewline = text.endsWith('\n');
-        const contentText = hasTrailingNewline ? text.slice(0, -1) : text;
-        const lines = contentText.split('\n');
-        if (lines.length > maxLines) {
-          text =
-            lines.slice(-maxLines).join('\n') +
-            (hasTrailingNewline ? '\n' : '');
+    if (typeof resultDisplay === 'string') {
+      let text = stripHashlines(resultDisplay);
+      if (!isAlternateBuffer) {
+        if (text.length > MAXIMUM_RESULT_DISPLAY_CHARACTERS) {
+          text = '...' + text.slice(-MAXIMUM_RESULT_DISPLAY_CHARACTERS);
+        }
+        if (maxLines) {
+          const hasTrailingNewline = text.endsWith('\n');
+          const contentText = hasTrailingNewline ? text.slice(0, -1) : text;
+          const lines = contentText.split('\n');
+          if (lines.length > maxLines) {
+            text =
+              lines.slice(-maxLines).join('\n') +
+              (hasTrailingNewline ? '\n' : '');
+          }
         }
       }
       return text;

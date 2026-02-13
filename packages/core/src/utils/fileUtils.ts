@@ -15,6 +15,7 @@ import { ToolErrorType } from '../tools/tool-error.js';
 import { BINARY_EXTENSIONS } from './ignorePatterns.js';
 import { createRequire as createModuleRequire } from 'node:module';
 import { debugLogger } from './debugLogger.js';
+import { formatHashline } from './hashline.js';
 
 const requireModule = createModuleRequire(import.meta.url);
 
@@ -409,6 +410,7 @@ export async function processSingleFileContent(
   fileSystemService: FileSystemService,
   offset?: number,
   limit?: number,
+  useHashline?: boolean,
 ): Promise<ProcessedFileReadResult> {
   try {
     if (!fs.existsSync(filePath)) {
@@ -497,7 +499,15 @@ export async function processSingleFileContent(
         const contentRangeTruncated =
           startLine > 0 || endLine < originalLineCount;
         const isTruncated = contentRangeTruncated || linesWereTruncatedInLength;
-        const llmContent = formattedLines.join('\n');
+        let llmContent = formattedLines.join('\n');
+
+        if (useHashline) {
+          llmContent = formattedLines
+            .map((line, index) =>
+              formatHashline(line, actualStartLine + 1 + index),
+            )
+            .join('\n');
+        }
 
         // By default, return nothing to streamline the common case of a successful read_file.
         let returnDisplay = '';
