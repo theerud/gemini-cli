@@ -10,9 +10,9 @@ import {
 } from '../../test-utils/render.js';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AlternateBufferQuittingDisplay } from './AlternateBufferQuittingDisplay.js';
-import { ToolCallStatus } from '../types.js';
 import type { HistoryItem, HistoryItemWithoutId } from '../types.js';
 import { Text } from 'ink';
+import { CoreToolCallStatus } from '@google/gemini-cli-core';
 
 vi.mock('../utils/terminalSetup.js', () => ({
   getTerminalProgram: () => null,
@@ -52,7 +52,7 @@ const mockHistory: HistoryItem[] = [
         name: 'tool1',
         toolName: 'tool1',
         description: 'Description for tool 1',
-        status: ToolCallStatus.Success,
+        status: CoreToolCallStatus.Success,
         resultDisplay: undefined,
         confirmationDetails: undefined,
       },
@@ -67,7 +67,7 @@ const mockHistory: HistoryItem[] = [
         name: 'tool2',
         toolName: 'tool2',
         description: 'Description for tool 2',
-        status: ToolCallStatus.Success,
+        status: CoreToolCallStatus.Success,
         resultDisplay: undefined,
         confirmationDetails: undefined,
       },
@@ -84,7 +84,7 @@ const mockPendingHistoryItems: HistoryItemWithoutId[] = [
         name: 'tool3',
         toolName: 'tool3',
         description: 'Description for tool 3',
-        status: ToolCallStatus.Pending,
+        status: CoreToolCallStatus.Scheduled,
         resultDisplay: undefined,
         confirmationDetails: undefined,
       },
@@ -180,7 +180,7 @@ describe('AlternateBufferQuittingDisplay', () => {
             name: 'confirming_tool',
             toolName: 'confirming_tool',
             description: 'Confirming tool description',
-            status: ToolCallStatus.Confirming,
+            status: CoreToolCallStatus.AwaitingApproval,
             resultDisplay: undefined,
             confirmationDetails: {
               type: 'info',

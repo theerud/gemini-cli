@@ -14,8 +14,9 @@ import {
   ToolConfirmationOutcome,
   MessageBusType,
   IdeClient,
+  CoreToolCallStatus,
 } from '@google/gemini-cli-core';
-import { ToolCallStatus, type IndividualToolCallDisplay } from '../types.js';
+import { type IndividualToolCallDisplay } from '../types.js';
 
 // Mock IdeClient
 vi.mock('@google/gemini-cli-core', async (importOriginal) => {
@@ -46,7 +47,7 @@ describe('ToolActionsContext', () => {
       name: 'test-tool',
       toolName: 'test-tool',
       description: 'desc',
-      status: ToolCallStatus.Confirming,
+      status: CoreToolCallStatus.AwaitingApproval,
       resultDisplay: undefined,
       confirmationDetails: { type: 'info', title: 'title', prompt: 'prompt' },
     },
@@ -56,7 +57,7 @@ describe('ToolActionsContext', () => {
       name: 'edit-tool',
       toolName: 'edit-tool',
       description: 'desc',
-      status: ToolCallStatus.Confirming,
+      status: CoreToolCallStatus.AwaitingApproval,
       resultDisplay: undefined,
       confirmationDetails: {
         type: 'edit',

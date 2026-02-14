@@ -18,10 +18,10 @@ import {
   GEMINI_IGNORE_FILE_NAME,
   ApprovalMode,
   // DEFAULT_FILE_EXCLUDES,
+  CoreToolCallStatus,
 } from '@google/gemini-cli-core';
 import * as core from '@google/gemini-cli-core';
 import * as os from 'node:os';
-import { ToolCallStatus } from '../types.js';
 import type { UseHistoryManagerReturn } from './useHistoryManager.js';
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'node:path';
@@ -214,7 +214,9 @@ describe('handleAtCommand', () => {
     expect(mockAddItem).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'tool_group',
-        tools: [expect.objectContaining({ status: ToolCallStatus.Success })],
+        tools: [
+          expect.objectContaining({ status: CoreToolCallStatus.Success }),
+        ],
       }),
       125,
     );
@@ -292,8 +294,8 @@ describe('handleAtCommand', () => {
       path.join(testRootDir, 'path', 'to', 'my file.txt'),
       fileContent,
     );
-    const escapedpath = path.join(testRootDir, 'path', 'to', 'my\\ file.txt');
-    const query = `@${escapedpath}`;
+
+    const query = `@${core.escapePath(filePath)}`;
 
     const result = await handleAtCommand({
       query,
@@ -316,7 +318,9 @@ describe('handleAtCommand', () => {
     expect(mockAddItem).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'tool_group',
-        tools: [expect.objectContaining({ status: ToolCallStatus.Success })],
+        tools: [
+          expect.objectContaining({ status: CoreToolCallStatus.Success }),
+        ],
       }),
       125,
     );
@@ -962,8 +966,8 @@ describe('handleAtCommand', () => {
         path.join(testRootDir, 'spaced file.txt'),
         fileContent,
       );
-      const escapedPath = path.join(testRootDir, 'spaced\\ file.txt');
-      const query = `Check @${escapedPath}, it has spaces.`;
+
+      const query = `Check @${core.escapePath(filePath)}, it has spaces.`;
 
       const result = await handleAtCommand({
         query,
@@ -1433,7 +1437,7 @@ describe('handleAtCommand', () => {
     expect(mockAddItem).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'tool_group',
-        tools: [expect.objectContaining({ status: ToolCallStatus.Error })],
+        tools: [expect.objectContaining({ status: CoreToolCallStatus.Error })],
       }),
       134,
     );
