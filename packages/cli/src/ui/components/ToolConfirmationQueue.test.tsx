@@ -229,7 +229,7 @@ describe('ToolConfirmationQueue', () => {
         callId: 'call-1',
         name: 'ask_user',
         description: 'ask user',
-        status: ToolCallStatus.Confirming,
+        status: CoreToolCallStatus.AwaitingApproval,
         confirmationDetails: {
           type: 'ask_user' as const,
           questions: [
