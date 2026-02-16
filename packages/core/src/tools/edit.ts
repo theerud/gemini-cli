@@ -346,17 +346,38 @@ async function calculateHashlineReplacement(
 
   // Perform replacement
   const firstLineInMatch = sourceLines[bestStartLine];
-  const indentationMatch = firstLineInMatch.match(/^([ \t]*)/);
-  const indentation = indentationMatch ? indentationMatch[1] : '';
+  const originalIndentationMatch = firstLineInMatch.match(/^([ \t]*)/);
+  const originalIndentation = originalIndentationMatch
+    ? originalIndentationMatch[1]
+    : '';
 
   const normalizedReplace = new_string.replace(/\r\n/g, '\n');
   const replaceLines = normalizedReplace.split('\n');
   // Strip hashline prefixes from replacement lines if the model accidentally included them
   const cleanedReplaceLines = replaceLines.map((line) => stripHashline(line));
 
-  const newBlockWithIndent = cleanedReplaceLines.map(
-    (line) => `${indentation}${line}`,
-  );
+  // Calculate the relative indentation of the first replacement line
+  const firstReplaceLine = cleanedReplaceLines[0] || '';
+  const replaceIndentationMatch = firstReplaceLine.match(/^([ \t]*)/);
+  const replaceIndentation = replaceIndentationMatch
+    ? replaceIndentationMatch[1]
+    : '';
+
+  let newBlockWithIndent: string[];
+  if (originalIndentation === replaceIndentation) {
+    // If first line indentation matches, assume the block is already correctly indented
+    newBlockWithIndent = cleanedReplaceLines;
+  } else {
+    // Adjust the indentation of all lines in the replacement block relative to the first line's shift
+    newBlockWithIndent = cleanedReplaceLines.map((line) => {
+      if (line.trim() === '') return line; // Preserve empty lines
+      if (line.startsWith(replaceIndentation)) {
+        return originalIndentation + line.substring(replaceIndentation.length);
+      }
+      // Fallback: if a line doesn't start with the expected base indentation, just trim it and apply original
+      return originalIndentation + line.trimStart();
+    });
+  }
 
   const newSourceLines = [...sourceLines];
   newSourceLines.splice(
