@@ -1288,7 +1288,9 @@ describe('handleAtCommand', () => {
     // Assert
     // It SHOULD be called for the tool_group
     expect(mockAddItem).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'tool_group' }),
+      expect.objectContaining({
+        type: 'tool_group',
+      }),
       999,
     );
 
@@ -1345,7 +1347,9 @@ describe('handleAtCommand', () => {
       });
       expect(containsResourceText).toBe(true);
       expect(mockAddItem).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'tool_group' }),
+        expect.objectContaining({
+          type: 'tool_group',
+        }),
         expect.any(Number),
       );
     });

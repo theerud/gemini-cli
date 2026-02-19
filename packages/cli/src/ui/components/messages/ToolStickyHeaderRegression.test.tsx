@@ -80,7 +80,7 @@ describe('ToolMessage Sticky Header Regression', () => {
           data={['item1']}
           renderItem={() => (
             <ToolGroupMessage
-              groupId={1}
+              item={{ id: 1, type: 'tool_group', tools: toolCalls }}
               toolCalls={toolCalls}
               terminalWidth={terminalWidth - 2} // Account for ScrollableList padding
             />
@@ -92,7 +92,7 @@ describe('ToolMessage Sticky Header Regression', () => {
       );
     };
 
-    const { lastFrame } = renderWithProviders(
+    const { lastFrame, waitUntilReady, unmount } = renderWithProviders(
       <Box height={terminalHeight}>
         <TestComponent />
       </Box>,
@@ -101,6 +101,7 @@ describe('ToolMessage Sticky Header Regression', () => {
         uiState: { terminalWidth },
       },
     );
+    await waitUntilReady();
 
     // Initial state: tool-1 should be visible
     await waitFor(() => {
@@ -113,6 +114,7 @@ describe('ToolMessage Sticky Header Regression', () => {
     await act(async () => {
       listRef?.scrollBy(7);
     });
+    await waitUntilReady();
 
     // tool-1 header should still be visible because it is sticky
     await waitFor(() => {
@@ -131,6 +133,7 @@ describe('ToolMessage Sticky Header Regression', () => {
     await act(async () => {
       listRef?.scrollBy(17);
     });
+    await waitUntilReady();
 
     await waitFor(() => {
       expect(lastFrame()).toContain('tool-2');
@@ -139,6 +142,7 @@ describe('ToolMessage Sticky Header Regression', () => {
     // tool-1 should be gone now (both header and content)
     expect(lastFrame()).not.toContain('tool-1');
     expect(lastFrame()).toMatchSnapshot();
+    unmount();
   });
 
   it('verifies that ShellToolMessage in a ToolGroupMessage in a ScrollableList has sticky headers', async () => {
@@ -166,7 +170,7 @@ describe('ToolMessage Sticky Header Regression', () => {
           data={['item1']}
           renderItem={() => (
             <ToolGroupMessage
-              groupId={1}
+              item={{ id: 1, type: 'tool_group', tools: toolCalls }}
               toolCalls={toolCalls}
               terminalWidth={terminalWidth - 2}
             />
@@ -178,7 +182,7 @@ describe('ToolMessage Sticky Header Regression', () => {
       );
     };
 
-    const { lastFrame } = renderWithProviders(
+    const { lastFrame, waitUntilReady, unmount } = renderWithProviders(
       <Box height={terminalHeight}>
         <TestComponent />
       </Box>,
@@ -187,6 +191,7 @@ describe('ToolMessage Sticky Header Regression', () => {
         uiState: { terminalWidth },
       },
     );
+    await waitUntilReady();
 
     await waitFor(() => {
       expect(lastFrame()).toContain(SHELL_COMMAND_NAME);
@@ -197,11 +202,13 @@ describe('ToolMessage Sticky Header Regression', () => {
     await act(async () => {
       listRef?.scrollBy(5);
     });
+    await waitUntilReady();
 
     await waitFor(() => {
       expect(lastFrame()).toContain(SHELL_COMMAND_NAME);
     });
     expect(lastFrame()).toContain('shell-06');
     expect(lastFrame()).toMatchSnapshot();
+    unmount();
   });
 });

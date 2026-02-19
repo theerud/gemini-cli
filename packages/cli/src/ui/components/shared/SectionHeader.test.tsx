@@ -30,17 +30,12 @@ describe('<SectionHeader />', () => {
       title: 'Narrow Container',
       width: 25,
     },
-    {
-      description: 'renders correctly with a subtitle',
-      title: 'Shortcuts',
-      subtitle: ' See /help for more',
-      width: 40,
-    },
-  ])('$description', ({ title, subtitle, width }) => {
-    const { lastFrame, unmount } = renderWithProviders(
-      <SectionHeader title={title} subtitle={subtitle} />,
+  ])('$description', async ({ title, width }) => {
+    const { lastFrame, waitUntilReady, unmount } = renderWithProviders(
+      <SectionHeader title={title} />,
       { width },
     );
+    await waitUntilReady();
 
     expect(lastFrame()).toMatchSnapshot();
     unmount();

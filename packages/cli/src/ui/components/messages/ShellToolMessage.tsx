@@ -30,9 +30,9 @@ import { useAlternateBuffer } from '../../hooks/useAlternateBuffer.js';
 import { type Config, CoreToolCallStatus } from '@google/gemini-cli-core';
 import { theme } from '../../semantic-colors.js';
 
+import { useUIState } from '../../contexts/UIStateContext.js';
+
 export interface ShellToolMessageProps extends ToolMessageProps {
-  activeShellPtyId?: number | null;
-  embeddedShellFocused?: boolean;
   config?: Config;
 }
 
@@ -53,10 +53,6 @@ export const ShellToolMessage: React.FC<ShellToolMessageProps> = ({
 
   renderOutputAsMarkdown = true,
 
-  activeShellPtyId,
-
-  embeddedShellFocused,
-
   ptyId,
 
   config,
@@ -68,6 +64,7 @@ export const ShellToolMessage: React.FC<ShellToolMessageProps> = ({
   borderDimColor,
   treeConnector,
 }) => {
+  const { activePtyId: activeShellPtyId, embeddedShellFocused } = useUIState();
   const isAlternateBuffer = useAlternateBuffer();
   const isThisShellFocused = checkIsShellFocused(
     name,
