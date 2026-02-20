@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2025 Google LLC
+ * Copyright 2026 Google LLC
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -505,6 +505,24 @@ export class PolicyEngine {
   setCheckers(checkers: SafetyCheckerRule[]): void {
     this.checkers = checkers.sort(
       (a, b) => (b.priority ?? 0) - (a.priority ?? 0),
+    );
+  }
+
+  /**
+   * Remove rules matching a specific tier (priority band).
+   */
+  removeRulesByTier(tier: number): void {
+    this.rules = this.rules.filter(
+      (rule) => Math.floor(rule.priority ?? 0) !== tier,
+    );
+  }
+
+  /**
+   * Remove checkers matching a specific tier (priority band).
+   */
+  removeCheckersByTier(tier: number): void {
+    this.checkers = this.checkers.filter(
+      (checker) => Math.floor(checker.priority ?? 0) !== tier,
     );
   }
 

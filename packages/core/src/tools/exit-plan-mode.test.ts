@@ -46,7 +46,7 @@ describe('ExitPlanModeTool', () => {
       setApprovedPlanPath: vi.fn(),
       getApprovalMode: vi.fn().mockReturnValue(ApprovalMode.PLAN),
       storage: {
-        getProjectTempPlansDir: vi.fn().mockReturnValue(mockPlansDir),
+        getPlansDir: vi.fn().mockReturnValue(mockPlansDir),
       } as unknown as Config['storage'],
     } as unknown as Config;
     tool = new ExitPlanModeTool(
