@@ -319,22 +319,6 @@ export class PolicyEngine {
       `[PolicyEngine.check] toolCall.name: ${toolCall.name}, stringifiedArgs: ${stringifiedArgs}`,
     );
 
-    // In PLAN mode, deny all MCP tools (tools with '__' in the name)
-    // MCP tools are external and could have side effects, so we block them during planning
-    if (
-      this.approvalMode === ApprovalMode.PLAN &&
-      toolCall.name &&
-      toolCall.name.includes('__')
-    ) {
-      debugLogger.debug(
-        `[PolicyEngine.check] PLAN mode: denying MCP tool ${toolCall.name}`,
-      );
-      return {
-        decision: PolicyDecision.DENY,
-        rule: undefined,
-      };
-    }
-
     // Check for shell commands upfront to handle splitting
     let isShellCommand = false;
     let command: string | undefined;
@@ -450,7 +434,6 @@ export class PolicyEngine {
               return {
                 decision: PolicyDecision.DENY,
                 rule: matchedRule,
-                reason: result.reason,
               };
             } else if (result.decision === SafetyCheckDecision.ASK_USER) {
               debugLogger.debug(
@@ -487,25 +470,9 @@ export class PolicyEngine {
     this.rules.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
   }
 
-  /**
-   * Replace all rules in the policy engine.
-   */
-  setRules(rules: PolicyRule[]): void {
-    this.rules = rules.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
-  }
-
   addChecker(checker: SafetyCheckerRule): void {
     this.checkers.push(checker);
     this.checkers.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
-  }
-
-  /**
-   * Replace all checkers in the policy engine.
-   */
-  setCheckers(checkers: SafetyCheckerRule[]): void {
-    this.checkers = checkers.sort(
-      (a, b) => (b.priority ?? 0) - (a.priority ?? 0),
-    );
   }
 
   /**
