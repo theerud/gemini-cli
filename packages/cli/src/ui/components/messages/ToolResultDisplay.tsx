@@ -11,11 +11,7 @@ import { MarkdownDisplay } from '../../utils/MarkdownDisplay.js';
 import { AnsiOutputText, AnsiLineText } from '../AnsiOutput.js';
 import { MaxSizedBox } from '../shared/MaxSizedBox.js';
 import { theme } from '../../semantic-colors.js';
-import type {
-  AnsiOutput,
-  AnsiLine,
-  PresentedPlan,
-} from '@google/gemini-cli-core';
+import type { AnsiOutput, AnsiLine } from '@google/gemini-cli-core';
 import { useUIState } from '../../contexts/UIStateContext.js';
 import { tryParseJSON } from '../../../utils/jsonoutput.js';
 import { useAlternateBuffer } from '../../hooks/useAlternateBuffer.js';
@@ -23,21 +19,11 @@ import { Scrollable } from '../shared/Scrollable.js';
 import { ScrollableList } from '../shared/ScrollableList.js';
 import { SCROLL_TO_ITEM_END } from '../shared/VirtualizedList.js';
 import { ACTIVE_SHELL_MAX_LINES } from '../../constants.js';
-
-const STATIC_HEIGHT = 1;
-const RESERVED_LINE_COUNT = 6; // for tool name, status, padding, and 'ShowMoreLines' hint
-const MIN_LINES_SHOWN = 2; // show at least this many lines
+import { calculateToolContentMaxLines } from '../../utils/toolLayoutUtils.js';
 
 // Large threshold to ensure we don't cause performance issues for very large
 // outputs that will get truncated further MaxSizedBox anyway.
 const MAXIMUM_RESULT_DISPLAY_CHARACTERS = 20000;
-
-// Regex to match hashline prefixes like "12:a1|"
-const HASHLINE_REGEX = /^(\d+):([0-9a-z]{2})\|/gm;
-
-function stripHashlines(text: string): string {
-  return text.replace(HASHLINE_REGEX, '');
-}
 
 export interface ToolResultDisplayProps {
   resultDisplay: string | object | undefined;
@@ -64,16 +50,11 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({
   const { renderMarkdown } = useUIState();
   const isAlternateBuffer = useAlternateBuffer();
 
-  let availableHeight = availableTerminalHeight
-    ? Math.max(
-        availableTerminalHeight - STATIC_HEIGHT - RESERVED_LINE_COUNT,
-        MIN_LINES_SHOWN + 1, // enforce minimum lines shown
-      )
-    : undefined;
-
-  if (maxLines && availableHeight) {
-    availableHeight = Math.min(availableHeight, maxLines);
-  }
+  const availableHeight = calculateToolContentMaxLines({
+    availableTerminalHeight,
+    isAlternateBuffer,
+    maxLinesLimit: maxLines,
+  });
 
   const combinedPaddingAndBorderWidth = 4;
   const childWidth = terminalWidth - combinedPaddingAndBorderWidth;
@@ -92,29 +73,43 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({
     [],
   );
 
-  const truncatedResultDisplay = React.useMemo(() => {
+  const { truncatedResultDisplay, hiddenLinesCount } = React.useMemo(() => {
+    let hiddenLines = 0;
     // Only truncate string output if not in alternate buffer mode to ensure
     // we can scroll through the full output.
-    if (typeof resultDisplay === 'string') {
-      let text = stripHashlines(resultDisplay);
-      if (!isAlternateBuffer) {
-        if (text.length > MAXIMUM_RESULT_DISPLAY_CHARACTERS) {
-          text = '...' + text.slice(-MAXIMUM_RESULT_DISPLAY_CHARACTERS);
-        }
-        if (maxLines) {
-          const hasTrailingNewline = text.endsWith('\n');
-          const contentText = hasTrailingNewline ? text.slice(0, -1) : text;
-          const lines = contentText.split('\n');
-          if (lines.length > maxLines) {
-            text =
-              lines.slice(-maxLines).join('\n') +
-              (hasTrailingNewline ? '\n' : '');
-          }
+    if (typeof resultDisplay === 'string' && !isAlternateBuffer) {
+      let text = resultDisplay;
+      if (text.length > MAXIMUM_RESULT_DISPLAY_CHARACTERS) {
+        text = '...' + text.slice(-MAXIMUM_RESULT_DISPLAY_CHARACTERS);
+      }
+      if (maxLines) {
+        const hasTrailingNewline = text.endsWith('\n');
+        const contentText = hasTrailingNewline ? text.slice(0, -1) : text;
+        const lines = contentText.split('\n');
+        if (lines.length > maxLines) {
+          // We will have a label from MaxSizedBox. Reserve space for it.
+          const targetLines = Math.max(1, maxLines - 1);
+          hiddenLines = lines.length - targetLines;
+          text =
+            lines.slice(-targetLines).join('\n') +
+            (hasTrailingNewline ? '\n' : '');
         }
       }
-      return text;
+      return { truncatedResultDisplay: text, hiddenLinesCount: hiddenLines };
     }
-    return resultDisplay;
+
+    if (Array.isArray(resultDisplay) && !isAlternateBuffer && maxLines) {
+      if (resultDisplay.length > maxLines) {
+        // We will have a label from MaxSizedBox. Reserve space for it.
+        const targetLines = Math.max(1, maxLines - 1);
+        return {
+          truncatedResultDisplay: resultDisplay.slice(-targetLines),
+          hiddenLinesCount: resultDisplay.length - targetLines,
+        };
+      }
+    }
+
+    return { truncatedResultDisplay: resultDisplay, hiddenLinesCount: 0 };
   }, [resultDisplay, isAlternateBuffer, maxLines]);
 
   if (!truncatedResultDisplay) return null;
@@ -133,15 +128,18 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({
     // If availableHeight is undefined, fallback to a safe default to prevents infinite loop
     // where Container grows -> List renders more -> Container grows.
     const limit = maxLines ?? availableHeight ?? ACTIVE_SHELL_MAX_LINES;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    const ansiOutput = truncatedResultDisplay as AnsiOutput;
-    const listHeight = Math.min(ansiOutput.length, limit);
+    const listHeight = Math.min(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+      (truncatedResultDisplay as AnsiOutput).length,
+      limit,
+    );
 
     return (
       <Box width={childWidth} flexDirection="column" maxHeight={listHeight}>
         <ScrollableList
           width={childWidth}
-          data={ansiOutput}
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+          data={truncatedResultDisplay as AnsiOutput}
           renderItem={renderVirtualizedAnsiLine}
           estimatedItemHeight={() => 1}
           keyExtractor={keyExtractor}
@@ -194,28 +192,14 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({
     typeof truncatedResultDisplay === 'object' &&
     'fileDiff' in truncatedResultDisplay
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    const diffResult = truncatedResultDisplay as FileDiffResult;
     content = (
       <DiffRenderer
-        diffContent={diffResult.fileDiff}
-        filename={diffResult.fileName}
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+        diffContent={(truncatedResultDisplay as FileDiffResult).fileDiff}
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+        filename={(truncatedResultDisplay as FileDiffResult).fileName}
         availableTerminalHeight={availableHeight}
         terminalWidth={childWidth}
-      />
-    );
-  } else if (
-    typeof truncatedResultDisplay === 'object' &&
-    'presentedPlan' in truncatedResultDisplay
-  ) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    const plan = truncatedResultDisplay as PresentedPlan;
-    content = (
-      <MarkdownDisplay
-        text={plan.presentedPlan.displayText}
-        terminalWidth={childWidth}
-        renderMarkdown={renderMarkdown}
-        isPending={false}
       />
     );
   } else {
@@ -223,12 +207,10 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({
       isAlternateBuffer ||
       (availableTerminalHeight === undefined && maxLines === undefined);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    const ansiOutput = truncatedResultDisplay as AnsiOutput;
-
     content = (
       <AnsiOutputText
-        data={ansiOutput}
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+        data={truncatedResultDisplay as AnsiOutput}
         availableTerminalHeight={
           isAlternateBuffer ? undefined : availableHeight
         }
@@ -255,7 +237,11 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({
 
   return (
     <Box width={childWidth} flexDirection="column">
-      <MaxSizedBox maxHeight={availableHeight} maxWidth={childWidth}>
+      <MaxSizedBox
+        maxHeight={availableHeight}
+        maxWidth={childWidth}
+        additionalHiddenLinesCount={hiddenLinesCount}
+      >
         {content}
       </MaxSizedBox>
     </Box>
