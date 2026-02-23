@@ -104,7 +104,6 @@ class ReadFileToolInvocation extends BaseToolInvocation<
       this.config.getFileSystemService(),
       this.params.start_line,
       this.params.end_line,
-      this.config.getHashlineEditMode(),
     );
 
     if (result.error) {

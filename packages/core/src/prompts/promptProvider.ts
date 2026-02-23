@@ -186,7 +186,6 @@ export class PromptProvider {
             interactive: interactiveMode,
             enableShellEfficiency: config.getEnableShellOutputEfficiency(),
             interactiveShellEnabled: config.isInteractiveShellEnabled(),
-            hashlineEditMode: config.getHashlineEditMode(),
           }),
         ),
         sandbox: this.withSection('sandbox', () => getSandboxMode()),

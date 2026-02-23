@@ -46,7 +46,6 @@ describe('PromptProvider', () => {
         getSkills: vi.fn().mockReturnValue([]),
       }),
       getActiveModel: vi.fn().mockReturnValue(PREVIEW_GEMINI_MODEL),
-      getHashlineEditMode: vi.fn().mockReturnValue(false),
       getAgentRegistry: vi.fn().mockReturnValue({
         getAllDefinitions: vi.fn().mockReturnValue([]),
       }),
