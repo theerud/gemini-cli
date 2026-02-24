@@ -96,6 +96,9 @@ export type SerializableConfirmationDetails =
       serverName: string;
       toolName: string;
       toolDisplayName: string;
+      toolArgs?: Record<string, unknown>;
+      toolDescription?: string;
+      toolParameterSchema?: unknown;
     }
   | {
       type: 'ask_user';
