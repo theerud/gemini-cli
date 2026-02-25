@@ -396,6 +396,8 @@ export interface ProcessedFileReadResult {
   linesShown?: [number, number]; // For text files [startLine, endLine] (1-based for display)
 }
 
+import { annotateContent } from './hashline.js';
+
 /**
  * Reads and processes a single file, handling text, images, and PDFs.
  * @param filePath Absolute path to the file.
@@ -403,6 +405,7 @@ export interface ProcessedFileReadResult {
  * @param _fileSystemService Currently unused in this function; kept for signature stability.
  * @param startLine Optional 1-based line number to start reading from.
  * @param endLine Optional 1-based line number to end reading at (inclusive).
+ * @param includeHashes Optional: If true, include Hashline identifiers for each line.
  * @returns ProcessedFileReadResult object.
  */
 export async function processSingleFileContent(
@@ -411,6 +414,7 @@ export async function processSingleFileContent(
   _fileSystemService: FileSystemService,
   startLine?: number,
   endLine?: number,
+  includeHashes?: boolean,
 ): Promise<ProcessedFileReadResult> {
   try {
     if (!fs.existsSync(filePath)) {
@@ -510,7 +514,11 @@ export async function processSingleFileContent(
           actualStart > 0 ||
           sliceEnd < originalLineCount ||
           linesWereTruncatedInLength;
-        const llmContent = formattedLines.join('\n');
+        let llmContent = formattedLines.join('\n');
+
+        if (includeHashes) {
+          llmContent = annotateContent(llmContent);
+        }
 
         // By default, return nothing to streamline the common case of a successful read_file.
         let returnDisplay = '';

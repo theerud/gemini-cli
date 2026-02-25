@@ -14,7 +14,6 @@ import {
   GLOB_TOOL_NAME,
   GREP_TOOL_NAME,
   LS_TOOL_NAME,
-  READ_FILE_TOOL_NAME,
   WRITE_FILE_TOOL_NAME,
   EDIT_TOOL_NAME,
   WEB_SEARCH_TOOL_NAME,
@@ -34,8 +33,6 @@ import {
   PARAM_RESPECT_GEMINI_IGNORE,
   PARAM_FILE_FILTERING_OPTIONS,
   // Tool-specific parameter names
-  READ_FILE_PARAM_START_LINE,
-  READ_FILE_PARAM_END_LINE,
   WRITE_FILE_PARAM_CONTENT,
   GREP_PARAM_INCLUDE_PATTERN,
   GREP_PARAM_EXCLUDE_PATTERN,
@@ -47,7 +44,6 @@ import {
   GREP_PARAM_AFTER,
   GREP_PARAM_BEFORE,
   GREP_PARAM_NO_IGNORE,
-  EDIT_PARAM_INSTRUCTION,
   EDIT_PARAM_OLD_STRING,
   EDIT_PARAM_NEW_STRING,
   EDIT_PARAM_ALLOW_MULTIPLE,
@@ -78,6 +74,8 @@ import {
   getShellDeclaration,
   getExitPlanModeDeclaration,
   getActivateSkillDeclaration,
+  getReadFileDeclaration,
+  getReplaceDeclaration,
 } from '../dynamic-declaration-helpers.js';
 import {
   DEFAULT_MAX_LINES_TEXT_FILE,
@@ -89,30 +87,11 @@ import {
  * Gemini 3 tool set. Initially a copy of the default legacy set.
  */
 export const GEMINI_3_SET: CoreToolSet = {
-  read_file: {
-    name: READ_FILE_TOOL_NAME,
-    description: `Reads and returns the content of a specified file. To maintain context efficiency, you MUST use 'start_line' and 'end_line' for targeted, surgical reads of specific sections. For your safety, the tool will automatically truncate output exceeding ${DEFAULT_MAX_LINES_TEXT_FILE} lines, ${MAX_LINE_LENGTH_TEXT_FILE} characters per line, or ${MAX_FILE_SIZE_MB}MB in size; however, triggering these limits is considered token-inefficient. Always retrieve only the minimum content necessary for your next step. Handles text, images (PNG, JPG, GIF, WEBP, SVG, BMP), audio files (MP3, WAV, AIFF, AAC, OGG, FLAC), and PDF files.`,
-    parametersJsonSchema: {
-      type: 'object',
-      properties: {
-        [PARAM_FILE_PATH]: {
-          description: 'The path to the file to read.',
-          type: 'string',
-        },
-        [READ_FILE_PARAM_START_LINE]: {
-          description:
-            'Optional: The 1-based line number to start reading from.',
-          type: 'number',
-        },
-        [READ_FILE_PARAM_END_LINE]: {
-          description:
-            'Optional: The 1-based line number to end reading at (inclusive).',
-          type: 'number',
-        },
-      },
-      required: [PARAM_FILE_PATH],
-    },
-  },
+  read_file: (enableHashline) =>
+    getReadFileDeclaration(
+      enableHashline,
+      `Reads and returns the content of a specified file. To maintain context efficiency, you MUST use 'start_line' and 'end_line' for targeted, surgical reads of specific sections. For your safety, the tool will automatically truncate output exceeding ${DEFAULT_MAX_LINES_TEXT_FILE} lines, ${MAX_LINE_LENGTH_TEXT_FILE} characters per line, or ${MAX_FILE_SIZE_MB}MB in size; however, triggering these limits is considered token-inefficient. Always retrieve only the minimum content necessary for your next step. Handles text, images (PNG, JPG, GIF, WEBP, SVG, BMP), audio files (MP3, WAV, AIFF, AAC, OGG, FLAC), and PDF files.`,
+    ),
 
   write_file: {
     name: WRITE_FILE_TOOL_NAME,
@@ -341,45 +320,12 @@ export const GEMINI_3_SET: CoreToolSet = {
   run_shell_command: (enableInteractiveShell, enableEfficiency) =>
     getShellDeclaration(enableInteractiveShell, enableEfficiency),
 
-  replace: {
-    name: EDIT_TOOL_NAME,
-    description: `Replaces text within a file. By default, the tool expects to find and replace exactly ONE occurrence of \`old_string\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. This tool requires providing significant context around the change to ensure precise targeting.
-The user has the ability to modify the \`new_string\` content. If modified, this will be stated in the response.`,
-    parametersJsonSchema: {
-      type: 'object',
-      properties: {
-        [PARAM_FILE_PATH]: {
-          description: 'The path to the file to modify.',
-          type: 'string',
-        },
-        [EDIT_PARAM_INSTRUCTION]: {
-          description: `A clear, semantic instruction for the code change, acting as a high-quality prompt for an expert LLM assistant. It must be self-contained and explain the goal of the change.`,
-          type: 'string',
-        },
-        [EDIT_PARAM_OLD_STRING]: {
-          description:
-            'The exact literal text to replace, unescaped. If this string is not the exact literal text (i.e. you escaped it) or does not match exactly, the tool will fail.',
-          type: 'string',
-        },
-        [EDIT_PARAM_NEW_STRING]: {
-          description:
-            "The exact literal text to replace `old_string` with, unescaped. Provide the EXACT text. Ensure the resulting code is correct and idiomatic. Do not use omission placeholders like '(rest of methods ...)', '...', or 'unchanged code'; provide exact literal code.",
-          type: 'string',
-        },
-        [EDIT_PARAM_ALLOW_MULTIPLE]: {
-          type: 'boolean',
-          description:
-            'If true, the tool will replace all occurrences of `old_string`. If false (default), it will only succeed if exactly one occurrence is found.',
-        },
-      },
-      required: [
-        PARAM_FILE_PATH,
-        EDIT_PARAM_INSTRUCTION,
-        EDIT_PARAM_OLD_STRING,
-        EDIT_PARAM_NEW_STRING,
-      ],
-    },
-  },
+  replace: (enableHashline) =>
+    getReplaceDeclaration(
+      enableHashline,
+      `Replaces text within a file. By default, the tool expects to find and replace exactly ONE occurrence of \`${EDIT_PARAM_OLD_STRING}\`. If you want to replace multiple occurrences of the exact same string, set \`${EDIT_PARAM_ALLOW_MULTIPLE}\` to true. This tool requires providing significant context around the change to ensure precise targeting.
+The user has the ability to modify the \`${EDIT_PARAM_NEW_STRING}\` content. If modified, this will be stated in the response.`,
+    ),
 
   google_web_search: {
     name: WEB_SEARCH_TOOL_NAME,
