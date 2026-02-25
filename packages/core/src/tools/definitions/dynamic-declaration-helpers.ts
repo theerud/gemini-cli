@@ -17,9 +17,20 @@ import {
   SHELL_TOOL_NAME,
   EXIT_PLAN_MODE_TOOL_NAME,
   ACTIVATE_SKILL_TOOL_NAME,
+  READ_FILE_TOOL_NAME,
+  EDIT_TOOL_NAME,
   SHELL_PARAM_COMMAND,
   PARAM_DESCRIPTION,
+  PARAM_FILE_PATH,
   PARAM_DIR_PATH,
+  READ_FILE_PARAM_START_LINE,
+  READ_FILE_PARAM_END_LINE,
+  READ_FILE_PARAM_INCLUDE_HASHES,
+  EDIT_PARAM_INSTRUCTION,
+  EDIT_PARAM_OLD_STRING,
+  EDIT_PARAM_NEW_STRING,
+  EDIT_PARAM_ALLOW_MULTIPLE,
+  EDIT_PARAM_LINE_EDITS,
   SHELL_PARAM_IS_BACKGROUND,
   EXIT_PLAN_PARAM_PLAN_PATH,
   SKILL_PARAM_NAME,
@@ -72,6 +83,159 @@ export function getCommandDescription(): string {
     return 'Exact command to execute as `powershell.exe -NoProfile -Command <command>`';
   }
   return 'Exact bash command to execute as `bash -c <command>`';
+}
+
+/**
+ * Returns the FunctionDeclaration for the read_file tool.
+ */
+export function getReadFileDeclaration(
+  enableHashline: boolean,
+  descriptionOverride?: string,
+): FunctionDeclaration {
+  const description =
+    descriptionOverride ||
+    `Reads and returns the content of a specified file. If the file is large, the content will be truncated. The tool's response will clearly indicate if truncation has occurred and will provide details on how to read more of the file using the 'start_line' and 'end_line' parameters. Handles text, images (PNG, JPG, GIF, WEBP, SVG, BMP), audio files (MP3, WAV, AIFF, AAC, OGG, FLAC), and PDF files. For text files, it can read specific line ranges.`;
+
+  const properties: Record<string, unknown> = {
+    [PARAM_FILE_PATH]: {
+      description: 'The path to the file to read.',
+      type: 'string',
+    },
+    [READ_FILE_PARAM_START_LINE]: {
+      description: 'Optional: The 1-based line number to start reading from.',
+      type: 'number',
+    },
+    [READ_FILE_PARAM_END_LINE]: {
+      description:
+        'Optional: The 1-based line number to end reading at (inclusive).',
+      type: 'number',
+    },
+  };
+
+  if (enableHashline) {
+    properties[READ_FILE_PARAM_INCLUDE_HASHES] = {
+      description:
+        'Optional: If true, returned content will include Hashline identifiers (INDEX#HASH:) for each line.',
+      type: 'boolean',
+    };
+  }
+
+  return {
+    name: READ_FILE_TOOL_NAME,
+    description: enableHashline
+      ? description +
+        `\n\nSet \`${READ_FILE_PARAM_INCLUDE_HASHES}: true\` to obtain line identifiers (LINE#HASH) for use with the precision \`${EDIT_PARAM_LINE_EDITS}\` mode in the \`${EDIT_TOOL_NAME}\` tool.`
+      : description,
+    parametersJsonSchema: {
+      type: 'object',
+      properties,
+      required: [PARAM_FILE_PATH],
+    },
+  };
+}
+
+/**
+ * Returns the FunctionDeclaration for the replace tool.
+ */
+export function getReplaceDeclaration(
+  enableHashline: boolean,
+  descriptionOverride?: string,
+): FunctionDeclaration {
+  const description =
+    descriptionOverride ||
+    `Replaces text within a file. By default, the tool expects to find and replace exactly ONE occurrence of \`${EDIT_PARAM_OLD_STRING}\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. This tool requires providing significant context around the change to ensure precise targeting. Always use the ${READ_FILE_TOOL_NAME} tool to examine the file's current content before attempting a text replacement.
+
+      The user has the ability to modify the \`${EDIT_PARAM_NEW_STRING}\` content. If modified, this will be stated in the response.
+
+      Expectation for required parameters:
+      1. \`${EDIT_PARAM_OLD_STRING}\` MUST be the exact literal text to replace (including all whitespace, indentation, newlines, and surrounding code etc.).
+      2. \`${EDIT_PARAM_NEW_STRING}\` MUST be the exact literal text to replace \`${EDIT_PARAM_OLD_STRING}\` with (also including all whitespace, indentation, newlines, and surrounding code etc.). Ensure the resulting code is correct and idiomatic and that \`${EDIT_PARAM_OLD_STRING}\` and \`${EDIT_PARAM_NEW_STRING}\` are different.
+      3. \`${EDIT_PARAM_INSTRUCTION}\` is the detailed instruction of what needs to be changed. It is important to Make it specific and detailed so developers or large language models can understand what needs to be changed and perform the changes on their own if necessary. 
+      4. NEVER escape \`${EDIT_PARAM_OLD_STRING}\` or \`${EDIT_PARAM_NEW_STRING}\`, that would break the exact literal text requirement.
+      **Important:** If ANY of the above are not satisfied, the tool will fail. CRITICAL for \`${EDIT_PARAM_OLD_STRING}\`: Must uniquely identify the instance(s) to change. Include at least 3 lines of context BEFORE and AFTER the target text, matching whitespace and indentation precisely. If this string matches multiple locations and \`${EDIT_PARAM_ALLOW_MULTIPLE}\` is not true, the tool will fail.
+      5. Prefer to break down complex and long changes into multiple smaller atomic calls to this tool. Always check the content of the file after changes or not finding a string to match.
+      **Multiple replacements:** Set \`${EDIT_PARAM_ALLOW_MULTIPLE}\` to true if you want to replace ALL occurrences that match \`${EDIT_PARAM_OLD_STRING}\` exactly.`;
+
+  const properties: Record<string, unknown> = {
+    [PARAM_FILE_PATH]: {
+      description: 'The path to the file to modify.',
+      type: 'string',
+    },
+    [EDIT_PARAM_INSTRUCTION]: {
+      description: `A clear, semantic instruction for the code change, acting as a high-quality prompt for an expert LLM assistant. It must be self-contained and explain the goal of the change.
+
+A good instruction should concisely answer:
+1.  WHY is the change needed? (e.g., "To fix a bug where users can be null...")
+2.  WHERE should the change happen? (e.g., "...in the 'renderUserProfile' function...")
+3.  WHAT is the high-level change? (e.g., "...add a null check for the 'user' object...")
+4.  WHAT is the desired outcome? (e.g., "...so that it displays a loading spinner instead of crashing.")
+
+**GOOD Example:** "In the 'calculateTotal' function, correct the sales tax calculation by updating the 'taxRate' constant from 0.05 to 0.075 to reflect the new regional tax laws."
+
+**BAD Examples:**
+- "Change the text." (Too vague)
+- "Fix the bug." (Doesn't explain the bug or the fix)
+- "Replace the line with this new line." (Brittle, just repeats the other parameters)
+`,
+      type: 'string',
+    },
+    [EDIT_PARAM_OLD_STRING]: {
+      description:
+        'The exact literal text to replace, preferably unescaped. For single replacements (default), include at least 3 lines of context BEFORE and AFTER the target text, matching whitespace and indentation precisely. If this string is not the exact literal text (i.e. you escaped it) or does not match exactly, the tool will fail.',
+      type: 'string',
+    },
+    [EDIT_PARAM_NEW_STRING]: {
+      description:
+        "The exact literal text to replace `old_string` with, preferably unescaped. Provide the EXACT text. Ensure the resulting code is correct and idiomatic. Do not use omission placeholders like '(rest of methods ...)', '...', or 'unchanged code'; provide exact literal code.",
+      type: 'string',
+    },
+    [EDIT_PARAM_ALLOW_MULTIPLE]: {
+      type: 'boolean',
+      description:
+        'If true, the tool will replace all occurrences of `old_string`. If false (default), it will only succeed if exactly one occurrence is found.',
+    },
+  };
+
+  if (enableHashline) {
+    properties[EDIT_PARAM_LINE_EDITS] = {
+      type: 'array',
+      description:
+        'Optional: Line-based edits using Hashline identifiers (e.g., ["42#WS3"]). If provided, the tool will prioritize these and skip string-based matching. Edits are applied as an atomic transaction.',
+      items: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            description:
+              'The Hashline ID of the line to edit (e.g., "42#WS3").',
+          },
+          new_content: {
+            type: 'string',
+            description: 'The new content for this line.',
+          },
+        },
+        required: ['id', 'new_content'],
+      },
+    };
+  }
+
+  const required = [PARAM_FILE_PATH, EDIT_PARAM_INSTRUCTION];
+  if (!enableHashline) {
+    required.push(EDIT_PARAM_OLD_STRING, EDIT_PARAM_NEW_STRING);
+  }
+
+  return {
+    name: EDIT_TOOL_NAME,
+    description: enableHashline
+      ? description +
+        `\n\nUse the \`${EDIT_PARAM_LINE_EDITS}\` parameter with Hashline identifiers (obtained from \`${READ_FILE_TOOL_NAME}\`) for precise, atomic edits that avoid whitespace and context-matching errors.`
+      : description,
+    parametersJsonSchema: {
+      type: 'object',
+      properties,
+      required,
+    },
+  };
 }
 
 /**
