@@ -14,7 +14,6 @@ import {
   GLOB_TOOL_NAME,
   GREP_TOOL_NAME,
   LS_TOOL_NAME,
-  READ_FILE_TOOL_NAME,
   WRITE_FILE_TOOL_NAME,
   EDIT_TOOL_NAME,
   WEB_SEARCH_TOOL_NAME,
@@ -30,36 +29,15 @@ import {
   getShellDeclaration,
   getExitPlanModeDeclaration,
   getActivateSkillDeclaration,
+  getReadFileDeclaration,
+  getReplaceDeclaration,
 } from '../dynamic-declaration-helpers.js';
 
 /**
  * Gemini 3 tool set. Initially a copy of the default legacy set.
  */
 export const GEMINI_3_SET: CoreToolSet = {
-  read_file: {
-    name: READ_FILE_TOOL_NAME,
-    description: `Reads and returns the content of a specified file. If the file is large, the content will be truncated. The tool's response will clearly indicate if truncation has occurred and will provide details on how to read more of the file using the 'start_line' and 'end_line' parameters. Handles text, images (PNG, JPG, GIF, WEBP, SVG, BMP), audio files (MP3, WAV, AIFF, AAC, OGG, FLAC), and PDF files. For text files, it can read specific line ranges.`,
-    parametersJsonSchema: {
-      type: 'object',
-      properties: {
-        file_path: {
-          description: 'The path to the file to read.',
-          type: 'string',
-        },
-        start_line: {
-          description:
-            'Optional: The 1-based line number to start reading from.',
-          type: 'number',
-        },
-        end_line: {
-          description:
-            'Optional: The 1-based line number to end reading at (inclusive).',
-          type: 'number',
-        },
-      },
-      required: ['file_path'],
-    },
-  },
+  read_file: (enableHashline) => getReadFileDeclaration(enableHashline),
 
   write_file: {
     name: WRITE_FILE_TOOL_NAME,
@@ -288,40 +266,12 @@ export const GEMINI_3_SET: CoreToolSet = {
   run_shell_command: (enableInteractiveShell, enableEfficiency) =>
     getShellDeclaration(enableInteractiveShell, enableEfficiency),
 
-  replace: {
-    name: EDIT_TOOL_NAME,
-    description: `Replaces text within a file. By default, the tool expects to find and replace exactly ONE occurrence of \`old_string\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. This tool requires providing significant context around the change to ensure precise targeting.
+  replace: (enableHashline) =>
+    getReplaceDeclaration(
+      enableHashline,
+      `Replaces text within a file. By default, the tool expects to find and replace exactly ONE occurrence of \`old_string\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. This tool requires providing significant context around the change to ensure precise targeting.
 The user has the ability to modify the \`new_string\` content. If modified, this will be stated in the response.`,
-    parametersJsonSchema: {
-      type: 'object',
-      properties: {
-        file_path: {
-          description: 'The path to the file to modify.',
-          type: 'string',
-        },
-        instruction: {
-          description: `A clear, semantic instruction for the code change, acting as a high-quality prompt for an expert LLM assistant. It must be self-contained and explain the goal of the change.`,
-          type: 'string',
-        },
-        old_string: {
-          description:
-            'The exact literal text to replace, unescaped. If this string is not the exact literal text (i.e. you escaped it) or does not match exactly, the tool will fail.',
-          type: 'string',
-        },
-        new_string: {
-          description:
-            "The exact literal text to replace `old_string` with, unescaped. Provide the EXACT text. Ensure the resulting code is correct and idiomatic. Do not use omission placeholders like '(rest of methods ...)', '...', or 'unchanged code'; provide exact literal code.",
-          type: 'string',
-        },
-        allow_multiple: {
-          type: 'boolean',
-          description:
-            'If true, the tool will replace all occurrences of `old_string`. If false (default), it will only succeed if exactly one occurrence is found.',
-        },
-      },
-      required: ['file_path', 'instruction', 'old_string', 'new_string'],
-    },
-  },
+    ),
 
   google_web_search: {
     name: WEB_SEARCH_TOOL_NAME,

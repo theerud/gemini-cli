@@ -174,20 +174,20 @@ export async function ensureCorrectEdit(
   abortSignal: AbortSignal,
   disableLLMCorrection: boolean,
 ): Promise<CorrectedEditResult> {
-  const cacheKey = `${currentContent}---${originalParams.old_string}---${originalParams.new_string}`;
+  const cacheKey = `${currentContent}---${originalParams.old_string ?? ''}---${originalParams.new_string ?? ''}`;
   const cachedResult = editCorrectionCache.get(cacheKey);
   if (cachedResult) {
     return cachedResult;
   }
 
-  let finalNewString = originalParams.new_string;
+  let finalNewString = originalParams.new_string ?? '';
   const newStringPotentiallyEscaped =
-    unescapeStringForGeminiBug(originalParams.new_string) !==
-    originalParams.new_string;
+    unescapeStringForGeminiBug(originalParams.new_string ?? '') !==
+    (originalParams.new_string ?? '');
 
   const allowMultiple = originalParams.allow_multiple ?? false;
 
-  let finalOldString = originalParams.old_string;
+  let finalOldString = originalParams.old_string ?? '';
   let occurrences = countOccurrences(currentContent, finalOldString);
 
   const isOccurrencesMatch = allowMultiple
@@ -199,14 +199,18 @@ export async function ensureCorrectEdit(
       finalNewString = await correctNewStringEscaping(
         baseLlmClient,
         finalOldString,
-        originalParams.new_string,
+        originalParams.new_string ?? '',
         abortSignal,
       );
     }
   } else if (occurrences > 1 && !allowMultiple) {
     // If user doesn't allow multiple but found multiple, return as-is (will fail validation later)
     const result: CorrectedEditResult = {
-      params: { ...originalParams },
+      params: {
+        file_path: originalParams.file_path,
+        old_string: originalParams.old_string ?? '',
+        new_string: originalParams.new_string ?? '',
+      },
       occurrences,
     };
     editCorrectionCache.set(cacheKey, result);
@@ -214,7 +218,7 @@ export async function ensureCorrectEdit(
   } else {
     // occurrences is 0 or some other unexpected state initially
     const unescapedOldStringAttempt = unescapeStringForGeminiBug(
-      originalParams.old_string,
+      originalParams.old_string ?? '',
     );
     occurrences = countOccurrences(currentContent, unescapedOldStringAttempt);
 
@@ -227,9 +231,9 @@ export async function ensureCorrectEdit(
       if (newStringPotentiallyEscaped && !disableLLMCorrection) {
         finalNewString = await correctNewString(
           baseLlmClient,
-          originalParams.old_string, // original old
+          originalParams.old_string ?? '', // original old
           unescapedOldStringAttempt, // corrected old
-          originalParams.new_string, // original new (which is potentially escaped)
+          originalParams.new_string ?? '', // original new (which is potentially escaped)
           abortSignal,
         );
       }
@@ -253,7 +257,11 @@ export async function ensureCorrectEdit(
             // Hard coded for 2 seconds
             // This file was edited sooner
             const result: CorrectedEditResult = {
-              params: { ...originalParams },
+              params: {
+                file_path: originalParams.file_path,
+                old_string: originalParams.old_string ?? '',
+                new_string: originalParams.new_string ?? '',
+              },
               occurrences: 0, // Explicitly 0 as LLM failed
             };
             editCorrectionCache.set(cacheKey, result);
@@ -264,7 +272,11 @@ export async function ensureCorrectEdit(
 
       if (disableLLMCorrection) {
         const result: CorrectedEditResult = {
-          params: { ...originalParams },
+          params: {
+            file_path: originalParams.file_path,
+            old_string: originalParams.old_string ?? '',
+            new_string: originalParams.new_string ?? '',
+          },
           occurrences: 0,
         };
         editCorrectionCache.set(cacheKey, result);
@@ -292,11 +304,11 @@ export async function ensureCorrectEdit(
 
         if (newStringPotentiallyEscaped) {
           const baseNewStringForLLMCorrection = unescapeStringForGeminiBug(
-            originalParams.new_string,
+            originalParams.new_string ?? '',
           );
           finalNewString = await correctNewString(
             baseLlmClient,
-            originalParams.old_string, // original old
+            originalParams.old_string ?? '', // original old
             llmCorrectedOldString, // corrected old
             baseNewStringForLLMCorrection, // base new for correction
             abortSignal,
@@ -305,7 +317,11 @@ export async function ensureCorrectEdit(
       } else {
         // LLM correction also failed for old_string
         const result: CorrectedEditResult = {
-          params: { ...originalParams },
+          params: {
+            file_path: originalParams.file_path,
+            old_string: originalParams.old_string ?? '',
+            new_string: originalParams.new_string ?? '',
+          },
           occurrences: 0, // Explicitly 0 as LLM failed
         };
         editCorrectionCache.set(cacheKey, result);
@@ -314,7 +330,11 @@ export async function ensureCorrectEdit(
     } else {
       // Unescaping old_string resulted in > 1 occurrence but not allowMultiple
       const result: CorrectedEditResult = {
-        params: { ...originalParams },
+        params: {
+          file_path: originalParams.file_path,
+          old_string: originalParams.old_string ?? '',
+          new_string: originalParams.new_string ?? '',
+        },
         occurrences, // This will be > 1
       };
       editCorrectionCache.set(cacheKey, result);
