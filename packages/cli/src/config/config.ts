@@ -1039,6 +1039,7 @@ export async function loadCliConfig(
     skillsSupport: settings.skills?.enabled ?? true,
     disabledSkills: settings.skills?.disabled,
     experimentalJitContext,
+    enableHashline: settings.experimental?.enableHashline,
     experimentalMemoryV2: settings.experimental?.memoryV2,
     experimentalAutoMemory: settings.experimental?.autoMemory,
     experimentalGemma: settings.experimental?.gemma,
