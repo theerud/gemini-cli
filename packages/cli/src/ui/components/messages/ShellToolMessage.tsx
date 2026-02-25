@@ -59,8 +59,12 @@ export const ShellToolMessage: React.FC<ShellToolMessageProps> = ({
   borderColor,
 
   borderDimColor,
+
   treeConnector,
+
   isExpandable,
+
+  originalRequestName,
 }) => {
   const {
     activePtyId: activeShellPtyId,
@@ -134,6 +138,7 @@ export const ShellToolMessage: React.FC<ShellToolMessageProps> = ({
           status={status}
           description={description}
           emphasis={emphasis}
+          originalRequestName={originalRequestName}
         />
 
         <FocusHint

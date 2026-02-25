@@ -22,10 +22,6 @@ import fs from 'node:fs';
 import { MockTool } from '../test-utils/mock-tool.js';
 import { ToolErrorType } from './tool-error.js';
 import type { MessageBus } from '../confirmation-bus/message-bus.js';
-import {
-  ENTER_PLAN_MODE_TOOL_NAME,
-  EXIT_PLAN_MODE_TOOL_NAME,
-} from './tool-names.js';
 
 vi.mock('node:fs');
 
@@ -663,29 +659,73 @@ describe('ToolRegistry', () => {
     });
   });
 
-  describe('Plan Mode tool visibility', () => {
-    let enterTool: MockTool;
-    let exitTool: MockTool;
+  describe('plan mode', () => {
+    it('should only return policy-allowed tools in plan mode', () => {
+      // Register several tools
+      const globTool = new MockTool({ name: 'glob', displayName: 'Glob' });
+      const readFileTool = new MockTool({
+        name: 'read_file',
+        displayName: 'ReadFile',
+      });
+      const shellTool = new MockTool({ name: 'shell', displayName: 'Shell' });
+      const writeTool = new MockTool({
+        name: 'write_file',
+        displayName: 'WriteFile',
+      });
 
-    beforeEach(() => {
-      enterTool = new MockTool({ name: ENTER_PLAN_MODE_TOOL_NAME });
-      exitTool = new MockTool({ name: EXIT_PLAN_MODE_TOOL_NAME });
-      toolRegistry.registerTool(enterTool);
-      toolRegistry.registerTool(exitTool);
+      toolRegistry.registerTool(globTool);
+      toolRegistry.registerTool(readFileTool);
+      toolRegistry.registerTool(shellTool);
+      toolRegistry.registerTool(writeTool);
+
+      // Mock config in PLAN mode: exclude shell and write_file
+      mockConfigGetExcludedTools.mockReturnValue(
+        new Set(['shell', 'write_file']),
+      );
+
+      const allTools = toolRegistry.getAllTools();
+      const toolNames = allTools.map((t) => t.name);
+
+      expect(toolNames).toContain('glob');
+      expect(toolNames).toContain('read_file');
+      expect(toolNames).not.toContain('shell');
+      expect(toolNames).not.toContain('write_file');
     });
 
-    it('should show enter_plan_mode and hide exit_plan_mode when in DEFAULT mode', () => {
-      vi.spyOn(config, 'getApprovalMode').mockReturnValue(ApprovalMode.DEFAULT);
+    it('should include read-only MCP tools when allowed by policy in plan mode', () => {
+      const readOnlyMcp = createMCPTool(
+        'test-server',
+        'read-only-tool',
+        'A read-only MCP tool',
+      );
+      // Set readOnlyHint to true via toolAnnotations
+      Object.defineProperty(readOnlyMcp, 'isReadOnly', { value: true });
 
-      expect(toolRegistry.getTool(ENTER_PLAN_MODE_TOOL_NAME)).toBe(enterTool);
-      expect(toolRegistry.getTool(EXIT_PLAN_MODE_TOOL_NAME)).toBeUndefined();
+      toolRegistry.registerTool(readOnlyMcp);
+
+      // Policy allows this tool (not in excluded set)
+      mockConfigGetExcludedTools.mockReturnValue(new Set());
+
+      const allTools = toolRegistry.getAllTools();
+      const toolNames = allTools.map((t) => t.name);
+      expect(toolNames).toContain('read-only-tool');
     });
 
-    it('should hide enter_plan_mode and show exit_plan_mode when in PLAN mode', () => {
-      vi.spyOn(config, 'getApprovalMode').mockReturnValue(ApprovalMode.PLAN);
+    it('should exclude non-read-only MCP tools when denied by policy in plan mode', () => {
+      const writeMcp = createMCPTool(
+        'test-server',
+        'write-mcp-tool',
+        'A write MCP tool',
+      );
 
-      expect(toolRegistry.getTool(ENTER_PLAN_MODE_TOOL_NAME)).toBeUndefined();
-      expect(toolRegistry.getTool(EXIT_PLAN_MODE_TOOL_NAME)).toBe(exitTool);
+      toolRegistry.registerTool(writeMcp);
+
+      // Policy excludes this tool
+      mockConfigGetExcludedTools.mockReturnValue(new Set(['write-mcp-tool']));
+
+      const allTools = toolRegistry.getAllTools();
+      const toolNames = allTools.map((t) => t.name);
+      expect(toolNames).not.toContain('write-mcp-tool');
     });
   });
 
