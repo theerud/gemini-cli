@@ -28,7 +28,7 @@ export interface ToolDefinition {
  * Explicit mapping of all core tools for a specific model family.
  */
 export interface CoreToolSet {
-  read_file: FunctionDeclaration;
+  read_file: (enableHashline: boolean) => FunctionDeclaration;
   write_file: FunctionDeclaration;
   grep_search: FunctionDeclaration;
   grep_search_ripgrep: FunctionDeclaration;
@@ -38,7 +38,7 @@ export interface CoreToolSet {
     enableInteractiveShell: boolean,
     enableEfficiency: boolean,
   ) => FunctionDeclaration;
-  replace: FunctionDeclaration;
+  replace: (enableHashline: boolean) => FunctionDeclaration;
   google_web_search: FunctionDeclaration;
   web_fetch: FunctionDeclaration;
   read_many_files: FunctionDeclaration;

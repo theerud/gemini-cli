@@ -1878,6 +1878,16 @@ const SETTINGS_SCHEMA = {
           'Enable web fetch behavior that bypasses LLM summarization.',
         showInDialog: true,
       },
+      enableHashline: {
+        type: 'boolean',
+        label: 'Enable Hashline',
+        category: 'Experimental',
+        requiresRestart: true,
+        default: false,
+        description:
+          'Enable Hashline protocol for file reading and editing. This uses content-anchored line identifiers (LINE#HASH) for more precise and drift-tolerant edits.',
+        showInDialog: true,
+      },
       gemmaModelRouter: {
         type: 'object',
         label: 'Gemma Model Router',

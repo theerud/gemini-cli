@@ -585,6 +585,10 @@ export interface ConfigParameters {
   disabledSkills?: string[];
   adminSkillsEnabled?: boolean;
   experimentalJitContext?: boolean;
+  enableHashline?: boolean;
+  experimental?: {
+    enableHashline?: boolean;
+  };
   toolOutputMasking?: Partial<ToolOutputMaskingConfig>;
   disableLLMCorrection?: boolean;
   plan?: boolean;
@@ -803,6 +807,7 @@ export class Config implements McpContext, AgentLoopContext {
 
   private readonly experimentalJitContext: boolean;
   private readonly disableLLMCorrection: boolean;
+  private readonly enableHashline: boolean;
   private readonly planEnabled: boolean;
   private readonly trackerEnabled: boolean;
   private readonly planModeRoutingEnabled: boolean;
@@ -894,6 +899,8 @@ export class Config implements McpContext, AgentLoopContext {
     this.enableAgents = params.enableAgents ?? false;
     this.agents = params.agents ?? {};
     this.disableLLMCorrection = params.disableLLMCorrection ?? true;
+    this.enableHashline =
+      params.enableHashline ?? params.experimental?.enableHashline ?? false;
     this.planEnabled = params.plan ?? true;
     this.trackerEnabled = params.tracker ?? false;
     this.planModeRoutingEnabled = params.planSettings?.modelRouting ?? true;
@@ -2338,6 +2345,10 @@ export class Config implements McpContext, AgentLoopContext {
 
   getDisableLLMCorrection(): boolean {
     return this.disableLLMCorrection;
+  }
+
+  getEnableHashline(): boolean {
+    return this.enableHashline;
   }
 
   isPlanEnabled(): boolean {
