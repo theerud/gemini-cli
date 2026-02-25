@@ -63,12 +63,16 @@ export function getToolSet(modelId?: string): CoreToolSet {
 // TOOL DEFINITIONS (LEGACY EXPORTS)
 // ============================================================================
 
-export const READ_FILE_DEFINITION: ToolDefinition = {
-  get base() {
-    return DEFAULT_LEGACY_SET.read_file;
-  },
-  overrides: (modelId) => getToolSet(modelId).read_file,
-};
+export function getReadFileDefinition(enableHashline: boolean): ToolDefinition {
+  return {
+    get base() {
+      return DEFAULT_LEGACY_SET.read_file(enableHashline);
+    },
+    overrides: (modelId) => getToolSet(modelId).read_file(enableHashline),
+  };
+}
+
+export const READ_FILE_DEFINITION = getReadFileDefinition(false);
 
 export const WRITE_FILE_DEFINITION: ToolDefinition = {
   get base() {
@@ -98,12 +102,16 @@ export const WEB_SEARCH_DEFINITION: ToolDefinition = {
   overrides: (modelId) => getToolSet(modelId).google_web_search,
 };
 
-export const EDIT_DEFINITION: ToolDefinition = {
-  get base() {
-    return DEFAULT_LEGACY_SET.replace;
-  },
-  overrides: (modelId) => getToolSet(modelId).replace,
-};
+export function getEditDefinition(enableHashline: boolean): ToolDefinition {
+  return {
+    get base() {
+      return DEFAULT_LEGACY_SET.replace(enableHashline);
+    },
+    overrides: (modelId) => getToolSet(modelId).replace(enableHashline),
+  };
+}
+
+export const EDIT_DEFINITION = getEditDefinition(false);
 
 export const GLOB_DEFINITION: ToolDefinition = {
   get base() {

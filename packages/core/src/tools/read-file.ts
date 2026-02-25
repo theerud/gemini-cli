@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type { FunctionDeclaration, PartUnion } from '@google/genai';
 import type { MessageBus } from '../confirmation-bus/message-bus.js';
 import path from 'node:path';
 import { makeRelative, shortenPath } from '../utils/paths.js';
@@ -11,7 +12,6 @@ import type { ToolInvocation, ToolLocation, ToolResult } from './tools.js';
 import { BaseDeclarativeTool, BaseToolInvocation, Kind } from './tools.js';
 import { ToolErrorType } from './tool-error.js';
 
-import type { PartUnion } from '@google/genai';
 import {
   processSingleFileContent,
   getSpecificMimeType,
@@ -23,7 +23,10 @@ import { logFileOperation } from '../telemetry/loggers.js';
 import { FileOperationEvent } from '../telemetry/types.js';
 import { READ_FILE_TOOL_NAME, READ_FILE_DISPLAY_NAME } from './tool-names.js';
 import { FileDiscoveryService } from '../services/fileDiscoveryService.js';
-import { READ_FILE_DEFINITION } from './definitions/coreTools.js';
+import {
+  READ_FILE_DEFINITION,
+  getReadFileDefinition,
+} from './definitions/coreTools.js';
 import { resolveToolDeclaration } from './definitions/resolver.js';
 
 /**
@@ -44,6 +47,11 @@ export interface ReadFileToolParams {
    * The line number to end reading at (optional, 1-based, inclusive)
    */
   end_line?: number;
+
+  /**
+   * Optional: If true, include Hashline identifiers for each line.
+   */
+  include_hashes?: boolean;
 }
 
 class ReadFileToolInvocation extends BaseToolInvocation<
@@ -104,6 +112,7 @@ class ReadFileToolInvocation extends BaseToolInvocation<
       this.config.getFileSystemService(),
       this.params.start_line,
       this.params.end_line,
+      this.params.include_hashes,
     );
 
     if (result.error) {
@@ -252,7 +261,10 @@ export class ReadFileTool extends BaseDeclarativeTool<
     );
   }
 
-  override getSchema(modelId?: string) {
-    return resolveToolDeclaration(READ_FILE_DEFINITION, modelId);
+  override getSchema(modelId?: string): FunctionDeclaration {
+    return resolveToolDeclaration(
+      getReadFileDefinition(this.config.getEnableHashline()),
+      modelId,
+    );
   }
 }

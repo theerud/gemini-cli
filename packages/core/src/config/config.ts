@@ -534,6 +534,10 @@ export interface ConfigParameters {
   disabledSkills?: string[];
   adminSkillsEnabled?: boolean;
   experimentalJitContext?: boolean;
+  enableHashline?: boolean;
+  experimental?: {
+    enableHashline?: boolean;
+  };
   toolOutputMasking?: Partial<ToolOutputMaskingConfig>;
   disableLLMCorrection?: boolean;
   plan?: boolean;
@@ -734,6 +738,7 @@ export class Config {
 
   private readonly experimentalJitContext: boolean;
   private readonly disableLLMCorrection: boolean;
+  private readonly enableHashline: boolean;
   private readonly planEnabled: boolean;
   private readonly planModeRoutingEnabled: boolean;
   private readonly modelSteering: boolean;
@@ -824,6 +829,8 @@ export class Config {
     this.enableAgents = params.enableAgents ?? false;
     this.agents = params.agents ?? {};
     this.disableLLMCorrection = params.disableLLMCorrection ?? true;
+    this.enableHashline =
+      params.enableHashline ?? params.experimental?.enableHashline ?? false;
     this.planEnabled = params.plan ?? false;
     this.planModeRoutingEnabled = params.planSettings?.modelRouting ?? true;
     this.enableEventDrivenScheduler = params.enableEventDrivenScheduler ?? true;
@@ -2152,6 +2159,10 @@ export class Config {
 
   getDisableLLMCorrection(): boolean {
     return this.disableLLMCorrection;
+  }
+
+  getEnableHashline(): boolean {
+    return this.enableHashline;
   }
 
   isPlanEnabled(): boolean {
