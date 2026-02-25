@@ -48,6 +48,7 @@ describe('ReadFileTool', () => {
         getProjectTempDir: () => path.join(tempRootDir, '.temp'),
       },
       isInteractive: () => false,
+      getEnableHashline: () => false,
       isPathAllowed(this: Config, absolutePath: string): boolean {
         const workspaceContext = this.getWorkspaceContext();
         if (workspaceContext.isPathWithinWorkspace(absolutePath)) {
@@ -482,6 +483,7 @@ describe('ReadFileTool', () => {
             const projectTempDir = this.storage.getProjectTempDir();
             return `Path not in workspace: Attempted path "${absolutePath}" resolves outside the allowed workspace directories: ${workspaceDirs.join(', ')} or the project temp directory: ${projectTempDir}`;
           },
+          getEnableHashline: () => false,
         } as unknown as Config;
         tool = new ReadFileTool(mockConfigInstance, createMockMessageBus());
       });
@@ -556,6 +558,7 @@ describe('ReadFileTool', () => {
             const projectTempDir = this.storage.getProjectTempDir();
             return `Path not in workspace: Attempted path "${absolutePath}" resolves outside the allowed workspace directories: ${workspaceDirs.join(', ')} or the project temp directory: ${projectTempDir}`;
           },
+          getEnableHashline: () => false,
         } as unknown as Config;
 
         const toolNoIgnore = new ReadFileTool(

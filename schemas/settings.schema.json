@@ -1694,6 +1694,13 @@
           "markdownDescription": "Enable web fetch behavior that bypasses LLM summarization.\n\n- Category: `Experimental`\n- Requires restart: `yes`\n- Default: `false`",
           "default": false,
           "type": "boolean"
+        },
+        "enableHashline": {
+          "title": "Enable Hashline",
+          "description": "Enable Hashline protocol for file reading and editing. This uses content-anchored line identifiers (LINE#HASH) for more precise and drift-tolerant edits.",
+          "markdownDescription": "Enable Hashline protocol for file reading and editing. This uses content-anchored line identifiers (LINE#HASH) for more precise and drift-tolerant edits.\n\n- Category: `Experimental`\n- Requires restart: `yes`\n- Default: `false`",
+          "default": false,
+          "type": "boolean"
         }
       },
       "additionalProperties": false

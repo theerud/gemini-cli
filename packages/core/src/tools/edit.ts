@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type { FunctionDeclaration } from '@google/genai';
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'node:path';
 import * as os from 'node:os';
@@ -44,6 +45,7 @@ import {
   logEditCorrectionEvent,
 } from '../telemetry/loggers.js';
 
+import { generateFileHashes, parseHashline } from '../utils/hashline.js';
 import { correctPath } from '../utils/pathCorrector.js';
 import {
   EDIT_TOOL_NAME,
@@ -52,7 +54,7 @@ import {
 } from './tool-names.js';
 import { debugLogger } from '../utils/debugLogger.js';
 import levenshtein from 'fast-levenshtein';
-import { EDIT_DEFINITION } from './definitions/coreTools.js';
+import { EDIT_DEFINITION, getEditDefinition } from './definitions/coreTools.js';
 import { resolveToolDeclaration } from './definitions/resolver.js';
 import { detectOmissionPlaceholders } from './omissionPlaceholderDetector.js';
 
@@ -71,7 +73,7 @@ interface ReplacementResult {
   occurrences: number;
   finalOldString: string;
   finalNewString: string;
-  strategy?: 'exact' | 'flexible' | 'regex' | 'fuzzy';
+  strategy?: 'exact' | 'flexible' | 'regex' | 'fuzzy' | 'hashline';
   matchRanges?: Array<{ start: number; end: number }>;
 }
 
@@ -135,8 +137,8 @@ async function calculateExactReplacement(
   const { old_string, new_string } = params;
 
   const normalizedCode = currentContent;
-  const normalizedSearch = old_string.replace(/\r\n/g, '\n');
-  const normalizedReplace = new_string.replace(/\r\n/g, '\n');
+  const normalizedSearch = (old_string ?? '').replace(/\r\n/g, '\n');
+  const normalizedReplace = (new_string ?? '').replace(/\r\n/g, '\n');
 
   const exactOccurrences = normalizedCode.split(normalizedSearch).length - 1;
 
@@ -174,8 +176,8 @@ async function calculateFlexibleReplacement(
   const { old_string, new_string } = params;
 
   const normalizedCode = currentContent;
-  const normalizedSearch = old_string.replace(/\r\n/g, '\n');
-  const normalizedReplace = new_string.replace(/\r\n/g, '\n');
+  const normalizedSearch = (old_string ?? '').replace(/\r\n/g, '\n');
+  const normalizedReplace = (new_string ?? '').replace(/\r\n/g, '\n');
 
   const sourceLines = normalizedCode.match(/.*(?:\n|$)/g)?.slice(0, -1) ?? [];
   const searchLinesStripped = normalizedSearch
@@ -230,8 +232,8 @@ async function calculateRegexReplacement(
   const { old_string, new_string } = params;
 
   // Normalize line endings for consistent processing.
-  const normalizedSearch = old_string.replace(/\r\n/g, '\n');
-  const normalizedReplace = new_string.replace(/\r\n/g, '\n');
+  const normalizedSearch = (old_string ?? '').replace(/\r\n/g, '\n');
+  const normalizedReplace = (new_string ?? '').replace(/\r\n/g, '\n');
 
   // This logic is ported from your Python implementation.
   // It builds a flexible, multi-line regex from a search string.
@@ -288,12 +290,88 @@ async function calculateRegexReplacement(
   };
 }
 
+async function calculateHashlineReplacement(
+  config: Config,
+  context: ReplacementContext,
+): Promise<ReplacementResult | null> {
+  const { currentContent, params } = context;
+  const { line_edits } = params;
+
+  if (!line_edits || line_edits.length === 0) {
+    return null;
+  }
+
+  const lines = currentContent.split('\n');
+  const hashes = generateFileHashes(currentContent);
+
+  const pendingEdits: Array<{ index: number; newContent: string }> = [];
+
+  for (const edit of line_edits) {
+    const parsed = parseHashline(`${edit.id}:`); // Append colon to reuse parser
+    if (!parsed) {
+      debugLogger.log(`Hashline: Failed to parse ID: ${edit.id}`);
+      return null; // Invalid ID format
+    }
+
+    const { index, hash } = parsed;
+    const actualHash = hashes[index - 1];
+
+    if (actualHash !== hash) {
+      debugLogger.log(
+        `Hashline: Hash mismatch at line ${index}. Expected ${hash}, found ${actualHash}`,
+      );
+      return null; // Fail fast on any mismatch
+    }
+
+    pendingEdits.push({ index, newContent: edit.new_content });
+  }
+
+  // Sort edits by index descending to apply them bottom-up
+  pendingEdits.sort((a, b) => b.index - a.index);
+
+  const modifiedLines = [...lines];
+  for (const edit of pendingEdits) {
+    modifiedLines[edit.index - 1] = edit.newContent;
+  }
+
+  const modifiedCode = modifiedLines.join('\n');
+
+  const event = new EditStrategyEvent('hashline');
+  logEditStrategy(config, event);
+
+  return {
+    newContent: restoreTrailingNewline(currentContent, modifiedCode),
+    occurrences: line_edits.length,
+    finalOldString: '', // Not used for hashline
+    finalNewString: '', // Not used for hashline
+    strategy: 'hashline',
+  };
+}
+
 export async function calculateReplacement(
   config: Config,
   context: ReplacementContext,
 ): Promise<ReplacementResult> {
   const { currentContent, params } = context;
-  const { old_string, new_string } = params;
+
+  // Try hashline replacement first if parameters are provided
+  if (params.line_edits && params.line_edits.length > 0) {
+    const hashlineResult = await calculateHashlineReplacement(config, context);
+    if (hashlineResult) {
+      return hashlineResult;
+    }
+    // If hashline fails (e.g. mismatch), we return 0 occurrences to trigger error/correction
+    return {
+      newContent: currentContent,
+      occurrences: 0,
+      finalOldString: 'HASH_MISMATCH',
+      finalNewString: '',
+      strategy: 'hashline',
+    };
+  }
+
+  const old_string = params.old_string ?? '';
+  const new_string = params.new_string ?? '';
   const normalizedSearch = old_string.replace(/\r\n/g, '\n');
   const normalizedReplace = new_string.replace(/\r\n/g, '\n');
 
@@ -351,7 +429,14 @@ export function getErrorReplaceResult(
 ) {
   let error: { display: string; raw: string; type: ToolErrorType } | undefined =
     undefined;
-  if (occurrences === 0) {
+
+  if (finalOldString === 'HASH_MISMATCH') {
+    error = {
+      display: `Failed to edit, hashline identifiers do not match the current file content.`,
+      raw: `Failed to edit, one or more Hashline identifiers (LINE#HASH) in 'line_edits' do not match the current state of ${params.file_path}. The file may have been modified. Use ${READ_FILE_TOOL_NAME} with 'include_hashes: true' to get the latest identifiers.`,
+      type: ToolErrorType.EDIT_NO_OCCURRENCE_FOUND,
+    };
+  } else if (occurrences === 0) {
     error = {
       display: `Failed to edit, could not find the string to replace.`,
       raw: `Failed to edit, 0 occurrences found for old_string in ${params.file_path}. Ensure you're not escaping content incorrectly and check whitespace, indentation, and context. Use ${READ_FILE_TOOL_NAME} tool to verify.`,
@@ -363,7 +448,7 @@ export function getErrorReplaceResult(
       raw: `Failed to edit, Expected 1 occurrence but found ${occurrences} for old_string in file: ${params.file_path}. If you intended to replace multiple occurrences, set 'allow_multiple' to true.`,
       type: ToolErrorType.EDIT_EXPECTED_OCCURRENCE_MISMATCH,
     };
-  } else if (finalOldString === finalNewString) {
+  } else if (finalOldString === finalNewString && !params.line_edits) {
     error = {
       display: `No changes to apply. The old_string and new_string are identical.`,
       raw: `No changes to apply. The old_string and new_string are identical in file: ${params.file_path}`,
@@ -385,12 +470,12 @@ export interface EditToolParams {
   /**
    * The text to replace
    */
-  old_string: string;
+  old_string?: string;
 
   /**
    * The text to replace it with
    */
-  new_string: string;
+  new_string?: string;
 
   /**
    * If true, the tool will replace all occurrences of `old_string` with `new_string`.
@@ -412,6 +497,20 @@ export interface EditToolParams {
    * Initially proposed content.
    */
   ai_proposed_content?: string;
+
+  /**
+   * Optional: Line-based edits using Hashline identifiers.
+   */
+  line_edits?: Array<{
+    /**
+     * The Hashline ID of the line to edit (e.g., "42#WS3").
+     */
+    id: string;
+    /**
+     * The new content for this line.
+     */
+    new_content: string;
+  }>;
 }
 
 interface CalculatedEdit {
@@ -421,7 +520,7 @@ interface CalculatedEdit {
   error?: { display: string; raw: string; type: ToolErrorType };
   isNewFile: boolean;
   originalLineEnding: '\r\n' | '\n';
-  strategy?: 'exact' | 'flexible' | 'regex' | 'fuzzy';
+  strategy?: 'exact' | 'flexible' | 'regex' | 'fuzzy' | 'hashline';
   matchRanges?: Array<{ start: number; end: number }>;
 }
 
@@ -470,8 +569,8 @@ class EditToolInvocation
 
     const fixedEdit = await FixLLMEditWithInstruction(
       params.instruction ?? 'Apply the requested edit.',
-      params.old_string,
-      params.new_string,
+      params.old_string ?? '',
+      params.new_string ?? '',
       errorForLlmEditFixer,
       contentForLlmEditFixer,
       this.config.getBaseLlmClient(),
@@ -580,12 +679,14 @@ class EditToolInvocation
       fileExists = false;
     }
 
-    const isNewFile = params.old_string === '' && !fileExists;
+    const oldStr = params.old_string ?? '';
+    const hasLineEdits = !!(params.line_edits && params.line_edits.length > 0);
+    const isNewFile = oldStr === '' && !fileExists && !hasLineEdits;
 
     if (isNewFile) {
       return {
         currentContent,
-        newContent: params.new_string,
+        newContent: params.new_string ?? '',
         occurrences: 1,
         isNewFile: true,
         error: undefined,
@@ -624,7 +725,7 @@ class EditToolInvocation
       };
     }
 
-    if (params.old_string === '') {
+    if (oldStr === '' && !hasLineEdits) {
       return {
         currentContent,
         newContent: currentContent,
@@ -645,12 +746,16 @@ class EditToolInvocation
       abortSignal,
     });
 
-    const initialError = getErrorReplaceResult(
-      params,
-      replacementResult.occurrences,
-      replacementResult.finalOldString,
-      replacementResult.finalNewString,
-    );
+    const initialError =
+      replacementResult.strategy === 'hashline' &&
+      replacementResult.occurrences > 0
+        ? undefined
+        : getErrorReplaceResult(
+            params,
+            replacementResult.occurrences,
+            replacementResult.finalOldString,
+            replacementResult.finalNewString,
+          );
 
     if (!initialError) {
       return {
@@ -761,18 +866,27 @@ class EditToolInvocation
       this.params.file_path,
       this.config.getTargetDir(),
     );
-    if (this.params.old_string === '') {
+
+    if (this.params.line_edits && this.params.line_edits.length > 0) {
+      const count = this.params.line_edits.length;
+      return `Edit ${shortenPath(relativePath)}: Applied ${count} line-based edit${count === 1 ? '' : 's'}`;
+    }
+
+    const oldStr = this.params.old_string ?? '';
+    const newStr = this.params.new_string ?? '';
+
+    if (oldStr === '') {
       return `Create ${shortenPath(relativePath)}`;
     }
 
     const oldStringSnippet =
-      this.params.old_string.split('\n')[0].substring(0, 30) +
-      (this.params.old_string.length > 30 ? '...' : '');
+      oldStr.split('\n')[0].substring(0, 30) +
+      (oldStr.length > 30 ? '...' : '');
     const newStringSnippet =
-      this.params.new_string.split('\n')[0].substring(0, 30) +
-      (this.params.new_string.length > 30 ? '...' : '');
+      newStr.split('\n')[0].substring(0, 30) +
+      (newStr.length > 30 ? '...' : '');
 
-    if (this.params.old_string === this.params.new_string) {
+    if (oldStr === newStr) {
       return `No file changes to ${shortenPath(relativePath)}`;
     }
     return `${shortenPath(relativePath)}: ${oldStringSnippet} => ${newStringSnippet}`;
@@ -865,7 +979,7 @@ class EditToolInvocation
           fileName,
           editData.currentContent ?? '',
           editData.newContent,
-          this.params.new_string,
+          this.params.new_string ?? '',
         );
         displayResult = {
           fileDiff,
@@ -983,10 +1097,10 @@ export class EditTool
     }
     params.file_path = filePath;
 
-    const newPlaceholders = detectOmissionPlaceholders(params.new_string);
+    const newPlaceholders = detectOmissionPlaceholders(params.new_string ?? '');
     if (newPlaceholders.length > 0) {
       const oldPlaceholders = new Set(
-        detectOmissionPlaceholders(params.old_string),
+        detectOmissionPlaceholders(params.old_string ?? ''),
       );
 
       for (const placeholder of newPlaceholders) {
@@ -1012,8 +1126,11 @@ export class EditTool
     );
   }
 
-  override getSchema(modelId?: string) {
-    return resolveToolDeclaration(EDIT_DEFINITION, modelId);
+  override getSchema(modelId?: string): FunctionDeclaration {
+    return resolveToolDeclaration(
+      getEditDefinition(this.config.getEnableHashline()),
+      modelId,
+    );
   }
 
   getModifyContext(_: AbortSignal): ModifyContext<EditToolParams> {
@@ -1024,7 +1141,7 @@ export class EditTool
           return await this.config
             .getFileSystemService()
             .readTextFile(params.file_path);
-        } catch (err) {
+        } catch (err: unknown) {
           if (!isNodeError(err) || err.code !== 'ENOENT') throw err;
           return '';
         }
@@ -1036,9 +1153,9 @@ export class EditTool
             .readTextFile(params.file_path);
           return applyReplacement(
             currentContent,
-            params.old_string,
-            params.new_string,
-            params.old_string === '' && currentContent === '',
+            params.old_string ?? '',
+            params.new_string ?? '',
+            (params.old_string ?? '') === '' && currentContent === '',
           );
         } catch (err) {
           if (!isNodeError(err) || err.code !== 'ENOENT') throw err;
@@ -1050,7 +1167,7 @@ export class EditTool
         modifiedProposedContent: string,
         originalParams: EditToolParams,
       ): EditToolParams => {
-        const content = originalParams.new_string;
+        const content = originalParams.new_string ?? '';
         return {
           ...originalParams,
           ai_proposed_content: content,
@@ -1116,13 +1233,13 @@ async function calculateFuzzyReplacement(
   const { old_string, new_string } = params;
 
   // Pre-check: Don't fuzzy match very short strings to avoid false positives
-  if (old_string.length < 10) {
+  if ((old_string ?? '').length < 10) {
     return null;
   }
 
   const normalizedCode = currentContent.replace(/\r\n/g, '\n');
-  const normalizedSearch = old_string.replace(/\r\n/g, '\n');
-  const normalizedReplace = new_string.replace(/\r\n/g, '\n');
+  const normalizedSearch = (old_string ?? '').replace(/\r\n/g, '\n');
+  const normalizedReplace = (new_string ?? '').replace(/\r\n/g, '\n');
 
   const sourceLines = normalizedCode.match(/.*(?:\n|$)/g)?.slice(0, -1) ?? [];
   const searchLines = normalizedSearch
@@ -1135,7 +1252,7 @@ async function calculateFuzzyReplacement(
   // We perform sourceLines.length comparisons (sliding window).
   // Total complexity proxy: sourceLines.length * old_string.length^2
   // Limit to 4e8 for < 1 second.
-  if (sourceLines.length * Math.pow(old_string.length, 2) > 400_000_000) {
+  if (sourceLines.length * Math.pow(normalizedSearch.length, 2) > 400_000_000) {
     return null;
   }
 
