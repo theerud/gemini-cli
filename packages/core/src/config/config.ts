@@ -703,6 +703,10 @@ export interface ConfigParameters {
   disabledSkills?: string[];
   adminSkillsEnabled?: boolean;
   experimentalJitContext?: boolean;
+  enableHashline?: boolean;
+  experimental?: {
+    enableHashline?: boolean;
+  };
   autoDistillation?: boolean;
   experimentalMemoryManager?: boolean;
   experimentalAgentHistoryTruncation?: boolean;
@@ -945,6 +949,7 @@ export class Config implements McpContext, AgentLoopContext {
   private readonly memoryBoundaryMarkers: readonly string[];
   private readonly topicUpdateNarration: boolean;
   private readonly disableLLMCorrection: boolean;
+  private readonly enableHashline: boolean;
   private readonly planEnabled: boolean;
   private readonly trackerEnabled: boolean;
   private readonly planModeRoutingEnabled: boolean;
@@ -1084,6 +1089,8 @@ export class Config implements McpContext, AgentLoopContext {
     this.enableAgents = params.enableAgents ?? true;
     this.agents = params.agents ?? {};
     this.disableLLMCorrection = params.disableLLMCorrection ?? true;
+    this.enableHashline =
+      params.enableHashline ?? params.experimental?.enableHashline ?? false;
     this.planEnabled = params.plan ?? true;
     this.trackerEnabled = params.tracker ?? false;
     this.planModeRoutingEnabled = params.planSettings?.modelRouting ?? true;
@@ -2799,6 +2806,10 @@ export class Config implements McpContext, AgentLoopContext {
 
   getDisableLLMCorrection(): boolean {
     return this.disableLLMCorrection;
+  }
+
+  getEnableHashline(): boolean {
+    return this.enableHashline;
   }
 
   isPlanEnabled(): boolean {

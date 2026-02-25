@@ -51,6 +51,7 @@ export const LS_PARAM_IGNORE = 'ignore';
 export const READ_FILE_TOOL_NAME = 'read_file';
 export const READ_FILE_PARAM_START_LINE = 'start_line';
 export const READ_FILE_PARAM_END_LINE = 'end_line';
+export const READ_FILE_PARAM_INCLUDE_HASHES = 'include_hashes';
 
 // -- run_shell_command --
 export const SHELL_TOOL_NAME = 'run_shell_command';
@@ -67,6 +68,7 @@ export const EDIT_PARAM_INSTRUCTION = 'instruction';
 export const EDIT_PARAM_OLD_STRING = 'old_string';
 export const EDIT_PARAM_NEW_STRING = 'new_string';
 export const EDIT_PARAM_ALLOW_MULTIPLE = 'allow_multiple';
+export const EDIT_PARAM_LINE_EDITS = 'line_edits';
 
 // -- google_web_search --
 export const WEB_SEARCH_TOOL_NAME = 'google_web_search';

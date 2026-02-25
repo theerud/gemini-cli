@@ -112,6 +112,7 @@ export * from './utils/promptIdContext.js';
 export * from './utils/thoughtUtils.js';
 export * from './utils/secure-browser-launcher.js';
 export * from './utils/debugLogger.js';
+export * from './utils/hashline.js';
 export * from './utils/events.js';
 export * from './utils/extensionLoader.js';
 export * from './utils/package.js';
