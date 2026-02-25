@@ -131,6 +131,7 @@ describe('EditTool', () => {
       getToolRegistry: () => ({}) as any,
       isInteractive: () => false,
       getDisableLLMCorrection: vi.fn(() => true),
+      getEnableHashline: vi.fn(() => false),
       getExperiments: () => {},
       isPlanMode: vi.fn(() => false),
       storage: {
