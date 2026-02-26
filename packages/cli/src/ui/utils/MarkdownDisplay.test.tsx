@@ -246,7 +246,7 @@ Another paragraph.
       );
       await waitUntilReady();
       expect(lastFrame()).toMatchSnapshot();
-      expect(lastFrame()).not.toContain(' 1 ');
+      expect(lastFrame()).not.toContain('1 const x = 1;');
       unmount();
     });
 
@@ -257,7 +257,7 @@ Another paragraph.
       );
       await waitUntilReady();
       expect(lastFrame()).toMatchSnapshot();
-      expect(lastFrame()).toContain(' 1 ');
+      expect(lastFrame()).toContain('1 const x = 1;');
       unmount();
     });
   });
