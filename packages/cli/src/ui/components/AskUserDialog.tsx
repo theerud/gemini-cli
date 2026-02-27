@@ -183,6 +183,10 @@ interface AskUserDialogProps {
    * Height constraint for scrollable content.
    */
   availableHeight?: number;
+  /**
+   * Custom keyboard shortcut hints (e.g., ["Ctrl+P to edit"])
+   */
+  extraParts?: string[];
 }
 
 interface ReviewViewProps {
@@ -190,6 +194,7 @@ interface ReviewViewProps {
   answers: { [key: string]: string };
   onSubmit: () => void;
   progressHeader?: React.ReactNode;
+  extraParts?: string[];
 }
 
 const ReviewView: React.FC<ReviewViewProps> = ({
@@ -197,6 +202,7 @@ const ReviewView: React.FC<ReviewViewProps> = ({
   answers,
   onSubmit,
   progressHeader,
+  extraParts,
 }) => {
   const unansweredCount = questions.length - Object.keys(answers).length;
   const hasUnanswered = unansweredCount > 0;
@@ -252,6 +258,7 @@ const ReviewView: React.FC<ReviewViewProps> = ({
       <DialogFooter
         primaryAction="Enter to submit"
         navigationActions="Tab/Shift+Tab to edit answers"
+        extraParts={extraParts}
       />
     </Box>
   );
@@ -930,6 +937,7 @@ export const AskUserDialog: React.FC<AskUserDialogProps> = ({
   onActiveTextInputChange,
   width,
   availableHeight: availableHeightProp,
+  extraParts,
 }) => {
   const uiState = useContext(UIStateContext);
   const availableHeight =
@@ -1125,6 +1133,7 @@ export const AskUserDialog: React.FC<AskUserDialogProps> = ({
           answers={answers}
           onSubmit={handleReviewSubmit}
           progressHeader={progressHeader}
+          extraParts={extraParts}
         />
       </Box>
     );
@@ -1148,6 +1157,7 @@ export const AskUserDialog: React.FC<AskUserDialogProps> = ({
             ? undefined
             : '↑/↓ to navigate'
       }
+      extraParts={extraParts}
     />
   );
 
