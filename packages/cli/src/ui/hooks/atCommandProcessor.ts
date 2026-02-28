@@ -414,6 +414,7 @@ async function readMcpResources(
           toolName: 'mcp_resource_read',
           description: resource.uri,
           status: CoreToolCallStatus.Success,
+          isClientInitiated: true,
           resultDisplay: `Successfully read resource ${resource.uri}`,
           confirmationDetails: undefined,
         } as IndividualToolCallDisplay,
@@ -429,6 +430,7 @@ async function readMcpResources(
           toolName: 'mcp_resource_read',
           description: resource.uri,
           status: CoreToolCallStatus.Error,
+          isClientInitiated: true,
           resultDisplay: `Error reading resource ${resource.uri}: ${getErrorMessage(error)}`,
           confirmationDetails: undefined,
         } as IndividualToolCallDisplay,
@@ -509,6 +511,7 @@ async function readLocalFiles(
       toolName: readManyFilesTool.name,
       description: invocation.getDescription(),
       status: CoreToolCallStatus.Success,
+      isClientInitiated: true,
       resultDisplay:
         result.returnDisplay ||
         `Successfully read: ${fileLabelsForDisplay.join(', ')}`,
@@ -569,6 +572,7 @@ async function readLocalFiles(
         invocation?.getDescription() ??
         'Error attempting to execute tool to read files',
       status: CoreToolCallStatus.Error,
+      isClientInitiated: true,
       resultDisplay: `Error reading files (${fileLabelsForDisplay.join(', ')}): ${getErrorMessage(error)}`,
       confirmationDetails: undefined,
     };

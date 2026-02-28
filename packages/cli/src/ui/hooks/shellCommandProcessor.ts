@@ -306,6 +306,7 @@ export const useShellCommandProcessor = (
           toolName: 'user_shell_command',
           description: rawQuery,
           status: CoreToolCallStatus.Executing,
+          isClientInitiated: true,
           resultDisplay: '',
           confirmationDetails: undefined,
         };
