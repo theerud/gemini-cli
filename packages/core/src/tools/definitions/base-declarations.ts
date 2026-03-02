@@ -122,3 +122,9 @@ export const EXIT_PLAN_PARAM_PLAN_PATH = 'plan_path';
 // -- enter_plan_mode --
 export const ENTER_PLAN_MODE_TOOL_NAME = 'enter_plan_mode';
 export const PLAN_MODE_PARAM_REASON = 'reason';
+
+// -- get_repo_map --
+export const GET_REPO_MAP_TOOL_NAME = 'get_repo_map';
+
+// -- list_symbols --
+export const LIST_SYMBOLS_TOOL_NAME = 'list_symbols';

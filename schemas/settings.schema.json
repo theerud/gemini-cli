@@ -1658,6 +1658,54 @@
           "default": true,
           "type": "boolean"
         },
+        "codeIntelligence": {
+          "title": "Code Intelligence",
+          "description": "Advanced code intelligence features.",
+          "markdownDescription": "Advanced code intelligence features.\n\n- Category: `Experimental`\n- Requires restart: `yes`\n- Default: `{}`",
+          "default": {},
+          "type": "object",
+          "properties": {
+            "repoMap": {
+              "title": "Repository Map",
+              "description": "Repository map generation settings.",
+              "markdownDescription": "Repository map generation settings.\n\n- Category: `Experimental`\n- Requires restart: `yes`\n- Default: `{}`",
+              "default": {},
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "title": "Enable Repository Map",
+                  "description": "Enable structural codebase mapping using Tree-sitter.",
+                  "markdownDescription": "Enable structural codebase mapping using Tree-sitter.\n\n- Category: `Experimental`\n- Requires restart: `yes`\n- Default: `true`",
+                  "default": true,
+                  "type": "boolean"
+                },
+                "maxMapTokens": {
+                  "title": "Max Map Tokens",
+                  "description": "Maximum tokens to use for the repository map.",
+                  "markdownDescription": "Maximum tokens to use for the repository map.\n\n- Category: `Experimental`\n- Requires restart: `yes`\n- Default: `4000`",
+                  "default": 4000,
+                  "type": "number"
+                },
+                "customGrammarsDir": {
+                  "title": "Custom Grammars Directory",
+                  "description": "Path to a directory containing custom Tree-sitter .wasm grammars.",
+                  "markdownDescription": "Path to a directory containing custom Tree-sitter .wasm grammars.\n\n- Category: `Experimental`\n- Requires restart: `yes`\n- Default: ``",
+                  "default": "",
+                  "type": "string"
+                },
+                "customQueriesDir": {
+                  "title": "Custom Queries Directory",
+                  "description": "Path to a directory containing custom Tree-sitter .scm queries.",
+                  "markdownDescription": "Path to a directory containing custom Tree-sitter .scm queries.\n\n- Category: `Experimental`\n- Requires restart: `yes`\n- Default: ``",
+                  "default": "",
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
         "extensionConfig": {
           "title": "Extension Configuration",
           "description": "Enable requesting and fetching of extension settings.",

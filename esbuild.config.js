@@ -7,7 +7,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, existsSync, cpSync, mkdirSync } from 'node:fs';
 import { wasmLoader } from 'esbuild-plugin-wasm';
 
 let esbuild;
@@ -115,6 +115,24 @@ Promise.allSettled([
   esbuild.build(cliConfig).then(({ metafile }) => {
     if (process.env.DEV === 'true') {
       writeFileSync('./bundle/esbuild.json', JSON.stringify(metafile, null, 2));
+    }
+
+    // Copy treesitter queries to bundle/queries
+    const queriesSource = path.join(
+      __dirname,
+      'packages',
+      'core',
+      'src',
+      'treesitter',
+      'queries',
+    );
+    const queriesTarget = path.join(__dirname, 'bundle', 'queries');
+    if (existsSync(queriesSource)) {
+      if (!existsSync(queriesTarget)) {
+        mkdirSync(queriesTarget, { recursive: true });
+      }
+      cpSync(queriesSource, queriesTarget, { recursive: true });
+      console.log('Copied Tree-sitter queries to bundle/queries');
     }
   }),
   esbuild.build(a2aServerConfig),

@@ -73,6 +73,8 @@ import {
   ASK_USER_OPTION_PARAM_LABEL,
   ASK_USER_OPTION_PARAM_DESCRIPTION,
   PLAN_MODE_PARAM_REASON,
+  GET_REPO_MAP_TOOL_NAME,
+  LIST_SYMBOLS_TOOL_NAME,
 } from '../base-declarations.js';
 import {
   getShellDeclaration,
@@ -704,4 +706,36 @@ The agent did not use the todo list because this task could be completed by a ti
 
   exit_plan_mode: (plansDir) => getExitPlanModeDeclaration(plansDir),
   activate_skill: (skillNames) => getActivateSkillDeclaration(skillNames),
+
+  get_repo_map: {
+    name: GET_REPO_MAP_TOOL_NAME,
+    description:
+      'Returns a ranked map of the codebase structure, highlighting key classes and functions.',
+    parametersJsonSchema: {
+      type: 'object',
+      properties: {
+        query: {
+          description:
+            'Optional: A query string to bias the importance ranking towards specific areas of the code.',
+          type: 'string',
+        },
+      },
+    },
+  },
+
+  list_symbols: {
+    name: LIST_SYMBOLS_TOOL_NAME,
+    description:
+      'Lists all symbols (classes, functions, methods) defined in a specific file.',
+    parametersJsonSchema: {
+      type: 'object',
+      properties: {
+        [PARAM_FILE_PATH]: {
+          description: 'The path to the file to list symbols from.',
+          type: 'string',
+        },
+      },
+      required: [PARAM_FILE_PATH],
+    },
+  },
 };

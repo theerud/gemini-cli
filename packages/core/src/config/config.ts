@@ -37,12 +37,15 @@ import { WebSearchTool } from '../tools/web-search.js';
 import { AskUserTool } from '../tools/ask-user.js';
 import { ExitPlanModeTool } from '../tools/exit-plan-mode.js';
 import { EnterPlanModeTool } from '../tools/enter-plan-mode.js';
+import { GetRepoMapTool } from '../tools/get-repo-map.js';
+import { ListSymbolsTool } from '../tools/list-symbols.js';
 import { GeminiClient } from '../core/client.js';
 import { BaseLlmClient } from '../core/baseLlmClient.js';
 import { LocalLiteRtLmClient } from '../core/localLiteRtLmClient.js';
 import type { HookDefinition, HookEventName } from '../hooks/types.js';
 import { FileDiscoveryService } from '../services/fileDiscoveryService.js';
 import { GitService } from '../services/gitService.js';
+import { RepoMapService } from '../treesitter/repoMapService.js';
 import type { TelemetryTarget } from '../telemetry/index.js';
 import {
   initializeTelemetry,
@@ -452,6 +455,15 @@ export interface PolicyUpdateConfirmationRequest {
   newHash: string;
 }
 
+export interface CodeIntelligenceSettings {
+  repoMap?: {
+    enabled?: boolean;
+    maxMapTokens?: number;
+    customGrammarsDir?: string;
+    customQueriesDir?: string;
+  };
+}
+
 export interface ConfigParameters {
   sessionId: string;
   clientVersion?: string;
@@ -552,6 +564,7 @@ export interface ConfigParameters {
   enableHooks?: boolean;
   enableHooksUI?: boolean;
   experiments?: Experiments;
+  experimental?: ExperimentalSettings;
   hooks?: { [K in HookEventName]?: HookDefinition[] };
   disabledHooks?: string[];
   projectHooks?: { [K in HookEventName]?: HookDefinition[] };
@@ -579,6 +592,11 @@ export interface ConfigParameters {
   billing?: {
     overageStrategy?: OverageStrategy;
   };
+}
+
+export interface ExperimentalSettings {
+  toolOutputMasking?: Partial<ToolOutputMaskingConfig>;
+  codeIntelligence?: CodeIntelligenceSettings;
 }
 
 export class Config implements McpContext {
@@ -778,12 +796,14 @@ export class Config implements McpContext {
   private readonly planModeRoutingEnabled: boolean;
   private readonly modelSteering: boolean;
   private contextManager?: ContextManager;
+  private repoMapService?: RepoMapService;
   private terminalBackground: string | undefined = undefined;
   private remoteAdminSettings: AdminControlsSettings | undefined;
   private latestApiRequest: GenerateContentParameters | undefined;
   private lastModeSwitchTime: number = performance.now();
   readonly userHintService: UserHintService;
   private approvedPlanPath: string | undefined;
+  private readonly experimental?: ExperimentalSettings;
 
   constructor(params: ConfigParameters) {
     this.sessionId = params.sessionId;
@@ -873,6 +893,7 @@ export class Config implements McpContext {
     this.modelAvailabilityService = new ModelAvailabilityService();
     this.experimentalJitContext = params.experimentalJitContext ?? false;
     this.modelSteering = params.modelSteering ?? false;
+    this.experimental = params.experimental;
     this.userHintService = new UserHintService(() =>
       this.isModelSteeringEnabled(),
     );
@@ -2227,6 +2248,13 @@ export class Config implements McpContext {
     return this.fileDiscoveryService;
   }
 
+  getRepoMapService(): RepoMapService {
+    if (!this.repoMapService) {
+      this.repoMapService = new RepoMapService(this, this.storage);
+    }
+    return this.repoMapService;
+  }
+
   getUsageStatisticsEnabled(): boolean {
     return this.usageStatisticsEnabled;
   }
@@ -2594,6 +2622,10 @@ export class Config implements McpContext {
     return this.interactive;
   }
 
+  getEnableRepoMap(): boolean {
+    return this.experimental?.codeIntelligence?.repoMap?.enabled ?? true;
+  }
+
   getUseRipgrep(): boolean {
     return this.useRipgrep;
   }
@@ -2845,6 +2877,15 @@ export class Config implements McpContext {
       );
       maybeRegister(EnterPlanModeTool, () =>
         registry.registerTool(new EnterPlanModeTool(this, this.messageBus)),
+      );
+    }
+
+    if (this.getEnableRepoMap()) {
+      maybeRegister(GetRepoMapTool, () =>
+        registry.registerTool(new GetRepoMapTool(this, this.messageBus)),
+      );
+      maybeRegister(ListSymbolsTool, () =>
+        registry.registerTool(new ListSymbolsTool(this, this.messageBus)),
       );
     }
 

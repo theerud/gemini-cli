@@ -1745,6 +1745,67 @@ const SETTINGS_SCHEMA = {
         description: 'Enable extension management features.',
         showInDialog: false,
       },
+      codeIntelligence: {
+        type: 'object',
+        label: 'Code Intelligence',
+        category: 'Experimental',
+        requiresRestart: true,
+        default: {},
+        description: 'Advanced code intelligence features.',
+        showInDialog: false,
+        properties: {
+          repoMap: {
+            type: 'object',
+            label: 'Repository Map',
+            category: 'Experimental',
+            requiresRestart: true,
+            default: {},
+            description: 'Repository map generation settings.',
+            showInDialog: false,
+            properties: {
+              enabled: {
+                type: 'boolean',
+                label: 'Enable Repository Map',
+                category: 'Experimental',
+                requiresRestart: true,
+                default: true,
+                description:
+                  'Enable structural codebase mapping using Tree-sitter.',
+                showInDialog: true,
+              },
+              maxMapTokens: {
+                type: 'number',
+                label: 'Max Map Tokens',
+                category: 'Experimental',
+                requiresRestart: true,
+                default: 4000,
+                description: 'Maximum tokens to use for the repository map.',
+                showInDialog: true,
+              },
+              customGrammarsDir: {
+                type: 'string',
+                label: 'Custom Grammars Directory',
+                category: 'Experimental',
+                requiresRestart: true,
+                default: '',
+                description:
+                  'Path to a directory containing custom Tree-sitter .wasm grammars.',
+                showInDialog: true,
+              },
+              customQueriesDir: {
+                type: 'string',
+                label: 'Custom Queries Directory',
+                category: 'Experimental',
+                requiresRestart: true,
+                default: '',
+                description:
+                  'Path to a directory containing custom Tree-sitter .scm queries.',
+                showInDialog: true,
+              },
+            },
+          },
+        },
+      },
       extensionConfig: {
         type: 'boolean',
         label: 'Extension Configuration',

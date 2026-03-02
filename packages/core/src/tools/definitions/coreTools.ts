@@ -89,6 +89,8 @@ export {
   ASK_USER_OPTION_PARAM_LABEL,
   ASK_USER_OPTION_PARAM_DESCRIPTION,
   PLAN_MODE_PARAM_REASON,
+  GET_REPO_MAP_TOOL_NAME,
+  LIST_SYMBOLS_TOOL_NAME,
   EXIT_PLAN_PARAM_PLAN_PATH,
   SKILL_PARAM_NAME,
 } from './base-declarations.js';
@@ -219,6 +221,20 @@ export const ENTER_PLAN_MODE_DEFINITION: ToolDefinition = {
     return DEFAULT_LEGACY_SET.enter_plan_mode;
   },
   overrides: (modelId) => getToolSet(modelId).enter_plan_mode,
+};
+
+export const GET_REPO_MAP_DEFINITION: ToolDefinition = {
+  get base() {
+    return DEFAULT_LEGACY_SET.get_repo_map;
+  },
+  overrides: (modelId) => getToolSet(modelId).get_repo_map,
+};
+
+export const LIST_SYMBOLS_DEFINITION: ToolDefinition = {
+  get base() {
+    return DEFAULT_LEGACY_SET.list_symbols;
+  },
+  overrides: (modelId) => getToolSet(modelId).list_symbols,
 };
 
 // ============================================================================

@@ -10,6 +10,8 @@ import {
   GREP_TOOL_NAME,
   LS_TOOL_NAME,
   READ_FILE_TOOL_NAME,
+  GET_REPO_MAP_TOOL_NAME,
+  LIST_SYMBOLS_TOOL_NAME,
 } from '../tools/tool-names.js';
 import {
   DEFAULT_THINKING_MODE,
@@ -120,6 +122,8 @@ export const CodebaseInvestigatorAgent = (
         READ_FILE_TOOL_NAME,
         GLOB_TOOL_NAME,
         GREP_TOOL_NAME,
+        GET_REPO_MAP_TOOL_NAME,
+        LIST_SYMBOLS_TOOL_NAME,
       ],
     },
 
@@ -141,10 +145,12 @@ You operate in a non-interactive loop and must reason based on the information p
 ---
 ## Core Directives
 <RULES>
-1.  **DEEP ANALYSIS, NOT JUST FILE FINDING:** Your goal is to understand the *why* behind the code. Don't just list files; explain their purpose and the role of their key components. Your final report should empower another agent to make a correct and complete fix.
-2.  **SYSTEMATIC & CURIOUS EXPLORATION:** Start with high-value clues (like tracebacks or ticket numbers) and broaden your search as needed. Think like a senior engineer doing a code review. An initial file contains clues (imports, function calls, puzzling logic). **If you find something you don't understand, you MUST prioritize investigating it until it is clear.** Treat confusion as a signal to dig deeper.
-3.  **HOLISTIC & PRECISE:** Your goal is to find the complete and minimal set of locations that need to be understood or changed. Do not stop until you are confident you have considered the side effects of a potential fix (e.g., type errors, breaking changes to callers, opportunities for code reuse).
-4.  **Web Search:** You are allowed to use the \`web_fetch\` tool to research libraries, language features, or concepts you don't understand (e.g., "what does gettext.translation do with localedir=None?").
+1.  **STRUCTURAL DISCOVERY FIRST:** Always start by getting a high-level map of the codebase using \`get_repo_map\`. This tool provides a ranked overview of key classes and functions.
+2.  **TARGETED EXPLORATION:** Once you identify interesting files from the map, use \`list_symbols\` to see the specific symbols (and their line numbers) within those files. This is much faster and more accurate than grepping.
+3.  **DEEP ANALYSIS, NOT JUST FILE FINDING:** Your goal is to understand the *why* behind the code. Don't just list files; explain their purpose and the role of their key components. Your final report should empower another agent to make a correct and complete fix.
+4.  **SYSTEMATIC & CURIOUS EXPLORATION:** Start with the map and broaden your search as needed. If the map doesn't contain what you need (e.g., searching for a specific string literal), fall back to \`grep_search\` or \`ls\`.
+5.  **CONFIRMATION & RIPPLE EFFECTS:** If you find something you don't understand, you MUST prioritize investigating it. Foresee the ripple effects of a change. If \`function A\` is modified, you must check its callers.
+6.  **Web Search:** You are allowed to use the \`web_fetch\` tool to research libraries, language features, or concepts you don't understand.
 </RULES>
 ---
 ## Scratchpad Management
