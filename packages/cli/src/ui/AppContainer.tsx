@@ -146,7 +146,6 @@ import { requestConsentInteractive } from '../config/extensions/consent.js';
 import { useSessionBrowser } from './hooks/useSessionBrowser.js';
 import { useSessionResume } from './hooks/useSessionResume.js';
 import { useIncludeDirsTrust } from './hooks/useIncludeDirsTrust.js';
-import { useSessionRetentionCheck } from './hooks/useSessionRetentionCheck.js';
 import { isWorkspaceTrusted } from '../config/trustedFolders.js';
 import { useSettings } from './contexts/SettingsContext.js';
 import { terminalCapabilityManager } from './utils/terminalCapabilityManager.js';
@@ -1553,28 +1552,6 @@ Logging in with Google... Restarting Gemini CLI to continue.
 
   useIncludeDirsTrust(config, isTrustedFolder, historyManager, setCustomDialog);
 
-  const handleAutoEnableRetention = useCallback(() => {
-    const userSettings = settings.forScope(SettingScope.User).settings;
-    const currentRetention = userSettings.general?.sessionRetention ?? {};
-
-    settings.setValue(SettingScope.User, 'general.sessionRetention', {
-      ...currentRetention,
-      enabled: true,
-      maxAge: '30d',
-      warningAcknowledged: true,
-    });
-  }, [settings]);
-
-  const {
-    shouldShowWarning: shouldShowRetentionWarning,
-    checkComplete: retentionCheckComplete,
-    sessionsToDeleteCount,
-  } = useSessionRetentionCheck(
-    config,
-    settings.merged,
-    handleAutoEnableRetention,
-  );
-
   const tabFocusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -2020,7 +1997,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
   const nightly = props.version.includes('nightly');
 
   const dialogsVisible =
-    (shouldShowRetentionWarning && retentionCheckComplete) ||
+    shouldShowIdePrompt ||
     shouldShowIdePrompt ||
     isFolderTrustDialogOpen ||
     isPolicyUpdateDialogOpen ||
@@ -2207,9 +2184,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       history: historyManager.history,
       historyManager,
       isThemeDialogOpen,
-      shouldShowRetentionWarning:
-        shouldShowRetentionWarning && retentionCheckComplete,
-      sessionsToDeleteCount: sessionsToDeleteCount ?? 0,
+
       themeError,
       isAuthenticating,
       isConfigInitialized,
@@ -2339,9 +2314,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
     }),
     [
       isThemeDialogOpen,
-      shouldShowRetentionWarning,
-      retentionCheckComplete,
-      sessionsToDeleteCount,
+
       themeError,
       isAuthenticating,
       isConfigInitialized,

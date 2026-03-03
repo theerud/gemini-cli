@@ -87,7 +87,9 @@ export async function loadSandboxConfig(
 
   const packageJson = await getPackageJson(__dirname);
   const image =
-    process.env['GEMINI_SANDBOX_IMAGE'] ?? packageJson?.config?.sandboxImageUri;
+    process.env['GEMINI_SANDBOX_IMAGE'] ??
+    process.env['GEMINI_SANDBOX_IMAGE_DEFAULT'] ??
+    packageJson?.config?.sandboxImageUri;
 
   if (command === 'bwrap') {
     return { command, image: image ?? 'host' };
