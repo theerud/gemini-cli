@@ -5,7 +5,7 @@
  */
 
 import type React from 'react';
-import { Box, Text } from 'ink';
+import { Box } from 'ink';
 import type { IndividualToolCallDisplay } from '../../types.js';
 import { StickyHeader } from '../StickyHeader.js';
 import { ToolResultDisplay } from './ToolResultDisplay.js';
@@ -23,7 +23,6 @@ import {
 } from './ToolShared.js';
 import { type Config, CoreToolCallStatus } from '@google/gemini-cli-core';
 import { ShellInputPrompt } from '../ShellInputPrompt.js';
-import { theme } from '../../semantic-colors.js';
 
 export type { TextEmphasis };
 
@@ -39,7 +38,6 @@ export interface ToolMessageProps extends IndividualToolCallDisplay {
   embeddedShellFocused?: boolean;
   ptyId?: number;
   config?: Config;
-  treeConnector?: string;
 }
 
 export const ToolMessage: React.FC<ToolMessageProps> = ({
@@ -58,7 +56,6 @@ export const ToolMessage: React.FC<ToolMessageProps> = ({
   embeddedShellFocused,
   ptyId,
   config,
-  treeConnector,
   progressMessage,
   originalRequestName,
   progress,
@@ -91,10 +88,11 @@ export const ToolMessage: React.FC<ToolMessageProps> = ({
         borderColor={borderColor}
         borderDimColor={borderDimColor}
       >
-        {treeConnector && (
-          <Text color={theme.text.secondary}>{treeConnector} </Text>
-        )}
-        <ToolStatusIndicator status={status} name={name} />
+        <ToolStatusIndicator
+          status={status}
+          name={name}
+          isFocused={isThisShellFocused}
+        />
         <ToolInfo
           name={name}
           status={status}

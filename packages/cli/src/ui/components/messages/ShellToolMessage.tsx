@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Box, Text, type DOMElement } from 'ink';
+import { Box, type DOMElement } from 'ink';
 import { ShellInputPrompt } from '../ShellInputPrompt.js';
 import { StickyHeader } from '../StickyHeader.js';
 import { useUIActions } from '../../contexts/UIActionsContext.js';
@@ -23,7 +23,6 @@ import {
 import type { ToolMessageProps } from './ToolMessage.js';
 import { ACTIVE_SHELL_MAX_LINES } from '../../constants.js';
 import { useAlternateBuffer } from '../../hooks/useAlternateBuffer.js';
-import { theme } from '../../semantic-colors.js';
 import { useUIState } from '../../contexts/UIStateContext.js';
 import { type Config } from '@google/gemini-cli-core';
 import { calculateShellMaxLines } from '../../utils/toolLayoutUtils.js';
@@ -59,8 +58,6 @@ export const ShellToolMessage: React.FC<ShellToolMessageProps> = ({
   borderColor,
 
   borderDimColor,
-
-  treeConnector,
 
   isExpandable,
 
@@ -128,10 +125,11 @@ export const ShellToolMessage: React.FC<ShellToolMessageProps> = ({
         borderDimColor={borderDimColor}
         containerRef={headerRef}
       >
-        {treeConnector && (
-          <Text color={theme.text.secondary}>{treeConnector} </Text>
-        )}
-        <ToolStatusIndicator status={status} name={name} />
+        <ToolStatusIndicator
+          status={status}
+          name={name}
+          isFocused={isThisShellFocused}
+        />
 
         <ToolInfo
           name={name}

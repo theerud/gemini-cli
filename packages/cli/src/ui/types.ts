@@ -154,6 +154,7 @@ export type HistoryItemGeminiContent = HistoryItemBase & {
 export type HistoryItemInfo = HistoryItemBase & {
   type: 'info';
   text: string;
+  secondaryText?: string;
   icon?: string;
   color?: string;
   marginBottom?: number;

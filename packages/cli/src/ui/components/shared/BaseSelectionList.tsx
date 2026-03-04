@@ -34,8 +34,6 @@ export interface BaseSelectionListProps<
   focusKey?: string;
   priority?: boolean;
   renderItem: (item: TItem, context: RenderItemContext) => React.ReactNode;
-  /** Custom color for the selected item indicator and number. Defaults to theme.status.success */
-  selectedColor?: string;
 }
 
 /**
@@ -68,7 +66,6 @@ export function BaseSelectionList<
   focusKey,
   priority,
   renderItem,
-  selectedColor = theme.status.success,
 }: BaseSelectionListProps<T, TItem>): React.JSX.Element {
   const { activeIndex } = useSelectionList({
     items,
@@ -120,8 +117,8 @@ export function BaseSelectionList<
         let numberColor = theme.text.primary;
 
         if (isSelected) {
-          titleColor = selectedColor;
-          numberColor = selectedColor;
+          titleColor = theme.ui.focus;
+          numberColor = theme.ui.focus;
         } else if (item.disabled) {
           titleColor = theme.text.secondary;
           numberColor = theme.text.secondary;
@@ -140,11 +137,15 @@ export function BaseSelectionList<
         )}.`;
 
         return (
-          <Box key={item.key} alignItems="flex-start">
+          <Box
+            key={item.key}
+            alignItems="flex-start"
+            backgroundColor={isSelected ? theme.background.focus : undefined}
+          >
             {/* Radio button indicator */}
             <Box minWidth={2} flexShrink={0}>
               <Text
-                color={isSelected ? selectedColor : theme.text.primary}
+                color={isSelected ? theme.ui.focus : theme.text.primary}
                 aria-hidden
               >
                 {isSelected ? '●' : ' '}
