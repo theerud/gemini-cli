@@ -23,6 +23,7 @@ import { useUIState } from '../contexts/UIStateContext.js';
 import { useConfig } from '../contexts/ConfigContext.js';
 import { useSettings } from '../contexts/SettingsContext.js';
 import { useVimMode } from '../contexts/VimModeContext.js';
+import { MIN_TERMINAL_WIDTH_FOR_FULL_LABEL } from '../constants.js';
 
 export const Footer: React.FC = () => {
   const uiState = useUIState();
@@ -70,7 +71,7 @@ export const Footer: React.FC = () => {
   const hideModelInfo = settings.merged.ui.footer.hideModelInfo;
   const hideContextPercentage = settings.merged.ui.footer.hideContextPercentage;
 
-  const isCompact = terminalWidth < 100;
+  const isCompact = terminalWidth < MIN_TERMINAL_WIDTH_FOR_FULL_LABEL;
   const pathLength = Math.max(20, Math.floor(terminalWidth * 0.25));
   const displayPath = shortenPath(tildeifyPath(targetDir), pathLength);
 
