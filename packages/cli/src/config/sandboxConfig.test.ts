@@ -97,7 +97,7 @@ describe('loadSandboxConfig', () => {
     it('should throw if GEMINI_SANDBOX is an invalid command', async () => {
       process.env['GEMINI_SANDBOX'] = 'invalid-command';
       await expect(loadSandboxConfig({}, {})).rejects.toThrow(
-        "Invalid sandbox engine 'invalid-command'. Must be one of: docker, podman, sandbox-exec, bwrap",
+        "Invalid sandbox command 'invalid-command'. Must be one of docker, podman, sandbox-exec, bwrap, lxc",
       );
     });
 
@@ -105,7 +105,23 @@ describe('loadSandboxConfig', () => {
       process.env['GEMINI_SANDBOX'] = 'docker';
       mockedCommandExistsSync.mockReturnValue(false);
       await expect(loadSandboxConfig({}, {})).rejects.toThrow(
-        "Sandbox engine 'docker' requested but not found in PATH.",
+        "Missing sandbox command 'docker' (from GEMINI_SANDBOX)",
+      );
+    });
+
+    it('should use lxc if GEMINI_SANDBOX=lxc and it exists', async () => {
+      process.env['GEMINI_SANDBOX'] = 'lxc';
+      mockedCommandExistsSync.mockReturnValue(true);
+      const config = await loadSandboxConfig({}, {});
+      expect(config).toEqual({ command: 'lxc', image: 'default/image' });
+      expect(mockedCommandExistsSync).toHaveBeenCalledWith('lxc');
+    });
+
+    it('should throw if GEMINI_SANDBOX=lxc but lxc command does not exist', async () => {
+      process.env['GEMINI_SANDBOX'] = 'lxc';
+      mockedCommandExistsSync.mockReturnValue(false);
+      await expect(loadSandboxConfig({}, {})).rejects.toThrow(
+        "Missing sandbox command 'lxc' (from GEMINI_SANDBOX)",
       );
     });
   });
@@ -169,7 +185,7 @@ describe('loadSandboxConfig', () => {
       await expect(
         loadSandboxConfig({}, { sandbox: 'podman' }),
       ).rejects.toThrow(
-        "Sandbox engine 'podman' requested but not found in PATH.",
+        "Missing sandbox command 'podman' (from GEMINI_SANDBOX)",
       );
     });
 
@@ -177,7 +193,7 @@ describe('loadSandboxConfig', () => {
       await expect(
         loadSandboxConfig({}, { sandbox: 'invalid-command' }),
       ).rejects.toThrow(
-        "Invalid sandbox engine 'invalid-command'. Must be one of: docker, podman, sandbox-exec, bwrap",
+        "Invalid sandbox command 'invalid-command'. Must be one of docker, podman, sandbox-exec, bwrap, lxc",
       );
     });
   });

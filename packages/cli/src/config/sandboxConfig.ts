@@ -28,6 +28,7 @@ export const VALID_SANDBOX_COMMANDS: ReadonlyArray<SandboxConfig['command']> = [
   'podman',
   'sandbox-exec',
   'bwrap',
+  'lxc',
 ];
 
 export function isSandboxCommand(
@@ -39,7 +40,10 @@ export function isSandboxCommand(
 function getSandboxCommand(
   sandbox?: boolean | string | null,
 ): SandboxConfig['command'] | '' {
-  if (process.env['SANDBOX']) return '';
+  // If the SANDBOX env var is set, we're already inside the sandbox.
+  if (process.env['SANDBOX']) {
+    return '';
+  }
 
   // Priority: Env Var > CLI Arg / Settings
   const env = process.env['GEMINI_SANDBOX']?.toLowerCase().trim();
@@ -55,12 +59,12 @@ function getSandboxCommand(
   if (typeof val === 'string') {
     if (!isSandboxCommand(val)) {
       throw new FatalSandboxError(
-        `Invalid sandbox engine '${val}'. Must be one of: ${VALID_SANDBOX_COMMANDS.join(', ')}`,
+        `Invalid sandbox command '${val}'. Must be one of ${VALID_SANDBOX_COMMANDS.join(', ')}`,
       );
     }
     if (commandExists.sync(val)) return val;
     throw new FatalSandboxError(
-      `Sandbox engine '${val}' requested but not found in PATH.`,
+      `Missing sandbox command '${val}' (from GEMINI_SANDBOX)`,
     );
   }
 
@@ -73,9 +77,16 @@ function getSandboxCommand(
     if (commandExists.sync(cmd)) return cmd;
   }
 
-  throw new FatalSandboxError(
-    'Sandbox is enabled but no supported engine (bwrap, docker, podman) was found in PATH.',
-  );
+  if (sandbox === true) {
+    throw new FatalSandboxError(
+      'Sandbox is enabled but no supported engine (bwrap, docker, podman) was found in PATH.',
+    );
+  }
+
+  return '';
+  // Note: 'lxc' is intentionally not auto-detected because it requires a
+  // pre-existing, running container managed by the user. Use
+  // GEMINI_SANDBOX=lxc or sandbox: "lxc" in settings to enable it.
 }
 
 export async function loadSandboxConfig(
