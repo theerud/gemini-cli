@@ -446,7 +446,7 @@ export enum AuthProviderType {
 }
 
 export interface SandboxConfig {
-  command: 'docker' | 'podman' | 'sandbox-exec' | 'bwrap' | 'lxc';
+  command: 'docker' | 'podman' | 'sandbox-exec' | 'bwrap' | 'runsc' | 'lxc';
   image: string;
 }
 
@@ -515,7 +515,7 @@ export interface ConfigParameters {
   model: string;
   disableLoopDetection?: boolean;
   maxSessionTurns?: number;
-  experimentalZedIntegration?: boolean;
+  acpMode?: boolean;
   listSessions?: boolean;
   deleteSession?: string;
   listExtensions?: boolean;
@@ -717,7 +717,7 @@ export class Config implements McpContext {
   private readonly summarizeToolOutput:
     | Record<string, SummarizeToolOutputSettings>
     | undefined;
-  private readonly experimentalZedIntegration: boolean = false;
+  private readonly acpMode: boolean = false;
   private readonly loadMemoryFromIncludeDirectories: boolean = false;
   private readonly includeDirectoryTree: boolean = true;
   private readonly importFormat: 'tree' | 'flat';
@@ -917,8 +917,7 @@ export class Config implements McpContext {
         DEFAULT_PROTECT_LATEST_TURN,
     };
     this.maxSessionTurns = params.maxSessionTurns ?? -1;
-    this.experimentalZedIntegration =
-      params.experimentalZedIntegration ?? false;
+    this.acpMode = params.acpMode ?? false;
     this.listSessions = params.listSessions ?? false;
     this.deleteSession = params.deleteSession;
     this.listExtensions = params.listExtensions ?? false;
@@ -1171,7 +1170,7 @@ export class Config implements McpContext {
       }
     });
 
-    if (!this.interactive || this.experimentalZedIntegration) {
+    if (!this.interactive || this.acpMode) {
       await this.mcpInitializationPromise;
     }
 
@@ -1214,7 +1213,12 @@ export class Config implements McpContext {
     return this.contentGenerator;
   }
 
-  async refreshAuth(authMethod: AuthType, apiKey?: string) {
+  async refreshAuth(
+    authMethod: AuthType,
+    apiKey?: string,
+    baseUrl?: string,
+    customHeaders?: Record<string, string>,
+  ) {
     // Reset availability service when switching auth
     this.modelAvailabilityService.reset();
 
@@ -1241,6 +1245,8 @@ export class Config implements McpContext {
       this,
       authMethod,
       apiKey,
+      baseUrl,
+      customHeaders,
     );
     this.contentGenerator = await createContentGenerator(
       newContentGeneratorConfig,
@@ -2237,8 +2243,8 @@ export class Config implements McpContext {
     return this.usageStatisticsEnabled;
   }
 
-  getExperimentalZedIntegration(): boolean {
-    return this.experimentalZedIntegration;
+  getAcpMode(): boolean {
+    return this.acpMode;
   }
 
   async waitForMcpInit(): Promise<void> {

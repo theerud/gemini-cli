@@ -76,7 +76,8 @@ export interface CliArgs {
   policy: string[] | undefined;
   allowedMcpServerNames: string[] | undefined;
   allowedTools: string[] | undefined;
-  experimentalAcp: boolean | undefined;
+  acp?: boolean;
+  experimentalAcp?: boolean;
   extensions: string[] | undefined;
   listExtensions: boolean | undefined;
   resume: string | typeof RESUME_LATEST | undefined;
@@ -172,9 +173,14 @@ export async function parseArguments(
                 .filter(Boolean),
             ),
         })
-        .option('experimental-acp', {
+        .option('acp', {
           type: 'boolean',
           description: 'Starts the agent in ACP mode',
+        })
+        .option('experimental-acp', {
+          type: 'boolean',
+          description:
+            'Starts the agent in ACP mode (deprecated, use --acp instead)',
         })
         .option('allowed-mcp-server-names', {
           type: 'array',
@@ -633,6 +639,7 @@ export async function loadCliConfig(
   // -i/--prompt-interactive forces interactive mode with an initial prompt
   const interactive =
     !!argv.promptInteractive ||
+    !!argv.acp ||
     !!argv.experimentalAcp ||
     (!isHeadlessMode({ prompt: argv.prompt, query: argv.query }) &&
       !argv.isCommand);
@@ -724,6 +731,7 @@ export async function loadCliConfig(
   }
 
   return new Config({
+    acpMode: !!argv.acp || !!argv.experimentalAcp,
     sessionId,
     clientVersion: await getVersion(),
     embeddingModel: DEFAULT_GEMINI_EMBEDDING_MODEL,
@@ -787,7 +795,7 @@ export async function loadCliConfig(
     bugCommand: settings.advanced?.bugCommand,
     model: resolvedModel,
     maxSessionTurns: settings.model?.maxSessionTurns,
-    experimentalZedIntegration: argv.experimentalAcp || false,
+
     listExtensions: argv.listExtensions || false,
     listSessions: argv.listSessions || false,
     deleteSession: argv.deleteSession,
