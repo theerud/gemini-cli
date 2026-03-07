@@ -907,17 +907,14 @@ export const useGeminiStream = (
   );
 
   const handleThoughtEvent = useCallback(
-    (eventValue: ThoughtSummary, userMessageTimestamp: number) => {
+    (eventValue: ThoughtSummary, _userMessageTimestamp: number) => {
       setThought(eventValue);
 
       if (getInlineThinkingMode(settings) === 'full') {
-        addItem(
-          {
-            type: 'thinking',
-            thought: eventValue,
-          } as HistoryItemThinking,
-          userMessageTimestamp,
-        );
+        addItem({
+          type: 'thinking',
+          thought: eventValue,
+        } as HistoryItemThinking);
       }
     },
     [addItem, settings, setThought],
@@ -1378,6 +1375,9 @@ export const useGeminiStream = (
           if (!options?.isContinuation) {
             setModelSwitchedFromQuotaError(false);
             config.setQuotaErrorOccurred(false);
+            config.resetBillingTurnState(
+              settings.merged.billing?.overageStrategy,
+            );
             suppressedToolErrorCountRef.current = 0;
             suppressedToolErrorNoteShownRef.current = false;
             lowVerbosityFailureNoteShownRef.current = false;
@@ -1543,6 +1543,7 @@ export const useGeminiStream = (
       setThought,
       maybeAddSuppressedToolErrorNote,
       maybeAddLowVerbosityFailureNote,
+      settings.merged.billing?.overageStrategy,
     ],
   );
 
