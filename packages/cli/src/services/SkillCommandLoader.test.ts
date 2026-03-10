@@ -120,6 +120,11 @@ describe('SkillCommandLoader', () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const actionResult = await commands[0].action!({} as any, '');
-    expect(actionResult.toolArgs).toEqual({ name: 'my awesome skill' });
+    expect(actionResult).toEqual({
+      type: 'tool',
+      toolName: ACTIVATE_SKILL_TOOL_NAME,
+      toolArgs: { name: 'my awesome skill' },
+      postSubmitPrompt: undefined,
+    });
   });
 });
