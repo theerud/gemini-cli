@@ -14,15 +14,14 @@ import { theme } from '../../semantic-colors.js';
 import type { TextBuffer } from './text-buffer.js';
 import { expandPastePlaceholders } from './text-buffer.js';
 import { cpSlice, cpIndexToOffset } from '../../utils/textUtils.js';
-import { keyMatchers, Command } from '../../keyMatchers.js';
+import { Command } from '../../key/keyMatchers.js';
+import { useKeyMatchers } from '../../hooks/useKeyMatchers.js';
 
 export interface TextInputProps {
   buffer: TextBuffer;
   placeholder?: string;
   onSubmit?: (value: string) => void;
   onCancel?: () => void;
-  onArrowUp?: () => void;
-  onArrowDown?: () => void;
   focus?: boolean;
 }
 
@@ -31,17 +30,15 @@ export function TextInput({
   placeholder = '',
   onSubmit,
   onCancel,
-  onArrowUp,
-  onArrowDown,
   focus = true,
 }: TextInputProps): React.JSX.Element {
+  const keyMatchers = useKeyMatchers();
   const {
     text,
     handleInput,
     visualCursor,
     viewportVisualLines,
     visualScrollRow,
-    allVisualLines,
   } = buffer;
   const [cursorVisualRowAbsolute, cursorVisualColAbsolute] = visualCursor;
 
@@ -57,34 +54,10 @@ export function TextInput({
         return true;
       }
 
-      if (key.name === 'up' && onArrowUp) {
-        if (cursorVisualRowAbsolute === 0) {
-          onArrowUp();
-          return true;
-        }
-      }
-
-      if (key.name === 'down' && onArrowDown) {
-        if (cursorVisualRowAbsolute === allVisualLines.length - 1) {
-          onArrowDown();
-          return true;
-        }
-      }
-
       const handled = handleInput(key);
       return handled;
     },
-    [
-      handleInput,
-      onCancel,
-      onSubmit,
-      text,
-      onArrowUp,
-      onArrowDown,
-      cursorVisualRowAbsolute,
-      allVisualLines.length,
-      buffer.pastedContent,
-    ],
+    [handleInput, onCancel, onSubmit, text, buffer.pastedContent, keyMatchers],
   );
 
   useKeypress(handleKeyPress, { isActive: focus, priority: true });

@@ -104,6 +104,7 @@ export function mapToDisplay(
       ...baseDisplayProperties,
       status: call.status,
       isClientInitiated: !!call.request.isClientInitiated,
+      kind: call.tool?.kind,
       resultDisplay,
       confirmationDetails,
       outputFile,

@@ -25,7 +25,6 @@ vi.mock('./text-buffer.js', async (importOriginal) => {
     cursor: [0, 0],
     visualCursor: [0, 0],
     viewportVisualLines: [''],
-    allVisualLines: [''],
     handleInput: vi.fn((key) => {
       // Simulate basic input for testing
       if (key.sequence) {
@@ -85,7 +84,6 @@ describe('TextInput', () => {
       cursor: [0, 0],
       visualCursor: [0, 0],
       viewportVisualLines: [''],
-      allVisualLines: [''],
       pastedContent: {} as Record<string, string>,
       handleInput: vi.fn((key) => {
         if (key.sequence) {
@@ -128,7 +126,6 @@ describe('TextInput', () => {
       cursor: [0, 4],
       visualCursor: [0, 4],
       viewportVisualLines: ['test'],
-      allVisualLines: ['test'],
       handleInput: vi.fn(),
       setText: vi.fn(),
     };
@@ -151,7 +148,6 @@ describe('TextInput', () => {
       cursor: [0, 0],
       visualCursor: [0, 0],
       viewportVisualLines: [''],
-      allVisualLines: [''],
       handleInput: vi.fn(),
       setText: vi.fn(),
     };
@@ -291,7 +287,7 @@ describe('TextInput', () => {
 
     await act(async () => {
       keypressHandler({
-        name: 'return',
+        name: 'enter',
         shift: false,
         alt: false,
         ctrl: false,
@@ -318,7 +314,7 @@ describe('TextInput', () => {
 
     await act(async () => {
       keypressHandler({
-        name: 'return',
+        name: 'enter',
         shift: false,
         alt: false,
         ctrl: false,
@@ -343,7 +339,7 @@ describe('TextInput', () => {
 
     await act(async () => {
       keypressHandler({
-        name: 'return',
+        name: 'enter',
         shift: false,
         alt: false,
         ctrl: false,
