@@ -832,7 +832,7 @@ describe('Composer', () => {
       expect(lastFrame({ allowEmpty: true })).toContain('ShortcutsHint');
     });
 
-    it('does not show shortcuts hint immediately when buffer has text', async () => {
+    it('hides shortcuts hint when text is typed in buffer', async () => {
       const uiState = createMockUIState({
         buffer: { text: 'hello' } as unknown as TextBuffer,
         cleanUiDetailsVisible: false,
@@ -895,16 +895,6 @@ describe('Composer', () => {
       const uiState = createMockUIState({
         cleanUiDetailsVisible: true,
         streamingState: StreamingState.Responding,
-      });
-
-      const { lastFrame } = await renderComposer(uiState);
-
-      expect(lastFrame()).not.toContain('ShortcutsHint');
-    });
-
-    it('hides shortcuts hint when text is typed in buffer', async () => {
-      const uiState = createMockUIState({
-        buffer: { text: 'hello' } as unknown as TextBuffer,
       });
 
       const { lastFrame } = await renderComposer(uiState);
