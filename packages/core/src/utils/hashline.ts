@@ -26,12 +26,17 @@ export function generateHash(
   index: number,
   contextHash?: string,
 ): string {
-  // Normalize: strip all whitespace to be robust against formatting drift.
-  const normalized = content.replace(/\s/g, '');
+  // Normalize: preserve leading whitespace, collapse internal space, trim trailing.
+  const leadingWhitespace = content.match(/^\s*/)?.[0] || '';
+  const body = content
+    .slice(leadingWhitespace.length)
+    .trimEnd()
+    .replace(/\s+/g, ' ');
+  const normalized = leadingWhitespace + body;
 
-  // If the line contains no alphanumeric characters (symbols, braces, empty),
+  // If the line body contains no alphanumeric characters (symbols, braces, empty),
   // it is "symbolic" and needs external context to be unique.
-  const isSymbolic = normalized.length === 0 || !/[a-zA-Z0-9]/.test(normalized);
+  const isSymbolic = body.length === 0 || !/[a-zA-Z0-9]/.test(body);
 
   let seed = normalized;
   if (isSymbolic) {
