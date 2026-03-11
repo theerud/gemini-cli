@@ -572,6 +572,21 @@ describe('vim-buffer-actions', () => {
         const result = handleVimAction(state, action);
         expect(result).toHaveOnlyValidCharacters();
         expect(result.lines[0]).toBe('hel');
+        // Cursor clamps to last char of the shortened line (vim NORMAL mode
+        // cursor cannot rest past the final character).
+        expect(result.cursorCol).toBe(2);
+      });
+
+      it('should clamp cursor when deleting the last character on a line', () => {
+        const state = createTestState(['hello'], 0, 4);
+        const action = {
+          type: 'vim_delete_char' as const,
+          payload: { count: 1 },
+        };
+
+        const result = handleVimAction(state, action);
+        expect(result).toHaveOnlyValidCharacters();
+        expect(result.lines[0]).toBe('hell');
         expect(result.cursorCol).toBe(3);
       });
 
