@@ -113,8 +113,8 @@ describe('sandbox-bwrap', () => {
   describe('start_sandbox with bwrap', () => {
     it('should handle bwrap execution with hardening flags and adaptive bindings', async () => {
       const config: SandboxConfig = {
+        enabled: true,
         command: 'bwrap',
-        image: 'host', // image is mostly ignored for bwrap in this mode
       };
 
       const mockSpawnProcess = new EventEmitter() as MockProcess;
@@ -156,8 +156,8 @@ describe('sandbox-bwrap', () => {
 
     it('should handle bwrap execution when specified via string argument', async () => {
       const config: SandboxConfig = {
+        enabled: true,
         command: 'bwrap',
-        image: 'host',
       };
 
       const mockSpawnProcess = new EventEmitter() as MockProcess;
@@ -182,7 +182,10 @@ describe('sandbox-bwrap', () => {
     });
 
     it('should include architecture-specific paths for x64', async () => {
-      const config: SandboxConfig = { command: 'bwrap', image: 'host' };
+      const config: SandboxConfig = {
+        enabled: true,
+        command: 'bwrap',
+      };
       Object.defineProperty(process, 'arch', { value: 'x64' });
 
       const mockSpawnProcess = new EventEmitter() as MockProcess;
@@ -210,7 +213,10 @@ describe('sandbox-bwrap', () => {
     });
 
     it('should create .gemini directory if it does not exist', async () => {
-      const config: SandboxConfig = { command: 'bwrap', image: 'host' };
+      const config: SandboxConfig = {
+        enabled: true,
+        command: 'bwrap',
+      };
       const userSettingsPath = '/home/user/.gemini';
 
       vi.mocked(fs.existsSync).mockImplementation((p) => {
@@ -236,7 +242,10 @@ describe('sandbox-bwrap', () => {
     });
 
     it('should include NixOS paths if /nix/store exists', async () => {
-      const config: SandboxConfig = { command: 'bwrap', image: 'host' };
+      const config: SandboxConfig = {
+        enabled: true,
+        command: 'bwrap',
+      };
       vi.mocked(fs.existsSync).mockImplementation((p) => {
         if (p === '/nix/store') return true;
         if (p === '/nix') return true;
@@ -264,7 +273,10 @@ describe('sandbox-bwrap', () => {
     });
 
     it('should pass environment variables correctly', async () => {
-      const config: SandboxConfig = { command: 'bwrap', image: 'host' };
+      const config: SandboxConfig = {
+        enabled: true,
+        command: 'bwrap',
+      };
       process.env['GEMINI_API_KEY'] = 'test-key';
       process.env['SANDBOX_ENV'] = 'CUSTOM_VAR=custom-value';
 

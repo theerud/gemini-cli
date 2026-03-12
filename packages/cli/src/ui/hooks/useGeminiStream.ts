@@ -1041,7 +1041,9 @@ export const useGeminiStream = (
         return;
       }
 
-      const finishReasonMessages: Record<FinishReason, string | undefined> = {
+      const finishReasonMessages: Partial<
+        Record<FinishReason, string | undefined>
+      > = {
         [FinishReason.FINISH_REASON_UNSPECIFIED]: undefined,
         [FinishReason.STOP]: undefined,
         [FinishReason.MAX_TOKENS]: 'Response truncated due to token limits.',
