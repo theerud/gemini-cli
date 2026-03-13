@@ -1922,7 +1922,6 @@ export async function connectToMcpServer(
             acceptHeader = 'application/json';
           }
 
-          // eslint-disable-next-line no-restricted-syntax -- TODO: Migrate to safeFetch for SSRF protection
           const response = await fetch(urlToFetch, {
             method: 'HEAD',
             headers: {
