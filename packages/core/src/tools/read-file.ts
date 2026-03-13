@@ -37,6 +37,7 @@ import {
   getReadFileDefinition,
 } from './definitions/coreTools.js';
 import { resolveToolDeclaration } from './definitions/resolver.js';
+import { discoverJitContext, appendJitContext } from './jit-context.js';
 
 /**
  * Parameters for the ReadFile tool
@@ -178,6 +179,12 @@ ${result.llmContent}`;
         programming_language,
       ),
     );
+
+    // Discover JIT subdirectory context for the accessed file path
+    const jitContext = await discoverJitContext(this.config, this.resolvedPath);
+    if (jitContext && typeof llmContent === 'string') {
+      llmContent = appendJitContext(llmContent, jitContext);
+    }
 
     return {
       llmContent,
