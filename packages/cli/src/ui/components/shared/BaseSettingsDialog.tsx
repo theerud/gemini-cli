@@ -355,6 +355,14 @@ export function BaseSettingsDialog({
 
       // Not in edit mode - handle navigation and actions
       if (effectiveFocusSection === 'settings') {
+        // Yield to active text boxes (crucial because parent sits at the top of LIFO stack)
+        // Exception: allow quick edit for number fields if they are currently selected.
+        const isQuickEdit =
+          currentItem?.type === 'number' && /^[0-9]$/.test(key.sequence);
+        if (key.insertable && !isQuickEdit) {
+          return false;
+        }
+
         // Up/Down navigation with wrap-around
         if (keyMatchers[Command.DIALOG_NAVIGATION_UP](key)) {
           moveUp();
