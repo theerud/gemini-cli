@@ -1154,6 +1154,26 @@ const SETTINGS_SCHEMA = {
               'Disable user input on browser window during automation.',
             showInDialog: false,
           },
+          browserUrl: {
+            type: 'string',
+            label: 'Browser URL',
+            category: 'Advanced',
+            requiresRestart: true,
+            default: undefined as string | undefined,
+            description:
+              'URL to connect to an existing Chrome instance (e.g., http://127.0.0.1:9222).',
+            showInDialog: true,
+          },
+          wsEndpoint: {
+            type: 'string',
+            label: 'WebSocket Endpoint',
+            category: 'Advanced',
+            requiresRestart: true,
+            default: undefined as string | undefined,
+            description:
+              'WebSocket endpoint to connect to an existing Chrome instance (e.g., ws://127.0.0.1:9222/devtools/browser/<id>).',
+            showInDialog: true,
+          },
         },
       },
     },

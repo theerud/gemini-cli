@@ -334,7 +334,13 @@ export class BrowserManager {
     if (sessionMode === 'isolated') {
       mcpArgs.push('--isolated');
     } else if (sessionMode === 'existing') {
-      mcpArgs.push('--autoConnect');
+      if (browserConfig.customConfig.browserUrl) {
+        mcpArgs.push('--browserUrl', browserConfig.customConfig.browserUrl);
+      } else if (browserConfig.customConfig.wsEndpoint) {
+        mcpArgs.push('--wsEndpoint', browserConfig.customConfig.wsEndpoint);
+      } else {
+        mcpArgs.push('--autoConnect');
+      }
     }
 
     // Add optional settings from config

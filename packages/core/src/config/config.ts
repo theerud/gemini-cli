@@ -324,6 +324,10 @@ export interface BrowserAgentCustomConfig {
   allowedDomains?: string[];
   /** Disable user input on the browser window during automation. Default: true in non-headless mode */
   disableUserInput?: boolean;
+  /** Browser URL to connect to an existing Chrome instance. */
+  browserUrl?: string;
+  /** WebSocket endpoint to connect to an existing Chrome instance. */
+  wsEndpoint?: string;
 }
 
 /**
@@ -2976,6 +2980,8 @@ export class Config implements McpContext, AgentLoopContext {
         visualModel: customConfig.visualModel,
         allowedDomains: customConfig.allowedDomains,
         disableUserInput: customConfig.disableUserInput,
+        browserUrl: customConfig.browserUrl,
+        wsEndpoint: customConfig.wsEndpoint,
       },
     };
   }
