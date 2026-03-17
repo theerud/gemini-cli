@@ -27,12 +27,11 @@ const VALID_SANDBOX_COMMANDS = [
   'docker',
   'podman',
   'sandbox-exec',
-  'bwrap',
   'runsc',
   'lxc',
 ];
 
-export function isSandboxCommand(
+function isSandboxCommand(
   value: string,
 ): value is Exclude<SandboxConfig['command'], undefined> {
   return (VALID_SANDBOX_COMMANDS as ReadonlyArray<string | undefined>).includes(
@@ -48,21 +47,26 @@ function getSandboxCommand(
     return '';
   }
 
-  // Priority: Env Var > CLI Arg / Settings
-  const env = process.env['GEMINI_SANDBOX']?.toLowerCase().trim();
-  let val: string | boolean = (env || sandbox) ?? false;
+  // note environment variable takes precedence over argument (from command line or settings)
+  const environmentConfiguredSandbox =
+    process.env['GEMINI_SANDBOX']?.toLowerCase().trim() ?? '';
+  sandbox =
+    environmentConfiguredSandbox?.length > 0
+      ? environmentConfiguredSandbox
+      : sandbox;
+  if (sandbox === '1' || sandbox === 'true') sandbox = true;
+  else if (sandbox === '0' || sandbox === 'false' || !sandbox) sandbox = false;
 
-  // Canonicalize boolean-like strings
-  if (val === 'true' || val === '1') val = true;
-  if (val === 'false' || val === '0') val = false;
+  if (sandbox === false) {
+    return '';
+  }
 
-  if (val === false) return '';
-
-  // Explicit engine request
-  if (typeof val === 'string') {
-    if (!isSandboxCommand(val)) {
+  if (typeof sandbox === 'string' && sandbox) {
+    if (!isSandboxCommand(sandbox)) {
       throw new FatalSandboxError(
-        `Invalid sandbox command '${val}'. Must be one of ${VALID_SANDBOX_COMMANDS.join(', ')}`,
+        `Invalid sandbox command '${sandbox}'. Must be one of ${VALID_SANDBOX_COMMANDS.join(
+          ', ',
+        )}`,
       );
     }
     // runsc (gVisor) is only supported on Linux
@@ -72,18 +76,18 @@ function getSandboxCommand(
       );
     }
     // confirm that specified command exists
-    if (!commandExists.sync(val)) {
+    if (!commandExists.sync(sandbox)) {
       throw new FatalSandboxError(
-        `Missing sandbox command '${val}' (from GEMINI_SANDBOX)`,
+        `Missing sandbox command '${sandbox}' (from GEMINI_SANDBOX)`,
       );
     }
     // runsc uses Docker with --runtime=runsc; both must be available (prioritize runsc when explicitly chosen)
-    if (val === 'runsc' && !commandExists.sync('docker')) {
+    if (sandbox === 'runsc' && !commandExists.sync('docker')) {
       throw new FatalSandboxError(
         "runsc (gVisor) requires Docker. Install Docker, or use sandbox: 'docker'.",
       );
     }
-    return val;
+    return sandbox;
   }
 
   // look for seatbelt, docker, or podman, in that order
@@ -91,15 +95,17 @@ function getSandboxCommand(
   // note: runsc is NOT auto-detected, it must be explicitly specified
   if (os.platform() === 'darwin' && commandExists.sync('sandbox-exec')) {
     return 'sandbox-exec';
+  } else if (commandExists.sync('docker') && sandbox === true) {
+    return 'docker';
+  } else if (commandExists.sync('podman') && sandbox === true) {
+    return 'podman';
   }
 
-  for (const cmd of ['docker', 'podman', 'bwrap'] as const) {
-    if (commandExists.sync(cmd)) return cmd;
-  }
-
+  // throw an error if user requested sandbox but no command was found
   if (sandbox === true) {
     throw new FatalSandboxError(
-      'Sandbox is enabled but no supported engine (bwrap, docker, podman) was found in PATH.',
+      'GEMINI_SANDBOX is true but failed to determine command for sandbox; ' +
+        'install docker or podman or specify command in GEMINI_SANDBOX',
     );
   }
 

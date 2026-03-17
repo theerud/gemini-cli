@@ -103,7 +103,7 @@ describe('loadSandboxConfig', () => {
     it('should throw if GEMINI_SANDBOX is an invalid command', async () => {
       process.env['GEMINI_SANDBOX'] = 'invalid-command';
       await expect(loadSandboxConfig({}, {})).rejects.toThrow(
-        "Invalid sandbox command 'invalid-command'. Must be one of docker, podman, sandbox-exec, bwrap, runsc, lxc",
+        "Invalid sandbox command 'invalid-command'. Must be one of docker, podman, sandbox-exec, runsc, lxc",
       );
     });
 
@@ -197,7 +197,8 @@ describe('loadSandboxConfig', () => {
       mockedOsPlatform.mockReturnValue('linux');
       mockedCommandExistsSync.mockReturnValue(false);
       await expect(loadSandboxConfig({}, { sandbox: true })).rejects.toThrow(
-        'Sandbox is enabled but no supported engine (bwrap, docker, podman) was found in PATH.',
+        'GEMINI_SANDBOX is true but failed to determine command for sandbox; ' +
+          'install docker or podman or specify command in GEMINI_SANDBOX',
       );
     });
   });
@@ -229,7 +230,7 @@ describe('loadSandboxConfig', () => {
       await expect(
         loadSandboxConfig({}, { sandbox: 'invalid-command' }),
       ).rejects.toThrow(
-        "Invalid sandbox command 'invalid-command'. Must be one of docker, podman, sandbox-exec, bwrap, runsc, lxc",
+        "Invalid sandbox command 'invalid-command'. Must be one of docker, podman, sandbox-exec, runsc, lxc",
       );
     });
   });
@@ -291,7 +292,7 @@ describe('loadSandboxConfig', () => {
       },
     );
 
-    it.each([false, 'false', '0', undefined, null])(
+    it.each([false, 'false', '0', undefined, null, ''])(
       'should disable sandbox for value: %s',
       async (value) => {
         // `null` is not a valid type for the arg, but good to test falsiness

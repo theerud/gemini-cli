@@ -466,7 +466,7 @@ export interface SandboxConfig {
   enabled: boolean;
   allowedPaths?: string[];
   networkAccess?: boolean;
-  command?: 'docker' | 'podman' | 'sandbox-exec' | 'bwrap' | 'runsc' | 'lxc';
+  command?: 'docker' | 'podman' | 'sandbox-exec' | 'runsc' | 'lxc';
   image?: string;
 }
 
@@ -477,7 +477,7 @@ export const ConfigSchema = z.object({
       allowedPaths: z.array(z.string()).default([]),
       networkAccess: z.boolean().default(false),
       command: z
-        .enum(['docker', 'podman', 'sandbox-exec', 'bwrap', 'runsc', 'lxc'])
+        .enum(['docker', 'podman', 'sandbox-exec', 'runsc', 'lxc'])
         .optional(),
       image: z.string().optional(),
     })

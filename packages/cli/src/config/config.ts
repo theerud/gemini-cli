@@ -49,7 +49,7 @@ import {
   loadSettings,
 } from './settings.js';
 
-import { isSandboxCommand, loadSandboxConfig } from './sandboxConfig.js';
+import { loadSandboxConfig } from './sandboxConfig.js';
 import { resolvePath } from '../utils/resolvePath.js';
 import { RESUME_LATEST } from '../utils/sessionUtils.js';
 
@@ -378,44 +378,9 @@ export async function parseArguments(
   // Normalize query args: handle both quoted "@path file" and unquoted @path file
   // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
   const queryArg = (result as { query?: string | string[] | undefined }).query;
-  let queryArray: string[] = Array.isArray(queryArg)
-    ? queryArg
-    : queryArg
-      ? [queryArg]
-      : [];
-
-  // Smart Engine Extraction: if -s is used, check if first word is an engine
-  if (result['sandbox'] === true && queryArray.length > 0) {
-    const firstWord = queryArray[0];
-    if (isSandboxCommand(firstWord)) {
-      (result as Record<string, unknown>)['sandbox'] = firstWord;
-      queryArray = queryArray.slice(1);
-      const engineIdx = process.argv.indexOf(firstWord);
-      if (engineIdx !== -1) process.argv.splice(engineIdx, 1);
-    }
-  }
-
-  // Strip sandbox flags from process.argv so inner processes don't re-sandbox
-  if (result['sandbox']) {
-    const queryStartIdx =
-      queryArray.length > 0
-        ? process.argv.indexOf(queryArray[0])
-        : process.argv.length;
-    for (let i = process.argv.length - 1; i >= 0; i--) {
-      const a = process.argv[i];
-      const isFlag =
-        a === '-s' ||
-        a === '--sandbox' ||
-        a.startsWith('--sandbox=') ||
-        a.startsWith('-s=');
-      if (isFlag && i < queryStartIdx) {
-        process.argv.splice(i, 1);
-      }
-    }
-  }
-
-  const q: string | undefined =
-    queryArray.length > 0 ? queryArray.join(' ') : undefined;
+  const q: string | undefined = Array.isArray(queryArg)
+    ? queryArg.join(' ')
+    : queryArg;
 
   // -p/--prompt forces non-interactive mode; positional args default to interactive in TTY
   if (q && !result['prompt']) {
@@ -466,9 +431,8 @@ export async function loadCliConfig(
 
   const loadedSettings = loadSettings(cwd);
 
-  if (argv.sandbox !== undefined) {
-    process.env['GEMINI_SANDBOX'] =
-      typeof argv.sandbox === 'string' ? argv.sandbox : String(argv.sandbox);
+  if (argv.sandbox) {
+    process.env['GEMINI_SANDBOX'] = 'true';
   }
 
   const memoryImportFormat = settings.context?.importFormat || 'tree';
