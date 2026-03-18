@@ -46,7 +46,6 @@ describe('ToolActionsContext', () => {
       callId: 'modern-call',
       correlationId: 'corr-123',
       name: 'test-tool',
-      toolName: 'test-tool',
       description: 'desc',
       status: CoreToolCallStatus.AwaitingApproval,
       resultDisplay: undefined,
@@ -56,7 +55,6 @@ describe('ToolActionsContext', () => {
       callId: 'edit-call',
       correlationId: 'corr-edit',
       name: 'edit-tool',
-      toolName: 'edit-tool',
       description: 'desc',
       status: CoreToolCallStatus.AwaitingApproval,
       resultDisplay: undefined,
@@ -191,7 +189,6 @@ describe('ToolActionsContext', () => {
     const legacyTool: IndividualToolCallDisplay = {
       callId: 'legacy-call',
       name: 'legacy-tool',
-      toolName: 'legacy-tool',
       description: 'desc',
       status: CoreToolCallStatus.AwaitingApproval,
       resultDisplay: undefined,

@@ -27,7 +27,6 @@ describe('ToolOverflowConsistencyChecks: ToolGroupMessage and ToolResultDisplay 
       {
         callId: 'call-1',
         name: 'test-tool',
-        toolName: 'test-tool',
         description: 'a test tool',
         status: CoreToolCallStatus.Success,
         resultDisplay,
@@ -87,7 +86,6 @@ describe('ToolOverflowConsistencyChecks: ToolGroupMessage and ToolResultDisplay 
       {
         callId: 'call-1',
         name: 'test-tool',
-        toolName: 'test-tool',
         description: 'a test tool',
         status: CoreToolCallStatus.Success,
         resultDisplay,

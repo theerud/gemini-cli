@@ -24,7 +24,6 @@ describe('<ShellToolMessage />', () => {
   const baseProps: ShellToolMessageProps = {
     callId: 'tool-123',
     name: SHELL_COMMAND_NAME,
-    toolName: 'run_shell_command',
     description: 'A shell command',
     resultDisplay: 'Test result',
     status: CoreToolCallStatus.Executing,

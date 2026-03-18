@@ -50,7 +50,6 @@ const mockHistory: HistoryItem[] = [
       {
         callId: 'call1',
         name: 'tool1',
-        toolName: 'tool1',
         description: 'Description for tool 1',
         status: CoreToolCallStatus.Success,
         resultDisplay: undefined,
@@ -65,7 +64,6 @@ const mockHistory: HistoryItem[] = [
       {
         callId: 'call2',
         name: 'tool2',
-        toolName: 'tool2',
         description: 'Description for tool 2',
         status: CoreToolCallStatus.Success,
         resultDisplay: undefined,
@@ -82,7 +80,6 @@ const mockPendingHistoryItems: HistoryItemWithoutId[] = [
       {
         callId: 'call3',
         name: 'tool3',
-        toolName: 'tool3',
         description: 'Description for tool 3',
         status: CoreToolCallStatus.Scheduled,
         resultDisplay: undefined,
@@ -186,7 +183,6 @@ describe('AlternateBufferQuittingDisplay', () => {
           {
             callId: 'call4',
             name: 'confirming_tool',
-            toolName: 'confirming_tool',
             description: 'Confirming tool description',
             status: CoreToolCallStatus.AwaitingApproval,
             resultDisplay: undefined,

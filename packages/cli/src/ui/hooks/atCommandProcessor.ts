@@ -442,7 +442,6 @@ async function readMcpResources(
         display: {
           callId: `mcp-resource-${resource.serverName}-${resource.uri}`,
           name: `resources/read (${resource.serverName})`,
-          toolName: 'mcp_resource_read',
           description: resource.uri,
           status: CoreToolCallStatus.Success,
           isClientInitiated: true,
@@ -458,7 +457,6 @@ async function readMcpResources(
         display: {
           callId: `mcp-resource-${resource.serverName}-${resource.uri}`,
           name: `resources/read (${resource.serverName})`,
-          toolName: 'mcp_resource_read',
           description: resource.uri,
           status: CoreToolCallStatus.Error,
           isClientInitiated: true,
@@ -539,7 +537,6 @@ async function readLocalFiles(
     const display: IndividualToolCallDisplay = {
       callId: `client-read-${userMessageTimestamp}`,
       name: readManyFilesTool.displayName,
-      toolName: readManyFilesTool.name,
       description: invocation.getDescription(),
       status: CoreToolCallStatus.Success,
       isClientInitiated: true,
@@ -598,7 +595,6 @@ async function readLocalFiles(
     const errorDisplay: IndividualToolCallDisplay = {
       callId: `client-read-${userMessageTimestamp}`,
       name: readManyFilesTool.displayName,
-      toolName: readManyFilesTool.name,
       description:
         invocation?.getDescription() ??
         'Error attempting to execute tool to read files',

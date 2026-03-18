@@ -100,10 +100,7 @@ export interface ToolCallEvent {
 export interface IndividualToolCallDisplay {
   callId: string;
   parentCallId?: string;
-  /** Display name (e.g., "Ask User Question") */
   name: string;
-  /** Internal tool name (e.g., "ask_user") */
-  toolName: string;
   description: string;
   resultDisplay: ToolResultDisplay | undefined;
   status: CoreToolCallStatus;

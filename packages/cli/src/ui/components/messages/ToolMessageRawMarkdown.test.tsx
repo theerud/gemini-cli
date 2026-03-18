@@ -15,7 +15,6 @@ describe('<ToolMessage /> - Raw Markdown Display Snapshots', () => {
   const baseProps: ToolMessageProps = {
     callId: 'tool-123',
     name: 'test-tool',
-    toolName: 'test_tool',
     description: 'A tool for testing',
     resultDisplay: 'Test **bold** and `code` markdown',
     status: CoreToolCallStatus.Success,

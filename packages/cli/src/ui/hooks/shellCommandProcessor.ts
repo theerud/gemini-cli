@@ -305,7 +305,6 @@ export const useShellCommandProcessor = (
         const initialToolDisplay: IndividualToolCallDisplay = {
           callId,
           name: SHELL_COMMAND_NAME,
-          toolName: 'user_shell_command',
           description: rawQuery,
           status: CoreToolCallStatus.Executing,
           isClientInitiated: true,

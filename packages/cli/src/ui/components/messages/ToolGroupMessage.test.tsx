@@ -36,7 +36,6 @@ describe('<ToolGroupMessage />', () => {
   ): IndividualToolCallDisplay => ({
     callId: 'tool-123',
     name: 'test-tool',
-    toolName: 'test_tool',
     description: 'A tool for testing',
     resultDisplay: 'Test result',
     status: CoreToolCallStatus.Success,

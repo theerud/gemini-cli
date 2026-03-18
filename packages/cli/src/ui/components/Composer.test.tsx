@@ -443,7 +443,6 @@ describe('Composer', () => {
               {
                 callId: 'call-1',
                 name: 'edit',
-                toolName: 'edit',
                 description: 'edit file',
                 status: CoreToolCallStatus.AwaitingApproval,
                 resultDisplay: undefined,
