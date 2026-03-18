@@ -287,7 +287,6 @@ export class AppRig {
 
       const newContentGeneratorConfig = {
         authType: authMethod,
-         
         proxy: gcConfig.getProxy(),
         apiKey: process.env['GEMINI_API_KEY'] || 'test-api-key',
       };
@@ -456,7 +455,6 @@ export class AppRig {
     const actualToolName = toolName === '*' ? undefined : toolName;
     this.config
       .getPolicyEngine()
-       
       .removeRulesForTool(actualToolName as string, source);
     this.breakpointTools.delete(toolName);
   }
