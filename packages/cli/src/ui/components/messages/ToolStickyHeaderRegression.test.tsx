@@ -92,7 +92,7 @@ describe('ToolMessage Sticky Header Regression', () => {
       );
     };
 
-    const { lastFrame, waitUntilReady, unmount } = renderWithProviders(
+    const { lastFrame, waitUntilReady, unmount } = await renderWithProviders(
       <Box height={terminalHeight}>
         <TestComponent />
       </Box>,
@@ -182,7 +182,7 @@ describe('ToolMessage Sticky Header Regression', () => {
       );
     };
 
-    const { lastFrame, waitUntilReady, unmount } = renderWithProviders(
+    const { lastFrame, waitUntilReady, unmount } = await renderWithProviders(
       <Box height={terminalHeight}>
         <TestComponent />
       </Box>,
