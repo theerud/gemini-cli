@@ -35,13 +35,19 @@ const commonRestrictedSyntaxRules = [
     message:
       'Do not throw string literals or non-Error objects. Throw new Error("...") instead.',
   },
+  {
+    selector:
+      'UnaryExpression[operator="typeof"] > MemberExpression[computed=true][property.type="Literal"]',
+    message:
+      'Do not use typeof to check object properties. Define a TypeScript interface and a type guard function instead.',
+  },
 ];
 
 export default tseslint.config(
   {
     // Global ignores
     ignores: [
-      'node_modules/*',
+      '**/node_modules/**',
       'eslint.config.js',
       'packages/**/dist/**',
       'bundle/**',
@@ -51,7 +57,7 @@ export default tseslint.config(
       'packages/core/src/skills/builtin/skill-creator/scripts/*.cjs',
       'evals/**',
       'packages/test-utils/**',
-      '.gemini/skills/**',
+      '.gemini/**',
       '**/*.d.ts',
     ],
   },
@@ -134,16 +140,7 @@ export default tseslint.config(
       'no-cond-assign': 'error',
       'no-debugger': 'error',
       'no-duplicate-case': 'error',
-      'no-restricted-syntax': [
-        'error',
-        ...commonRestrictedSyntaxRules,
-        {
-          selector:
-            'UnaryExpression[operator="typeof"] > MemberExpression[computed=true][property.type="Literal"]',
-          message:
-            'Do not use typeof to check object properties. Define a TypeScript interface and a type guard function instead.',
-        },
-      ],
+      'no-restricted-syntax': ['error', ...commonRestrictedSyntaxRules],
       'no-unsafe-finally': 'error',
       'no-unused-expressions': 'off', // Disable base rule
       '@typescript-eslint/no-unused-expressions': [
@@ -162,6 +159,7 @@ export default tseslint.config(
       '@typescript-eslint/await-thenable': ['error'],
       '@typescript-eslint/no-floating-promises': ['error'],
       '@typescript-eslint/no-unnecessary-type-assertion': ['error'],
+      '@typescript-eslint/no-misused-spread': ['error'],
       'no-restricted-imports': [
         'error',
         {
