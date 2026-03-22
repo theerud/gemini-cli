@@ -31,6 +31,11 @@ import {
   EDIT_PARAM_NEW_STRING,
   EDIT_PARAM_ALLOW_MULTIPLE,
   EDIT_PARAM_LINE_EDITS,
+  EDIT_PARAM_EDITS,
+  EDIT_PARAM_OP,
+  EDIT_PARAM_POS,
+  EDIT_PARAM_END,
+  EDIT_PARAM_LINES,
   SHELL_PARAM_IS_BACKGROUND,
   EXIT_PLAN_PARAM_PLAN_PATH,
   SKILL_PARAM_NAME,
@@ -115,7 +120,7 @@ export function getReadFileDeclaration(
   if (enableHashline) {
     properties[READ_FILE_PARAM_INCLUDE_HASHES] = {
       description:
-        'Optional: If true, returned content will include Hashline identifiers (INDEX#HASH:) for each line.',
+        'Optional: If true, returned content will include Hashline identifiers (INDEX#HASH:) for each line. These identifiers are used as anchors for precise editing.',
       type: 'boolean',
     };
   }
@@ -124,7 +129,7 @@ export function getReadFileDeclaration(
     name: READ_FILE_TOOL_NAME,
     description: enableHashline
       ? description +
-        `\n\nSet \`${READ_FILE_PARAM_INCLUDE_HASHES}: true\` to obtain line identifiers (LINE#HASH) for use with the precision \`${EDIT_PARAM_LINE_EDITS}\` mode in the \`${EDIT_TOOL_NAME}\` tool.`
+        `\n\nSet \`${READ_FILE_PARAM_INCLUDE_HASHES}: true\` to obtain line identifiers (LINE#HASH) for use with the precision \`${EDIT_PARAM_EDITS}\` mode in the \`${EDIT_TOOL_NAME}\` tool.`
       : description,
     parametersJsonSchema: {
       type: 'object',
@@ -217,6 +222,38 @@ A good instruction should concisely answer:
         required: ['id', 'new_content'],
       },
     };
+
+    properties[EDIT_PARAM_EDITS] = {
+      type: 'array',
+      description:
+        'Optional: Advanced line-based edits using Hashline identifiers (e.g., "42#WS3"). If provided, the tool will prioritize these and skip string-based matching. Edits are applied as an atomic transaction.',
+      items: {
+        type: 'object',
+        properties: {
+          [EDIT_PARAM_OP]: {
+            type: 'string',
+            enum: ['replace', 'append', 'prepend'],
+            description:
+              "The operation to perform: 'replace' (replaces lines from 'pos' to 'end'), 'append' (inserts lines after 'pos'), or 'prepend' (inserts lines before 'pos').",
+          },
+          [EDIT_PARAM_POS]: {
+            type: 'string',
+            description: 'The Hashline ID of the anchor line (e.g., "42#WS3").',
+          },
+          [EDIT_PARAM_END]: {
+            type: 'string',
+            description:
+              "Optional: The Hashline ID of the end anchor line for range replacements. Only used with op: 'replace'.",
+          },
+          [EDIT_PARAM_LINES]: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'The new content lines for this operation.',
+          },
+        },
+        required: [EDIT_PARAM_OP, EDIT_PARAM_POS, EDIT_PARAM_LINES],
+      },
+    };
   }
 
   const required = [PARAM_FILE_PATH, EDIT_PARAM_INSTRUCTION];
@@ -228,7 +265,7 @@ A good instruction should concisely answer:
     name: EDIT_TOOL_NAME,
     description: enableHashline
       ? description +
-        `\n\nUse the \`${EDIT_PARAM_LINE_EDITS}\` parameter with Hashline identifiers (obtained from \`${READ_FILE_TOOL_NAME}\`) for precise, atomic edits that avoid whitespace and context-matching errors.`
+        `\n\nUse the \`${EDIT_PARAM_EDITS}\` parameter with Hashline identifiers (obtained from \`${READ_FILE_TOOL_NAME}\`) for precise, atomic edits that support range replacements and relative insertions (append/prepend).`
       : description,
     parametersJsonSchema: {
       type: 'object',
