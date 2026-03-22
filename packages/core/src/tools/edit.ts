@@ -512,6 +512,32 @@ export interface EditToolParams {
      */
     new_content: string;
   }>;
+
+  /**
+   * Optional: Advanced line-based edits using Hashline identifiers.
+   * Supports range replacement, append, and prepend.
+   */
+  edits?: Array<{
+    /**
+     * The operation to perform:
+     * - 'replace': replace lines from 'pos' to 'end' (or just 'pos' if 'end' is omitted)
+     * - 'append': insert lines after 'pos'
+     * - 'prepend': insert lines before 'pos'
+     */
+    op: 'replace' | 'append' | 'prepend';
+    /**
+     * The Hashline ID of the anchor line (e.g., "42#WS3").
+     */
+    pos: string;
+    /**
+     * Optional: The Hashline ID of the end anchor line for range replacements.
+     */
+    end?: string;
+    /**
+     * The new content lines for this operation.
+     */
+    lines: string[];
+  }>;
 }
 
 export function isEditToolParams(args: unknown): args is EditToolParams {
@@ -521,10 +547,8 @@ export function isEditToolParams(args: unknown): args is EditToolParams {
   return (
     'file_path' in args &&
     typeof args.file_path === 'string' &&
-    'old_string' in args &&
-    typeof args.old_string === 'string' &&
-    'new_string' in args &&
-    typeof args.new_string === 'string'
+    (!('old_string' in args) || typeof args.old_string === 'string') &&
+    (!('new_string' in args) || typeof args.new_string === 'string')
   );
 }
 
