@@ -457,7 +457,8 @@ export async function calculateReplacement(
         finalOldString: 'HASH_MISMATCH',
         finalNewString: '',
         strategy: 'hashline',
-        hashlineError: error,
+        hashlineError:
+          error instanceof HashlineMismatchError ? error : undefined,
       };
     }
   }
