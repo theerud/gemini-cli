@@ -26,17 +26,12 @@ export function generateHash(
   index: number,
   contextHash?: string,
 ): string {
-  // Normalize: preserve leading whitespace, collapse internal space, trim trailing.
-  const leadingWhitespace = content.match(/^\s*/)?.[0] || '';
-  const body = content
-    .slice(leadingWhitespace.length)
-    .trimEnd()
-    .replace(/\s+/g, ' ');
-  const normalized = leadingWhitespace + body;
+  // Normalize: remove all whitespace to be robust against formatting changes.
+  const normalized = content.replace(/\s/g, '');
 
-  // If the line body contains no alphanumeric characters (symbols, braces, empty),
+  // If the line contains no alphanumeric characters (symbols, braces, empty),
   // it is "symbolic" and needs external context to be unique.
-  const isSymbolic = body.length === 0 || !/[a-zA-Z0-9]/.test(body);
+  const isSymbolic = normalized.length === 0 || !/[a-zA-Z0-9]/.test(normalized);
 
   let seed = normalized;
   if (isSymbolic) {
@@ -91,6 +86,91 @@ export function parseHashline(line: string): {
     hash: match[2],
     content: match[3],
   };
+}
+
+/**
+ * Details of a Hashline mismatch during verification.
+ */
+export interface HashMismatch {
+  /** The 1-based line number. */
+  line: number;
+  /** The Hashline identifier expected by the model. */
+  expected: string;
+  /** The actual Hashline identifier generated from current content. */
+  actual: string;
+}
+
+/**
+ * Error thrown when Hashline verification fails.
+ */
+export class HashlineMismatchError extends Error {
+  constructor(
+    readonly mismatches: HashMismatch[],
+    message = 'Hashline mismatch detected',
+  ) {
+    super(message);
+    this.name = 'HashlineMismatchError';
+  }
+}
+
+/**
+ * Formats a recovery diagnostic for Hashline mismatches.
+ *
+ * Provides a "Recovery Snippet" with:
+ * - Context lines (2-3 lines above/below).
+ * - `>>>` prefix on the lines that failed.
+ * - The *actual* current `LINE#ID: content` format to help the model self-correct.
+ *
+ * @param mismatches The detected mismatches.
+ * @param lines The raw lines of the file.
+ * @returns A formatted diagnostic string.
+ */
+export function formatMismatchDiagnostic(
+  mismatches: HashMismatch[],
+  lines: string[],
+): string {
+  const hashes = generateFileHashes(lines.join('\n'));
+  const diagnosticLines: string[] = [];
+
+  // Sort mismatches by line number to ensure logical context grouping
+  const sortedMismatches = [...mismatches].sort((a, b) => a.line - b.line);
+
+  let lastReportedLine = 0;
+
+  for (const mismatch of sortedMismatches) {
+    const start = Math.max(1, mismatch.line - 2);
+    const end = Math.min(lines.length, mismatch.line + 2);
+
+    // Add separator if there is a gap between reported contexts
+    if (lastReportedLine > 0 && start > lastReportedLine + 1) {
+      diagnosticLines.push('...');
+    } else if (lastReportedLine > 0 && start <= lastReportedLine) {
+      // Overlapping or adjacent, skip starting from where we left off
+      // But we need to handle the case where the current mismatch is already within reported range
+      if (mismatch.line <= lastReportedLine) continue;
+    }
+
+    for (let i = Math.max(start, lastReportedLine + 1); i <= end; i++) {
+      const lineContent = lines[i - 1];
+      const actualHash = hashes[i - 1];
+      const formatted = formatHashline(i, actualHash, lineContent);
+      const isMismatchLine = mismatches.some((m) => m.line === i);
+
+      if (isMismatchLine) {
+        diagnosticLines.push(`>>> ${formatted}`);
+      } else {
+        diagnosticLines.push(`    ${formatted}`);
+      }
+    }
+    lastReportedLine = end;
+  }
+
+  return [
+    'HASHLINE MISMATCH DETECTED',
+    'The content of the file has changed. Use the actual Hashline identifiers below to recover:',
+    '',
+    ...diagnosticLines,
+  ].join('\n');
 }
 
 /**

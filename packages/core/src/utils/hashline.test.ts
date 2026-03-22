@@ -10,6 +10,8 @@ import {
   generateFileHashes,
   annotateContent,
   parseHashline,
+  HashlineMismatchError,
+  formatMismatchDiagnostic,
 } from './hashline.js';
 
 describe('hashline utility', () => {
@@ -119,6 +121,60 @@ function b() {
       const lines = annotated.split('\n');
       expect(lines[0]).toMatch(/^1#[A-Z2-9]{3}:line1$/);
       expect(lines[1]).toMatch(/^2#[A-Z2-9]{3}:line2$/);
+    });
+  });
+
+  describe('HashlineMismatchError', () => {
+    it('should hold mismatch details', () => {
+      const mismatches = [{ line: 5, expected: 'ABC', actual: 'DEF' }];
+      const error = new HashlineMismatchError(mismatches);
+      expect(error.mismatches).toEqual(mismatches);
+      expect(error.message).toBe('Hashline mismatch detected');
+    });
+  });
+
+  describe('formatMismatchDiagnostic', () => {
+    it('should format a recovery diagnostic with context', () => {
+      const content = Array.from({ length: 10 }, (_, i) => `line${i + 1}`).join(
+        '\n',
+      );
+      const lines = content.split('\n');
+      const hashes = generateFileHashes(content);
+      const mismatches = [{ line: 5, expected: 'WRONG', actual: hashes[4] }];
+
+      const diagnostic = formatMismatchDiagnostic(mismatches, lines);
+
+      expect(diagnostic).toContain('HASHLINE MISMATCH DETECTED');
+      expect(diagnostic).toContain('>>> 5#');
+      expect(diagnostic).toContain('    3#');
+      expect(diagnostic).toContain('    7#');
+      expect(diagnostic).not.toContain('    1#'); // Too far from line 5
+      expect(diagnostic).not.toContain('    10#'); // Too far from line 5
+    });
+
+    it('should handle multiple mismatches and overlapping context', () => {
+      const content = Array.from({ length: 15 }, (_, i) => `line${i + 1}`).join(
+        '\n',
+      );
+      const lines = content.split('\n');
+      const hashes = generateFileHashes(content);
+      const mismatches = [
+        { line: 3, expected: 'W1', actual: hashes[2] },
+        { line: 5, expected: 'W2', actual: hashes[4] },
+        { line: 12, expected: 'W3', actual: hashes[11] },
+      ];
+
+      const diagnostic = formatMismatchDiagnostic(mismatches, lines);
+
+      // Lines 3 and 5 should have context that overlaps or is adjacent
+      // Line 3 context: 1, 2, 3, 4, 5
+      // Line 5 context: 3, 4, 5, 6, 7
+      // Together: 1, 2, 3, 4, 5, 6, 7
+      expect(diagnostic).toContain('>>> 3#');
+      expect(diagnostic).toContain('>>> 5#');
+      expect(diagnostic).toContain('    4#');
+      expect(diagnostic).toContain('...'); // Between 7 and 10 (12-2)
+      expect(diagnostic).toContain('>>> 12#');
     });
   });
 });
