@@ -265,7 +265,18 @@ A good instruction should concisely answer:
     name: EDIT_TOOL_NAME,
     description: enableHashline
       ? description +
-        `\n\nUse the \`${EDIT_PARAM_EDITS}\` parameter with Hashline identifiers (obtained from \`${READ_FILE_TOOL_NAME}\`) for precise, atomic edits that support range replacements and relative insertions (append/prepend).`
+        `\n\nUse the \`${EDIT_PARAM_EDITS}\` parameter with Hashline identifiers (obtained from \`${READ_FILE_TOOL_NAME}\`) for precise, atomic edits.
+
+      **Hashline Guidance:**
+      1. **Operations**:
+         - \`replace\`: Replaces a single line (provide \`pos\`) or a range (provide \`pos\` and \`end\`).
+         - \`append\` / \`prepend\`: Inserts lines after or before the \`pos\` anchor.
+      2. **Edit Shapes**:
+         - **Body-only (Shape A)**: Replace lines *between* headers/footers. Set \`pos\` to the first inner line and \`end\` to the last inner line.
+         - **Full-block (Shape B)**: Replace from header to footer inclusive. Set \`pos\` to the header and \`end\` to the footer. Re-emit the header/footer in \`lines\`.
+      3. **Safety**:
+         - **Shared Boundaries**: Avoid anchoring on lines like \`} else {\` or \`} catch {\`. Widen the range to consume the whole block instead.
+         - **Self-Healing**: If you receive a \`HASHLINE MISMATCH DETECTED\` error, use the provided recovery snippet with updated \`LINE#ID\` anchors to immediately retry the edit.`
       : description,
     parametersJsonSchema: {
       type: 'object',

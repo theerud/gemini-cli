@@ -53,19 +53,60 @@ Once enabled, the tools will automatically expose new parameters:
     3#X7Z:export function run() {
     ```
 
-2.  **Edit with Hashes**: Use the `replace` tool with the `line_edits`
-    parameter. You can omit `old_string` and `new_string`.
+2.  **Edit with Hashes**: Use the `replace` tool with the `edits` parameter
+    (recommended) or the legacy `line_edits` parameter.
+
+    The `edits` parameter supports advanced operations:
+    - **`replace`**: Replace a single line or a range of lines.
+    - **`append`**: Insert lines after a specific anchor.
+    - **`prepend`**: Insert lines before a specific anchor.
+
     ```bash
     replace(
       file_path="src/app.ts",
-      line_edits=[
-        { "id": "3#X7Z", "new_content": "export async function run() {" }
+      edits=[
+        {
+          "op": "replace",
+          "pos": "3#X7Z",
+          "lines": ["export async function run() {"]
+        }
       ]
     )
     ```
 
-### Error Handling
+    **Range Replace:**
+
+    ```bash
+    replace(
+      file_path="src/app.ts",
+      edits=[
+        {
+          "op": "replace",
+          "pos": "3#X7Z",
+          "end": "5#DEF",
+          "lines": ["export async function run() {", "  await init();", "}"]
+        }
+      ]
+    )
+    ```
+
+### Error Handling & Self-Healing
 
 If the content of the line does not match the hash provided (e.g., if the file
 was modified externally), the tool will fail fast with a `HASH_MISMATCH` error
 to prevent corruption.
+
+When a mismatch occurs, the tool provides a **Recovery Snippet** showing the
+current state of the file with the correct Hashline identifiers:
+
+```text
+HASHLINE MISMATCH DETECTED
+The content of the file has changed. Use the actual Hashline identifiers below to recover:
+
+    3#X7Z: export function run() {
+>>> 4#GHI:   // New line added externally
+    5#DEF: }
+```
+
+The model can then use these updated identifiers to immediately correct its tool
+call without requiring an additional `read_file` turn.
