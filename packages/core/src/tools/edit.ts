@@ -46,7 +46,13 @@ import {
   logEditStrategy,
   logEditCorrectionEvent,
 } from '../telemetry/loggers.js';
-import { generateFileHashes, parseHashline } from '../utils/hashline.js';
+import {
+  generateFileHashes,
+  parseHashline,
+  HashlineMismatchError,
+  formatMismatchDiagnostic,
+  type HashMismatch,
+} from '../utils/hashline.js';
 import {
   EDIT_TOOL_NAME,
   READ_FILE_TOOL_NAME,
@@ -75,6 +81,7 @@ interface ReplacementResult {
   finalNewString: string;
   strategy?: 'exact' | 'flexible' | 'regex' | 'fuzzy' | 'hashline';
   matchRanges?: Array<{ start: number; end: number }>;
+  hashlineError?: HashlineMismatchError;
 }
 
 export function applyReplacement(
@@ -295,43 +302,118 @@ async function calculateHashlineReplacement(
   context: ReplacementContext,
 ): Promise<ReplacementResult | null> {
   const { currentContent, params } = context;
-  const { line_edits } = params;
+  const { line_edits, edits } = params;
 
-  if (!line_edits || line_edits.length === 0) {
+  if (
+    (!line_edits || line_edits.length === 0) &&
+    (!edits || edits.length === 0)
+  ) {
     return null;
   }
 
   const lines = currentContent.split('\n');
   const hashes = generateFileHashes(currentContent);
+  const mismatches: HashMismatch[] = [];
 
-  const pendingEdits: Array<{ index: number; newContent: string }> = [];
-
-  for (const edit of line_edits) {
-    const parsed = parseHashline(`${edit.id}:`); // Append colon to reuse parser
+  const validateAnchor = (anchor: string): number | null => {
+    const parsed = parseHashline(`${anchor}:`); // Append colon to reuse parser
     if (!parsed) {
-      debugLogger.log(`Hashline: Failed to parse ID: ${edit.id}`);
-      return null; // Invalid ID format
+      debugLogger.log(`Hashline: Failed to parse anchor: ${anchor}`);
+      const lenientMatch = anchor.match(/^(\d+)/);
+      const index = lenientMatch ? parseInt(lenientMatch[1], 10) : 0;
+      mismatches.push({
+        line: index,
+        expected: anchor,
+        actual: 'INVALID_FORMAT',
+      });
+      return null;
     }
 
     const { index, hash } = parsed;
-    const actualHash = hashes[index - 1];
+    if (index < 1 || index > lines.length) {
+      mismatches.push({ line: index, expected: hash, actual: 'OUT_OF_BOUNDS' });
+      return null;
+    }
 
+    const actualHash = hashes[index - 1];
     if (actualHash !== hash) {
       debugLogger.log(
         `Hashline: Hash mismatch at line ${index}. Expected ${hash}, found ${actualHash}`,
       );
-      return null; // Fail fast on any mismatch
+      mismatches.push({ line: index, expected: hash, actual: actualHash });
+      return null;
     }
 
-    pendingEdits.push({ index, newContent: edit.new_content });
+    return index;
+  };
+
+  interface InternalEdit {
+    op: 'replace' | 'append' | 'prepend';
+    pos: number;
+    end?: number;
+    lines: string[];
   }
 
-  // Sort edits by index descending to apply them bottom-up
-  pendingEdits.sort((a, b) => b.index - a.index);
+  const pendingEdits: InternalEdit[] = [];
+
+  if (line_edits) {
+    for (const edit of line_edits) {
+      const pos = validateAnchor(edit.id);
+      if (pos !== null) {
+        pendingEdits.push({ op: 'replace', pos, lines: [edit.new_content] });
+      }
+    }
+  }
+
+  if (edits) {
+    for (const edit of edits) {
+      const pos = validateAnchor(edit.pos);
+      let end: number | undefined;
+      if (edit.end) {
+        end = validateAnchor(edit.end) ?? undefined;
+      }
+      if (pos !== null) {
+        pendingEdits.push({ op: edit.op, pos, end, lines: edit.lines });
+      }
+    }
+  }
+
+  if (mismatches.length > 0) {
+    throw new HashlineMismatchError(mismatches);
+  }
+
+  // Sort edits by position descending to apply them bottom-up
+  pendingEdits.sort((a, b) => b.pos - a.pos);
 
   const modifiedLines = [...lines];
   for (const edit of pendingEdits) {
-    modifiedLines[edit.index - 1] = edit.newContent;
+    const { op, pos, end, lines: newLines } = edit;
+    const index = pos - 1;
+
+    if (op === 'replace') {
+      const count = end ? end - pos + 1 : 1;
+
+      // Safety Heuristic: If we are replacing a block, check if the model
+      // duplicated the next line in the replacement.
+      const finalNewLines = [...newLines];
+      const nextLineIndex = pos + count - 1;
+      if (nextLineIndex < lines.length) {
+        const nextLine = lines[nextLineIndex];
+        const lastProposedLine = finalNewLines[finalNewLines.length - 1];
+        if (
+          lastProposedLine !== undefined &&
+          lastProposedLine.trim() === nextLine.trim()
+        ) {
+          finalNewLines.pop();
+        }
+      }
+
+      modifiedLines.splice(index, count, ...finalNewLines);
+    } else if (op === 'append') {
+      modifiedLines.splice(index + 1, 0, ...newLines);
+    } else if (op === 'prepend') {
+      modifiedLines.splice(index, 0, ...newLines);
+    }
   }
 
   const modifiedCode = modifiedLines.join('\n');
@@ -341,7 +423,7 @@ async function calculateHashlineReplacement(
 
   return {
     newContent: restoreTrailingNewline(currentContent, modifiedCode),
-    occurrences: line_edits.length,
+    occurrences: (line_edits?.length ?? 0) + (edits?.length ?? 0),
     finalOldString: '', // Not used for hashline
     finalNewString: '', // Not used for hashline
     strategy: 'hashline',
@@ -355,19 +437,29 @@ export async function calculateReplacement(
   const { currentContent, params } = context;
 
   // Try hashline replacement first if parameters are provided
-  if (params.line_edits && params.line_edits.length > 0) {
-    const hashlineResult = await calculateHashlineReplacement(config, context);
-    if (hashlineResult) {
-      return hashlineResult;
+  if (
+    (params.line_edits && params.line_edits.length > 0) ||
+    (params.edits && params.edits.length > 0)
+  ) {
+    try {
+      const hashlineResult = await calculateHashlineReplacement(
+        config,
+        context,
+      );
+      if (hashlineResult) {
+        return hashlineResult;
+      }
+    } catch (error) {
+      // If hashline fails (e.g. mismatch), we return 0 occurrences to trigger error/correction
+      return {
+        newContent: currentContent,
+        occurrences: 0,
+        finalOldString: 'HASH_MISMATCH',
+        finalNewString: '',
+        strategy: 'hashline',
+        hashlineError: error,
+      };
     }
-    // If hashline fails (e.g. mismatch), we return 0 occurrences to trigger error/correction
-    return {
-      newContent: currentContent,
-      occurrences: 0,
-      finalOldString: 'HASH_MISMATCH',
-      finalNewString: '',
-      strategy: 'hashline',
-    };
   }
 
   const old_string = params.old_string ?? '';
@@ -426,14 +518,22 @@ export function getErrorReplaceResult(
   occurrences: number,
   finalOldString: string,
   finalNewString: string,
+  currentLines: string[] = [],
+  hashlineError?: HashlineMismatchError,
 ) {
   let error: { display: string; raw: string; type: ToolErrorType } | undefined =
     undefined;
 
   if (finalOldString === 'HASH_MISMATCH') {
+    let raw = `Failed to edit, one or more Hashline identifiers (LINE#HASH) in 'line_edits' or 'edits' do not match the current state of ${params.file_path}. The file may have been modified. Use ${READ_FILE_TOOL_NAME} with 'include_hashes: true' to get the latest identifiers.`;
+
+    if (hashlineError instanceof HashlineMismatchError) {
+      raw = formatMismatchDiagnostic(hashlineError.mismatches, currentLines);
+    }
+
     error = {
       display: `Failed to edit, hashline identifiers do not match the current file content.`,
-      raw: `Failed to edit, one or more Hashline identifiers (LINE#HASH) in 'line_edits' do not match the current state of ${params.file_path}. The file may have been modified. Use ${READ_FILE_TOOL_NAME} with 'include_hashes: true' to get the latest identifiers.`,
+      raw,
       type: ToolErrorType.EDIT_NO_OCCURRENCE_FOUND,
     };
   } else if (occurrences === 0) {
@@ -695,6 +795,8 @@ class EditToolInvocation
       secondAttemptResult.occurrences,
       secondAttemptResult.finalOldString,
       secondAttemptResult.finalNewString,
+      contentForLlmEditFixer.split('\n'),
+      secondAttemptResult.hashlineError,
     );
 
     if (secondError) {
@@ -831,6 +933,8 @@ class EditToolInvocation
             replacementResult.occurrences,
             replacementResult.finalOldString,
             replacementResult.finalNewString,
+            currentContent.split('\n'),
+            replacementResult.hashlineError,
           );
 
     if (!initialError) {
