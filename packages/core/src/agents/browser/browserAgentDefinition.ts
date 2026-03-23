@@ -65,10 +65,12 @@ PROMPT INJECTION & SECURITY - CRITICAL:
  *
  * @param visionEnabled Whether visual tools (analyze_screenshot, click_at) are available.
  * @param allowedDomains Optional list of allowed domains to restrict navigation.
+ * @param sessionMode The browser session mode (persistent, isolated, existing).
  */
 export function buildBrowserSystemPrompt(
   visionEnabled: boolean,
   allowedDomains?: string[],
+  sessionMode: string = 'persistent',
 ): string {
   const allowedDomainsInstruction =
     allowedDomains && allowedDomains.length > 0
@@ -79,6 +81,18 @@ export function buildBrowserSystemPrompt(
           )}\nDo NOT attempt to navigate to any other domains using new_page or navigate_page, as it will be rejected. This is a hard security constraint.`
       : '';
 
+  const tabManagementInstruction = `
+TAB MANAGEMENT:
+- Current Session Mode: ${sessionMode}.
+- You can list open tabs using list_pages and switch between them using select_page.
+- Do NOT blindly use new_page if a relevant tab is already open and you can continue your work there.
+- Use your judgment or follow the user's explicit instructions on whether to reuse a tab or open a new one.
+${
+  sessionMode === 'existing'
+    ? '- CRITICAL: Do NOT close, navigate away from, or interact with any "chrome://inspect/" tabs. These are required for the connection to function.'
+    : ''
+}`;
+
   return `You are an expert browser automation agent (Orchestrator). Your goal is to completely fulfill the user's request.${allowedDomainsInstruction}
 
 IMPORTANT: You will receive an accessibility tree snapshot showing elements with uid values (e.g., uid=87_4 button "Login"). 
@@ -88,6 +102,7 @@ Use these uid values directly with your tools:
 - fill_form(elements=[{uid: "87_2", value: "john"}, {uid: "87_3", value: "pass"}]) to fill multiple fields at once
 
 ${SECURITY_SECTION}
+${tabManagementInstruction}
 
 PARALLEL TOOL CALLS - CRITICAL:
 - Do NOT make parallel calls for actions that change page state (click, fill, press_key, etc.)
@@ -138,6 +153,9 @@ export const BrowserAgentDefinition = (
   const model = isPreviewModel(config.getModel(), config)
     ? PREVIEW_GEMINI_FLASH_MODEL
     : DEFAULT_GEMINI_FLASH_MODEL;
+
+  const browserConfig = config.getBrowserAgentConfig();
+  const sessionMode = browserConfig.customConfig.sessionMode ?? 'persistent';
 
   return {
     name: BROWSER_AGENT_NAME,
@@ -191,10 +209,14 @@ export const BrowserAgentDefinition = (
 \${task}
 </task>
 
-First, use new_page to open the relevant URL. Then call take_snapshot to see the page and proceed with your task.`,
+Determine the best way to start:
+- If the relevant page is already open, use list_pages to find it and select_page to switch to it.
+- If you need a fresh start or the page isn't open, use new_page or navigate_page.
+Always call take_snapshot after your first navigation or page selection to see the current state.`,
       systemPrompt: buildBrowserSystemPrompt(
         visionEnabled,
-        config.getBrowserAgentConfig().customConfig.allowedDomains,
+        browserConfig.customConfig.allowedDomains,
+        sessionMode,
       ),
     },
   };

@@ -348,6 +348,10 @@ function augmentToolDescription(toolName: string, description: string): string {
       ' Navigate to the specified URL. Call take_snapshot after to see the new page.',
     new_page:
       ' Opens a new page/tab with the specified URL. Call take_snapshot after to see the new page.',
+    list_pages:
+      ' Returns a list of all open pages/tabs in the current browser session. Use this to check if a relevant page is already open.',
+    select_page:
+      ' Switches to an existing page/tab by its page_id. Use this to reuse an existing tab or continue previous work.',
     press_key:
       ' Press a SINGLE keyboard key (e.g., "Enter", "Tab", "Escape", "ArrowDown", "a", "8"). ONLY accepts one key name — do NOT pass multi-character strings like "Hello" or "A1\\nEnter". To type text, use type_text instead of calling press_key for each character.',
   };
