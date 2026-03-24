@@ -135,13 +135,13 @@ class AnalyzeScreenshotInvocation extends BaseToolInvocation<
               role: 'user',
               parts: [
                 {
-                  text: `Analyze this screenshot and respond to the following instruction:\n\n${instruction}`,
-                },
-                {
                   inlineData: {
                     mimeType,
                     data: screenshotBase64,
                   },
+                },
+                {
+                  text: `Analyze this screenshot and respond to the following instruction:\n\n${instruction}`,
                 },
               ],
             },
