@@ -8,6 +8,7 @@ import { type FunctionCall } from '@google/genai';
 import type {
   ToolConfirmationOutcome,
   ToolConfirmationPayload,
+  DiffStat,
 } from '../tools/tools.js';
 import type { ToolCall } from '../scheduler/types.js';
 
@@ -95,6 +96,7 @@ export type SerializableConfirmationDetails =
       originalContent: string | null;
       newContent: string;
       isModifying?: boolean;
+      diffStat?: DiffStat;
     }
   | {
       type: 'exec';
@@ -137,6 +139,7 @@ export interface UpdatePolicy {
   argsPattern?: string;
   commandPrefix?: string | string[];
   mcpName?: string;
+  allowRedirection?: boolean;
 }
 
 export interface ToolPolicyRejection {
