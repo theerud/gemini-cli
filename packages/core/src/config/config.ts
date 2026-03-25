@@ -6,6 +6,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { SandboxPolicyManager } from '../policy/sandboxPolicyManager.js';
 import { inspect } from 'node:util';
 import process from 'node:process';
 import { z } from 'zod';
@@ -334,6 +335,8 @@ export interface BrowserAgentCustomConfig {
   browserUrl?: string;
   /** WebSocket endpoint to connect to an existing Chrome instance. */
   wsEndpoint?: string;
+  /** Maximum number of actions (tool calls) allowed per task. Default: 100 */
+  maxActionsPerTask?: number;
   /** Whether to confirm sensitive actions (e.g., fill_form, evaluate_script). */
   confirmSensitiveActions?: boolean;
   /** Whether to block file uploads. */
@@ -738,7 +741,8 @@ export class Config implements McpContext, AgentLoopContext {
   private readonly telemetrySettings: TelemetrySettings;
   private readonly usageStatisticsEnabled: boolean;
   private _geminiClient!: GeminiClient;
-  private readonly _sandboxManager: SandboxManager;
+  private _sandboxManager: SandboxManager;
+  private readonly _sandboxPolicyManager: SandboxPolicyManager;
   private baseLlmClient!: BaseLlmClient;
   private localLiteRtLmClient?: LocalLiteRtLmClient;
   private modelRouterService: ModelRouterService;
@@ -914,14 +918,14 @@ export class Config implements McpContext, AgentLoopContext {
       params.embeddingModel ?? DEFAULT_GEMINI_EMBEDDING_MODEL;
     this.sandbox = params.sandbox
       ? {
-          enabled: params.sandbox.enabled ?? false,
+          enabled: params.sandbox.enabled || params.toolSandboxing || false,
           allowedPaths: params.sandbox.allowedPaths ?? [],
           networkAccess: params.sandbox.networkAccess ?? false,
           command: params.sandbox.command,
           image: params.sandbox.image,
         }
       : {
-          enabled: false,
+          enabled: params.toolSandboxing || false,
           allowedPaths: [],
           networkAccess: false,
         };
@@ -931,6 +935,30 @@ export class Config implements McpContext, AgentLoopContext {
     if (
       !(this._sandboxManager instanceof NoopSandboxManager) &&
       this.sandbox.enabled
+    ) {
+      this.fileSystemService = new SandboxedFileSystemService(
+        this._sandboxManager,
+        params.targetDir,
+      );
+    } else {
+      this.fileSystemService = new StandardFileSystemService();
+    }
+
+    this._sandboxPolicyManager = new SandboxPolicyManager();
+    const initialApprovalMode =
+      params.approvalMode ??
+      params.policyEngineConfig?.approvalMode ??
+      'default';
+    this._sandboxManager = createSandboxManager(
+      this.sandbox,
+      params.targetDir,
+      this._sandboxPolicyManager,
+      initialApprovalMode,
+    );
+
+    if (
+      !(this._sandboxManager instanceof NoopSandboxManager) &&
+      this.sandbox?.enabled
     ) {
       this.fileSystemService = new SandboxedFileSystemService(
         this._sandboxManager,
@@ -1010,7 +1038,7 @@ export class Config implements McpContext, AgentLoopContext {
     this.model = params.model;
     this.disableLoopDetection = params.disableLoopDetection ?? false;
     this._activeModel = params.model;
-    this.enableAgents = params.enableAgents ?? false;
+    this.enableAgents = params.enableAgents ?? true;
     this.agents = params.agents ?? {};
     this.disableLLMCorrection = params.disableLLMCorrection ?? true;
     this.enableHashline =
@@ -1171,12 +1199,19 @@ export class Config implements McpContext, AgentLoopContext {
       params.policyUpdateConfirmationRequest;
 
     this.disableAlwaysAllow = params.disableAlwaysAllow ?? false;
+    const engineApprovalMode =
+      params.approvalMode ??
+      params.policyEngineConfig?.approvalMode ??
+      ApprovalMode.DEFAULT;
     this.policyEngine = new PolicyEngine(
       {
         ...params.policyEngineConfig,
-        approvalMode:
-          params.approvalMode ?? params.policyEngineConfig?.approvalMode,
+        approvalMode: engineApprovalMode,
         disableAlwaysAllow: this.disableAlwaysAllow,
+        toolSandboxEnabled: this.getSandboxEnabled(),
+        sandboxApprovedTools:
+          this.sandboxPolicyManager?.getModeConfig(engineApprovalMode)
+            ?.approvedTools ?? [],
       },
       checkerRunner,
     );
@@ -1569,6 +1604,20 @@ export class Config implements McpContext, AgentLoopContext {
    */
   get geminiClient(): GeminiClient {
     return this._geminiClient;
+  }
+
+  private refreshSandboxManager(): void {
+    this._sandboxManager = createSandboxManager(
+      this.sandbox,
+      this.targetDir,
+      this._sandboxPolicyManager,
+      this.getApprovalMode(),
+    );
+    this.shellExecutionConfig.sandboxManager = this._sandboxManager;
+  }
+
+  get sandboxPolicyManager() {
+    return this._sandboxPolicyManager;
   }
 
   get sandboxManager(): SandboxManager {
@@ -2299,6 +2348,10 @@ export class Config implements McpContext, AgentLoopContext {
     return this.policyEngine.getApprovalMode();
   }
 
+  isPlanMode(): boolean {
+    return this.getApprovalMode() === ApprovalMode.PLAN;
+  }
+
   getPolicyUpdateConfirmationRequest():
     | PolicyUpdateConfirmationRequest
     | undefined {
@@ -2350,7 +2403,11 @@ export class Config implements McpContext, AgentLoopContext {
       );
     }
 
-    this.policyEngine.setApprovalMode(mode);
+    this.policyEngine.setApprovalMode(
+      mode,
+      this.sandboxPolicyManager?.getModeConfig(mode)?.approvedTools ?? [],
+    );
+    this.refreshSandboxManager();
 
     const isPlanModeTransition =
       currentMode !== mode &&
@@ -3156,6 +3213,7 @@ export class Config implements McpContext, AgentLoopContext {
         disableUserInput: customConfig.disableUserInput,
         browserUrl: customConfig.browserUrl,
         wsEndpoint: customConfig.wsEndpoint,
+        maxActionsPerTask: customConfig.maxActionsPerTask ?? 100,
         confirmSensitiveActions: customConfig.confirmSensitiveActions,
         blockFileUploads: customConfig.blockFileUploads,
       },

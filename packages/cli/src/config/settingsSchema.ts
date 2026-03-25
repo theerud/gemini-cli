@@ -1228,6 +1228,16 @@ const SETTINGS_SCHEMA = {
               'WebSocket endpoint to connect to an existing Chrome instance (e.g., ws://127.0.0.1:9222/devtools/browser/<id>).',
             showInDialog: true,
           },
+          maxActionsPerTask: {
+            type: 'number',
+            label: 'Max Actions Per Task',
+            category: 'Advanced',
+            requiresRestart: false,
+            default: 100,
+            description:
+              'The maximum number of tool calls allowed per browser task. Enforcement is hard: the agent will be terminated when the limit is reached.',
+            showInDialog: false,
+          },
           confirmSensitiveActions: {
             type: 'boolean',
             label: 'Confirm Sensitive Actions',
@@ -1952,7 +1962,7 @@ const SETTINGS_SCHEMA = {
         label: 'Enable Agents',
         category: 'Experimental',
         requiresRestart: true,
-        default: false,
+        default: true,
         description: 'Enable local and remote subagents.',
         showInDialog: false,
       },
