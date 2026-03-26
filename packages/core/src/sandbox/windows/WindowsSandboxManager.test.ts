@@ -12,10 +12,18 @@ import { WindowsSandboxManager } from './WindowsSandboxManager.js';
 import * as sandboxManager from '../../services/sandboxManager.js';
 import type { SandboxRequest } from '../../services/sandboxManager.js';
 import { spawnAsync } from '../../utils/shell-utils.js';
+import type { SandboxPolicyManager } from '../../policy/sandboxPolicyManager.js';
 
-vi.mock('../../utils/shell-utils.js', () => ({
-  spawnAsync: vi.fn(),
-}));
+vi.mock('../../utils/shell-utils.js', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('../../utils/shell-utils.js')>();
+  return {
+    ...actual,
+    spawnAsync: vi.fn(),
+    initializeShellParsers: vi.fn(),
+    isStrictlyApproved: vi.fn().mockResolvedValue(true),
+  };
+});
 
 describe('WindowsSandboxManager', () => {
   let manager: WindowsSandboxManager;
@@ -27,7 +35,10 @@ describe('WindowsSandboxManager', () => {
       p.toString(),
     );
     testCwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gemini-cli-test-'));
-    manager = new WindowsSandboxManager({ workspace: testCwd });
+    manager = new WindowsSandboxManager({
+      workspace: testCwd,
+      modeConfig: { readonly: false, allowOverrides: true },
+    });
   });
 
   afterEach(() => {
@@ -65,6 +76,80 @@ describe('WindowsSandboxManager', () => {
 
     const result = await manager.prepareCommand(req);
     expect(result.args[0]).toBe('1');
+  });
+
+  it('should handle network access from additionalPermissions', async () => {
+    const req: SandboxRequest = {
+      command: 'whoami',
+      args: [],
+      cwd: testCwd,
+      env: {},
+      policy: {
+        additionalPermissions: {
+          network: true,
+        },
+      },
+    };
+
+    const result = await manager.prepareCommand(req);
+    expect(result.args[0]).toBe('1');
+  });
+
+  it('should reject network access in Plan mode', async () => {
+    const planManager = new WindowsSandboxManager({
+      workspace: testCwd,
+      modeConfig: { readonly: true, allowOverrides: false },
+    });
+    const req: SandboxRequest = {
+      command: 'curl',
+      args: ['google.com'],
+      cwd: testCwd,
+      env: {},
+      policy: {
+        additionalPermissions: { network: true },
+      },
+    };
+
+    await expect(planManager.prepareCommand(req)).rejects.toThrow(
+      'Sandbox request rejected: Cannot override readonly/network/filesystem restrictions in Plan mode.',
+    );
+  });
+
+  it('should handle persistent permissions from policyManager', async () => {
+    const persistentPath = path.resolve('/persistent/path');
+    const mockPolicyManager = {
+      getCommandPermissions: vi.fn().mockReturnValue({
+        fileSystem: { write: [persistentPath] },
+        network: true,
+      }),
+    } as unknown as SandboxPolicyManager;
+
+    const managerWithPolicy = new WindowsSandboxManager({
+      workspace: testCwd,
+      modeConfig: { allowOverrides: true, network: false },
+      policyManager: mockPolicyManager,
+    });
+
+    const req: SandboxRequest = {
+      command: 'test-cmd',
+      args: [],
+      cwd: testCwd,
+      env: {},
+    };
+
+    const result = await managerWithPolicy.prepareCommand(req);
+    expect(result.args[0]).toBe('1'); // Network allowed by persistent policy
+
+    const icaclsArgs = vi
+      .mocked(spawnAsync)
+      .mock.calls.filter((c) => c[0] === 'icacls')
+      .map((c) => c[1]);
+
+    expect(icaclsArgs).toContainEqual([
+      persistentPath,
+      '/setintegritylevel',
+      'Low',
+    ]);
   });
 
   it('should sanitize environment variables', async () => {
@@ -124,13 +209,18 @@ describe('WindowsSandboxManager', () => {
 
       await manager.prepareCommand(req);
 
-      expect(spawnAsync).toHaveBeenCalledWith('icacls', [
+      const icaclsArgs = vi
+        .mocked(spawnAsync)
+        .mock.calls.filter((c) => c[0] === 'icacls')
+        .map((c) => c[1]);
+
+      expect(icaclsArgs).toContainEqual([
         path.resolve(testCwd),
         '/setintegritylevel',
         'Low',
       ]);
 
-      expect(spawnAsync).toHaveBeenCalledWith('icacls', [
+      expect(icaclsArgs).toContainEqual([
         path.resolve(allowedPath),
         '/setintegritylevel',
         'Low',
@@ -139,6 +229,119 @@ describe('WindowsSandboxManager', () => {
       fs.rmSync(allowedPath, { recursive: true, force: true });
     }
   });
+
+  it('should grant Low Integrity access to additional write paths', async () => {
+    const extraWritePath = path.join(
+      os.tmpdir(),
+      'gemini-cli-test-extra-write',
+    );
+    if (!fs.existsSync(extraWritePath)) {
+      fs.mkdirSync(extraWritePath);
+    }
+    try {
+      const req: SandboxRequest = {
+        command: 'test',
+        args: [],
+        cwd: testCwd,
+        env: {},
+        policy: {
+          additionalPermissions: {
+            fileSystem: {
+              write: [extraWritePath],
+            },
+          },
+        },
+      };
+
+      await manager.prepareCommand(req);
+
+      const icaclsArgs = vi
+        .mocked(spawnAsync)
+        .mock.calls.filter((c) => c[0] === 'icacls')
+        .map((c) => c[1]);
+
+      expect(icaclsArgs).toContainEqual([
+        path.resolve(extraWritePath),
+        '/setintegritylevel',
+        'Low',
+      ]);
+    } finally {
+      fs.rmSync(extraWritePath, { recursive: true, force: true });
+    }
+  });
+
+  it.runIf(process.platform === 'win32')(
+    'should reject UNC paths in grantLowIntegrityAccess',
+    async () => {
+      const uncPath = '\\\\attacker\\share\\malicious.txt';
+      const req: SandboxRequest = {
+        command: 'test',
+        args: [],
+        cwd: testCwd,
+        env: {},
+        policy: {
+          additionalPermissions: {
+            fileSystem: {
+              write: [uncPath],
+            },
+          },
+        },
+      };
+
+      await manager.prepareCommand(req);
+
+      const icaclsArgs = vi
+        .mocked(spawnAsync)
+        .mock.calls.filter((c) => c[0] === 'icacls')
+        .map((c) => c[1]);
+
+      expect(icaclsArgs).not.toContainEqual([
+        uncPath,
+        '/setintegritylevel',
+        'Low',
+      ]);
+    },
+  );
+
+  it.runIf(process.platform === 'win32')(
+    'should allow extended-length and local device paths',
+    async () => {
+      const longPath = '\\\\?\\C:\\very\\long\\path';
+      const devicePath = '\\\\.\\PhysicalDrive0';
+
+      const req: SandboxRequest = {
+        command: 'test',
+        args: [],
+        cwd: testCwd,
+        env: {},
+        policy: {
+          additionalPermissions: {
+            fileSystem: {
+              write: [longPath, devicePath],
+            },
+          },
+        },
+      };
+
+      await manager.prepareCommand(req);
+
+      const icaclsArgs = vi
+        .mocked(spawnAsync)
+        .mock.calls.filter((c) => c[0] === 'icacls')
+        .map((c) => c[1]);
+
+      expect(icaclsArgs).toContainEqual([
+        longPath,
+        '/setintegritylevel',
+        'Low',
+      ]);
+      expect(icaclsArgs).toContainEqual([
+        devicePath,
+        '/setintegritylevel',
+        'Low',
+      ]);
+    },
+  );
 
   it('skips denying access to non-existent forbidden paths to prevent icacls failure', async () => {
     const missingPath = path.join(
