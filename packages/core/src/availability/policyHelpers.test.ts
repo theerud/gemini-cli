@@ -16,6 +16,7 @@ import {
   DEFAULT_GEMINI_FLASH_LITE_MODEL,
   DEFAULT_GEMINI_MODEL_AUTO,
   PREVIEW_GEMINI_3_1_CUSTOM_TOOLS_MODEL,
+  PREVIEW_GEMINI_3_1_FLASH_LITE_MODEL,
   PREVIEW_GEMINI_3_1_MODEL,
 } from '../config/models.js';
 import { AuthType } from '../core/contentGenerator.js';
@@ -28,12 +29,15 @@ const createMockConfig = (overrides: Partial<Config> = {}): Config => {
     getModel: () => 'gemini-2.5-pro',
     getGemini31LaunchedSync: () => false,
     getGemini31FlashLiteLaunchedSync: () => false,
+    getHasAccessToPreviewModel: () => true,
+    getExperimentalDynamicModelConfiguration: () => true,
     getUseCustomToolModelSync: () => {
       const useGemini31 = config.getGemini31LaunchedSync();
       const authType = config.getContentGeneratorConfig().authType;
       return useGemini31 && authType === AuthType.USE_GEMINI;
     },
     getContentGeneratorConfig: () => ({ authType: undefined }),
+    modelConfigService: new ModelConfigService(DEFAULT_MODEL_CONFIGS),
     ...overrides,
   } as unknown as Config;
   return config;
@@ -119,6 +123,25 @@ describe('policyHelpers', () => {
       expect(chain[0]?.model).toBe('gemini-2.5-flash-lite');
       expect(chain[1]?.model).toBe('gemini-2.5-flash');
       expect(chain[2]?.model).toBe('gemini-2.5-pro');
+    });
+
+    it('returns 3.1 flash-lite chain when flag is enabled', () => {
+      const config = createMockConfig({
+        getGemini31FlashLiteLaunchedSync: () => true,
+      });
+      const chain = resolvePolicyChain(config, 'flash-lite');
+      expect(chain[0]?.model).toBe(PREVIEW_GEMINI_3_1_FLASH_LITE_MODEL);
+      expect(chain.length).toBeGreaterThan(1);
+      expect(chain[1]?.model).toBe(DEFAULT_GEMINI_FLASH_LITE_MODEL);
+    });
+
+    it('falls back to 2.5 flash-lite when 3.1 is requested but preview is disabled', () => {
+      const config = createMockConfig({
+        getGemini31FlashLiteLaunchedSync: () => true,
+        getHasAccessToPreviewModel: () => false,
+      });
+      const chain = resolvePolicyChain(config, 'flash-lite');
+      expect(chain[0]?.model).toBe(DEFAULT_GEMINI_FLASH_LITE_MODEL);
     });
 
     it('wraps around the chain when wrapsAround is true', () => {
@@ -261,6 +284,12 @@ describe('policyHelpers', () => {
   describe('applyModelSelection', () => {
     const mockModelConfigService = {
       getResolvedConfig: vi.fn(),
+      resolveModelId: vi.fn().mockImplementation((id) => id),
+      getModelDefinition: vi.fn().mockImplementation((id) => {
+        if (id === 'gemini-pro') return { tier: 'pro' };
+        if (id === 'gemini-flash') return { tier: 'flash' };
+        return { tier: 'custom' };
+      }),
     };
 
     const mockAvailabilityService = {

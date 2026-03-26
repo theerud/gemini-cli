@@ -244,10 +244,16 @@ export class ModelConfigService {
       return undefined;
     }
     // Map through the template and resolve each model ID
-    return template.map((policy) => ({
+    const resolved = template.map((policy) => ({
       ...policy,
       model: this.resolveModelId(policy.model, context),
     }));
+
+    // Deduplicate consecutive models in the chain
+    return resolved.filter(
+      (policy, index) =>
+        index === 0 || policy.model !== resolved[index - 1].model,
+    );
   }
 
   registerRuntimeModelConfig(aliasName: string, alias: ModelConfigAlias): void {

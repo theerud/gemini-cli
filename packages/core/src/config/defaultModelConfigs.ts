@@ -105,7 +105,7 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
     classifier: {
       extends: 'base',
       modelConfig: {
-        model: 'gemini-2.5-flash-lite',
+        model: 'flash-lite',
         generateContentConfig: {
           maxOutputTokens: 1024,
           thinkingConfig: {
@@ -117,7 +117,7 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
     'prompt-completion': {
       extends: 'base',
       modelConfig: {
-        model: 'gemini-2.5-flash-lite',
+        model: 'flash-lite',
         generateContentConfig: {
           temperature: 0.3,
           maxOutputTokens: 16000,
@@ -130,7 +130,7 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
     'fast-ack-helper': {
       extends: 'base',
       modelConfig: {
-        model: 'gemini-2.5-flash-lite',
+        model: 'flash-lite',
         generateContentConfig: {
           temperature: 0.2,
           maxOutputTokens: 120,
@@ -143,7 +143,7 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
     'edit-corrector': {
       extends: 'base',
       modelConfig: {
-        model: 'gemini-2.5-flash-lite',
+        model: 'flash-lite',
         generateContentConfig: {
           thinkingConfig: {
             thinkingBudget: 0,
@@ -154,7 +154,7 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
     'summarizer-default': {
       extends: 'base',
       modelConfig: {
-        model: 'gemini-2.5-flash-lite',
+        model: 'flash-lite',
         generateContentConfig: {
           maxOutputTokens: 2000,
         },
@@ -163,7 +163,7 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
     'summarizer-shell': {
       extends: 'base',
       modelConfig: {
-        model: 'gemini-2.5-flash-lite',
+        model: 'flash-lite',
         generateContentConfig: {
           maxOutputTokens: 2000,
         },
@@ -445,6 +445,10 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
       default: 'gemini-3.1-flash-lite-preview',
       contexts: [
         {
+          condition: { hasAccessToPreview: false },
+          target: 'gemini-2.5-flash-lite',
+        },
+        {
           condition: { useGemini3_1FlashLite: false },
           target: 'gemini-2.5-flash-lite',
         },
@@ -460,11 +464,26 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
       ],
     },
     'flash-lite': {
-      default: 'gemini-2.5-flash-lite',
+      default: 'gemini-3.1-flash-lite-preview',
       contexts: [
         {
-          condition: { useGemini3_1FlashLite: true },
-          target: 'gemini-3.1-flash-lite-preview',
+          condition: { hasAccessToPreview: false },
+          target: 'gemini-2.5-flash-lite',
+        },
+        {
+          condition: { useGemini3_1FlashLite: false },
+          target: 'gemini-2.5-flash-lite',
+        },
+        {
+          condition: {
+            requestedModels: [
+              'auto-gemini-2.5',
+              'gemini-2.5-pro',
+              'gemini-2.5-flash',
+              'gemini-2.5-flash-lite',
+            ],
+          },
+          target: 'gemini-2.5-flash-lite',
         },
       ],
     },
@@ -571,6 +590,21 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
       },
     ],
     lite: [
+      {
+        model: 'gemini-3.1-flash-lite-preview',
+        actions: {
+          terminal: 'silent',
+          transient: 'silent',
+          not_found: 'silent',
+          unknown: 'silent',
+        },
+        stateTransitions: {
+          terminal: 'terminal',
+          transient: 'terminal',
+          not_found: 'terminal',
+          unknown: 'terminal',
+        },
+      },
       {
         model: 'gemini-2.5-flash-lite',
         actions: {

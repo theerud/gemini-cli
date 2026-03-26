@@ -14,6 +14,7 @@ import {
   DEFAULT_GEMINI_FLASH_LITE_MODEL,
   DEFAULT_GEMINI_FLASH_MODEL,
   DEFAULT_GEMINI_MODEL,
+  PREVIEW_GEMINI_3_1_FLASH_LITE_MODEL,
   PREVIEW_GEMINI_FLASH_MODEL,
   PREVIEW_GEMINI_MODEL,
   resolveModel,
@@ -61,6 +62,10 @@ const DEFAULT_CHAIN: ModelPolicyChain = [
 ];
 
 const FLASH_LITE_CHAIN: ModelPolicyChain = [
+  definePolicy({
+    model: PREVIEW_GEMINI_3_1_FLASH_LITE_MODEL,
+    actions: SILENT_ACTIONS,
+  }),
   definePolicy({
     model: DEFAULT_GEMINI_FLASH_LITE_MODEL,
     actions: SILENT_ACTIONS,
