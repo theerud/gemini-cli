@@ -217,7 +217,8 @@ A good instruction should concisely answer:
           },
           new_content: {
             type: 'string',
-            description: 'The new content for this line.',
+            description:
+              "The new content for this line. Note: Setting this to an empty string replaces the line with a blank line. To delete the line entirely, use the 'edits' parameter with 'op': 'replace' and an empty 'lines' array.",
           },
         },
         required: ['id', 'new_content'],
@@ -249,7 +250,8 @@ A good instruction should concisely answer:
           [EDIT_PARAM_LINES]: {
             type: 'array',
             items: { type: 'string' },
-            description: 'The new content lines for this operation.',
+            description:
+              "The new content lines for this operation. To delete a range of lines, set 'op' to 'replace' and provide an empty 'lines' array.",
           },
         },
         required: [EDIT_PARAM_OP, EDIT_PARAM_POS, EDIT_PARAM_LINES],
@@ -275,7 +277,8 @@ A good instruction should concisely answer:
       2. **Edit Shapes**:
          - **Body-only (Shape A)**: Replace lines *between* headers/footers. Set \`pos\` to the first inner line and \`end\` to the last inner line.
          - **Full-block (Shape B)**: Replace from header to footer inclusive. Set \`pos\` to the header and \`end\` to the footer. Re-emit the header/footer in \`lines\`.
-      3. **Safety**:
+      3. **Deletion**: To delete lines entirely, use \`replace\` with an empty \`lines\` array (e.g., \`{ "op": "replace", "pos": "START#ID", "end": "END#ID", "lines": [] }\`).
+      4. **Safety**:
          - **Shared Boundaries**: Avoid anchoring on lines like \`} else {\` or \`} catch {\`. Widen the range to consume the whole block instead.
          - **Self-Healing**: If you receive a \`HASHLINE MISMATCH DETECTED\` error, use the provided recovery snippet with updated \`LINE#ID\` anchors to immediately retry the edit.`
       : description,

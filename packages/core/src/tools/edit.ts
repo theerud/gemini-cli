@@ -312,7 +312,7 @@ async function calculateHashlineReplacement(
     return null;
   }
 
-  const lines = currentContent.split('\n');
+  const lines = currentContent.split(/\r?\n/);
   const hashes = generateFileHashes(currentContent);
   const mismatches: HashMismatch[] = [];
 
@@ -1364,12 +1364,12 @@ export class EditTool
           const currentContent = await this.config
             .getFileSystemService()
             .readTextFile(params.file_path);
-          return applyReplacement(
-            currentContent,
-            params.old_string ?? '',
-            params.new_string ?? '',
-            (params.old_string ?? '') === '' && currentContent === '',
-          );
+          const replacementResult = await calculateReplacement(this.config, {
+            params,
+            currentContent: currentContent.replace(/\r\n/g, '\n'),
+            abortSignal: new AbortController().signal, // Internal preview doesn't need external signal
+          });
+          return replacementResult.newContent;
         } catch (err) {
           if (!isNodeError(err) || err.code !== 'ENOENT') throw err;
           return '';
@@ -1387,6 +1387,9 @@ export class EditTool
           old_string: oldContent,
           new_string: modifiedProposedContent,
           modified_by_user: true,
+          // Clear hashline-based edits to ensure the manual edit takes precedence.
+          line_edits: undefined,
+          edits: undefined,
         };
       },
     };
