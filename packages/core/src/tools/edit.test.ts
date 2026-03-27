@@ -1030,6 +1030,44 @@ function doIt() {
         }
       },
     );
+
+    it('should NOT fail with ATTEMPT_TO_CREATE_EXISTING_FILE when using edits with empty old_string on existing file', async () => {
+      fs.writeFileSync(filePath, 'Some content.', 'utf8');
+
+      const params: EditToolParams = {
+        file_path: filePath,
+        instruction: 'test',
+        old_string: '',
+        new_string: '',
+        edits: [{ op: 'replace', pos: '1#ANY', lines: ['new content'] }],
+      };
+
+      const invocation = tool.build(params);
+      const result = await invocation.execute(new AbortController().signal);
+
+      // It should NOT be ATTEMPT_TO_CREATE_EXISTING_FILE.
+      expect(result.error?.type).toBe(ToolErrorType.EDIT_NO_OCCURRENCE_FOUND);
+      expect(result.error?.type).not.toBe(
+        ToolErrorType.ATTEMPT_TO_CREATE_EXISTING_FILE,
+      );
+    });
+
+    it('should return correct description for advanced hashline edits', () => {
+      const params: EditToolParams = {
+        file_path: filePath,
+        instruction: 'test',
+        old_string: '',
+        new_string: '',
+        edits: [
+          { op: 'replace', pos: '1#ABC', lines: ['l1'] },
+          { op: 'append', pos: '2#DEF', lines: ['l2'] },
+        ],
+      };
+      const invocation = tool.build(params);
+      expect(invocation.getDescription()).toBe(
+        `Edit ${testFile}: Applied 2 advanced hashline edits`,
+      );
+    });
   });
 
   describe('IDE mode', () => {
