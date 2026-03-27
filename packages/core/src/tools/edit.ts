@@ -872,7 +872,9 @@ class EditToolInvocation
 
     const oldStr = params.old_string ?? '';
     const hasLineEdits = !!(params.line_edits && params.line_edits.length > 0);
-    const isNewFile = oldStr === '' && !fileExists && !hasLineEdits;
+    const hasEdits = !!(params.edits && params.edits.length > 0);
+    const isNewFile =
+      oldStr === '' && !fileExists && !hasLineEdits && !hasEdits;
 
     if (isNewFile) {
       return {
@@ -916,7 +918,7 @@ class EditToolInvocation
       };
     }
 
-    if (oldStr === '' && !hasLineEdits) {
+    if (oldStr === '' && !hasLineEdits && !hasEdits) {
       return {
         currentContent,
         newContent: currentContent,
@@ -1059,6 +1061,10 @@ class EditToolInvocation
     if (this.params.line_edits && this.params.line_edits.length > 0) {
       const count = this.params.line_edits.length;
       return `Edit ${shortenPath(relativePath)}: Applied ${count} line-based edit${count === 1 ? '' : 's'}`;
+    }
+    if (this.params.edits && this.params.edits.length > 0) {
+      const count = this.params.edits.length;
+      return `Edit ${shortenPath(relativePath)}: Applied ${count} advanced hashline edit${count === 1 ? '' : 's'}`;
     }
 
     const oldStr = this.params.old_string ?? '';
