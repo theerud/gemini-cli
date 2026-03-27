@@ -22,6 +22,7 @@ import {
 import {
   DEFAULT_GEMINI_FLASH_LITE_MODEL,
   DEFAULT_GEMINI_MODEL,
+  PREVIEW_GEMINI_3_1_FLASH_LITE_MODEL,
   PREVIEW_GEMINI_MODEL_AUTO,
   isAutoModel,
   isGemini3Model,
@@ -71,7 +72,10 @@ export function resolvePolicyChain(
       useCustomTools: useCustomToolModel,
     };
 
-    if (resolvedModel === DEFAULT_GEMINI_FLASH_LITE_MODEL) {
+    if (
+      resolvedModel === DEFAULT_GEMINI_FLASH_LITE_MODEL ||
+      resolvedModel === PREVIEW_GEMINI_3_1_FLASH_LITE_MODEL
+    ) {
       chain = config.modelConfigService.resolveChain('lite', context);
     } else if (
       isGemini3Model(resolvedModel, config) ||
@@ -108,7 +112,10 @@ export function resolvePolicyChain(
 
   // --- LEGACY PATH ---
 
-  if (resolvedModel === DEFAULT_GEMINI_FLASH_LITE_MODEL) {
+  if (
+    resolvedModel === DEFAULT_GEMINI_FLASH_LITE_MODEL ||
+    resolvedModel === PREVIEW_GEMINI_3_1_FLASH_LITE_MODEL
+  ) {
     chain = getFlashLitePolicyChain();
   } else if (
     isGemini3Model(resolvedModel, config) ||

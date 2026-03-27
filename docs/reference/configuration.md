@@ -508,7 +508,7 @@ their corresponding top-level category object in your `settings.json` file.
       "gemini-2.5-flash-lite": {
         "extends": "chat-base-2.5",
         "modelConfig": {
-          "model": "gemini-2.5-flash-lite"
+          "model": "flash-lite"
         }
       },
       "gemini-2.5-flash-base": {
@@ -526,7 +526,7 @@ their corresponding top-level category object in your `settings.json` file.
       "classifier": {
         "extends": "base",
         "modelConfig": {
-          "model": "gemini-2.5-flash-lite",
+          "model": "flash-lite",
           "generateContentConfig": {
             "maxOutputTokens": 1024,
             "thinkingConfig": {
@@ -538,7 +538,7 @@ their corresponding top-level category object in your `settings.json` file.
       "prompt-completion": {
         "extends": "base",
         "modelConfig": {
-          "model": "gemini-2.5-flash-lite",
+          "model": "flash-lite",
           "generateContentConfig": {
             "temperature": 0.3,
             "maxOutputTokens": 16000,
@@ -551,7 +551,7 @@ their corresponding top-level category object in your `settings.json` file.
       "fast-ack-helper": {
         "extends": "base",
         "modelConfig": {
-          "model": "gemini-2.5-flash-lite",
+          "model": "flash-lite",
           "generateContentConfig": {
             "temperature": 0.2,
             "maxOutputTokens": 120,
@@ -564,7 +564,7 @@ their corresponding top-level category object in your `settings.json` file.
       "edit-corrector": {
         "extends": "base",
         "modelConfig": {
-          "model": "gemini-2.5-flash-lite",
+          "model": "flash-lite",
           "generateContentConfig": {
             "thinkingConfig": {
               "thinkingBudget": 0
@@ -575,7 +575,7 @@ their corresponding top-level category object in your `settings.json` file.
       "summarizer-default": {
         "extends": "base",
         "modelConfig": {
-          "model": "gemini-2.5-flash-lite",
+          "model": "flash-lite",
           "generateContentConfig": {
             "maxOutputTokens": 2000
           }
@@ -584,7 +584,7 @@ their corresponding top-level category object in your `settings.json` file.
       "summarizer-shell": {
         "extends": "base",
         "modelConfig": {
-          "model": "gemini-2.5-flash-lite",
+          "model": "flash-lite",
           "generateContentConfig": {
             "maxOutputTokens": 2000
           }
@@ -663,7 +663,7 @@ their corresponding top-level category object in your `settings.json` file.
       },
       "chat-compression-2.5-flash-lite": {
         "modelConfig": {
-          "model": "gemini-2.5-flash-lite"
+          "model": "flash-lite"
         }
       },
       "chat-compression-default": {
@@ -1151,7 +1151,7 @@ their corresponding top-level category object in your `settings.json` file.
       ],
       "lite": [
         {
-          "model": "gemini-2.5-flash-lite",
+          "model": "flash-lite",
           "actions": {
             "terminal": "silent",
             "transient": "silent",

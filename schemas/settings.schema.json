@@ -707,7 +707,7 @@
           "gemini-2.5-flash-lite": {
             "extends": "chat-base-2.5",
             "modelConfig": {
-              "model": "gemini-2.5-flash-lite"
+              "model": "flash-lite"
             }
           },
           "gemini-2.5-flash-base": {
@@ -725,7 +725,7 @@
           "classifier": {
             "extends": "base",
             "modelConfig": {
-              "model": "gemini-2.5-flash-lite",
+              "model": "flash-lite",
               "generateContentConfig": {
                 "maxOutputTokens": 1024,
                 "thinkingConfig": {
@@ -737,7 +737,7 @@
           "prompt-completion": {
             "extends": "base",
             "modelConfig": {
-              "model": "gemini-2.5-flash-lite",
+              "model": "flash-lite",
               "generateContentConfig": {
                 "temperature": 0.3,
                 "maxOutputTokens": 16000,
@@ -750,7 +750,7 @@
           "fast-ack-helper": {
             "extends": "base",
             "modelConfig": {
-              "model": "gemini-2.5-flash-lite",
+              "model": "flash-lite",
               "generateContentConfig": {
                 "temperature": 0.2,
                 "maxOutputTokens": 120,
@@ -763,7 +763,7 @@
           "edit-corrector": {
             "extends": "base",
             "modelConfig": {
-              "model": "gemini-2.5-flash-lite",
+              "model": "flash-lite",
               "generateContentConfig": {
                 "thinkingConfig": {
                   "thinkingBudget": 0
@@ -774,7 +774,7 @@
           "summarizer-default": {
             "extends": "base",
             "modelConfig": {
-              "model": "gemini-2.5-flash-lite",
+              "model": "flash-lite",
               "generateContentConfig": {
                 "maxOutputTokens": 2000
               }
@@ -783,7 +783,7 @@
           "summarizer-shell": {
             "extends": "base",
             "modelConfig": {
-              "model": "gemini-2.5-flash-lite",
+              "model": "flash-lite",
               "generateContentConfig": {
                 "maxOutputTokens": 2000
               }
@@ -862,7 +862,7 @@
           },
           "chat-compression-2.5-flash-lite": {
             "modelConfig": {
-              "model": "gemini-2.5-flash-lite"
+              "model": "flash-lite"
             }
           },
           "chat-compression-default": {
@@ -1309,7 +1309,7 @@
           ],
           "lite": [
             {
-              "model": "gemini-2.5-flash-lite",
+              "model": "flash-lite",
               "actions": {
                 "terminal": "silent",
                 "transient": "silent",
@@ -1432,7 +1432,7 @@
             "gemini-2.5-flash-lite": {
               "extends": "chat-base-2.5",
               "modelConfig": {
-                "model": "gemini-2.5-flash-lite"
+                "model": "flash-lite"
               }
             },
             "gemini-2.5-flash-base": {
@@ -1450,7 +1450,7 @@
             "classifier": {
               "extends": "base",
               "modelConfig": {
-                "model": "gemini-2.5-flash-lite",
+                "model": "flash-lite",
                 "generateContentConfig": {
                   "maxOutputTokens": 1024,
                   "thinkingConfig": {
@@ -1462,7 +1462,7 @@
             "prompt-completion": {
               "extends": "base",
               "modelConfig": {
-                "model": "gemini-2.5-flash-lite",
+                "model": "flash-lite",
                 "generateContentConfig": {
                   "temperature": 0.3,
                   "maxOutputTokens": 16000,
@@ -1475,7 +1475,7 @@
             "fast-ack-helper": {
               "extends": "base",
               "modelConfig": {
-                "model": "gemini-2.5-flash-lite",
+                "model": "flash-lite",
                 "generateContentConfig": {
                   "temperature": 0.2,
                   "maxOutputTokens": 120,
@@ -1488,7 +1488,7 @@
             "edit-corrector": {
               "extends": "base",
               "modelConfig": {
-                "model": "gemini-2.5-flash-lite",
+                "model": "flash-lite",
                 "generateContentConfig": {
                   "thinkingConfig": {
                     "thinkingBudget": 0
@@ -1499,7 +1499,7 @@
             "summarizer-default": {
               "extends": "base",
               "modelConfig": {
-                "model": "gemini-2.5-flash-lite",
+                "model": "flash-lite",
                 "generateContentConfig": {
                   "maxOutputTokens": 2000
                 }
@@ -1508,7 +1508,7 @@
             "summarizer-shell": {
               "extends": "base",
               "modelConfig": {
-                "model": "gemini-2.5-flash-lite",
+                "model": "flash-lite",
                 "generateContentConfig": {
                   "maxOutputTokens": 2000
                 }
@@ -1587,7 +1587,7 @@
             },
             "chat-compression-2.5-flash-lite": {
               "modelConfig": {
-                "model": "gemini-2.5-flash-lite"
+                "model": "flash-lite"
               }
             },
             "chat-compression-default": {
@@ -2079,7 +2079,7 @@
             ],
             "lite": [
               {
-                "model": "gemini-2.5-flash-lite",
+                "model": "flash-lite",
                 "actions": {
                   "terminal": "silent",
                   "transient": "silent",
