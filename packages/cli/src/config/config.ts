@@ -642,6 +642,7 @@ export async function loadCliConfig(
       memoryImportFormat,
       memoryFileFiltering,
       settings.context?.discoveryMaxDirs,
+      settings.context?.memoryBoundaryMarkers,
     );
     memoryContent = result.memoryContent;
     fileCount = result.fileCount;
@@ -896,6 +897,7 @@ export async function loadCliConfig(
     loadMemoryFromIncludeDirectories:
       settings.context?.loadMemoryFromIncludeDirectories || false,
     discoveryMaxDirs: settings.context?.discoveryMaxDirs,
+    memoryBoundaryMarkers: settings.context?.memoryBoundaryMarkers,
     importFormat: settings.context?.importFormat,
     debugMode,
     question,
@@ -976,6 +978,14 @@ export async function loadCliConfig(
     experimentalJitContext: settings.experimental?.jitContext,
     enableHashline: settings.experimental?.enableHashline,
     experimentalMemoryManager: settings.experimental?.memoryManager,
+    experimentalAgentHistoryTruncation:
+      settings.experimental?.agentHistoryTruncation,
+    experimentalAgentHistoryTruncationThreshold:
+      settings.experimental?.agentHistoryTruncationThreshold,
+    experimentalAgentHistoryRetainedMessages:
+      settings.experimental?.agentHistoryRetainedMessages,
+    experimentalAgentHistorySummarization:
+      settings.experimental?.agentHistorySummarization,
     modelSteering: settings.experimental?.modelSteering,
     topicUpdateNarration: settings.experimental?.topicUpdateNarration,
     toolOutputMasking: settings.experimental?.toolOutputMasking,
