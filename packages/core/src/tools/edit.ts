@@ -84,6 +84,7 @@ interface ReplacementResult {
   strategy?: 'exact' | 'flexible' | 'regex' | 'fuzzy' | 'hashline';
   matchRanges?: Array<{ start: number; end: number }>;
   hashlineError?: HashlineMismatchError;
+  warnings?: string[];
 }
 
 export function applyReplacement(
@@ -387,28 +388,22 @@ async function calculateHashlineReplacement(
   // Sort edits by position descending to apply them bottom-up
   pendingEdits.sort((a, b) => b.pos - a.pos);
 
+  const originalLines = [...lines];
   const modifiedLines = [...lines];
   for (const edit of pendingEdits) {
     const { op, pos, end, lines: newLines } = edit;
     const index = pos - 1;
 
+    // Apply tab autocorrection if the model used \t escape sequences instead of actual tabs.
+    const finalNewLines = newLines.map((line) => {
+      if (!line.includes('\\t') || line.includes('\t')) return line;
+      return line.replace(/^((?:\\t)+)/, (escaped) =>
+        '\t'.repeat(escaped.length / 2),
+      );
+    });
+
     if (op === 'replace') {
       const count = end ? end - pos + 1 : 1;
-
-      // Safety Heuristic: If we are replacing a block, check if the model
-      // duplicated the next line in the replacement.
-      const finalNewLines = [...newLines];
-      const nextLineIndex = pos + count - 1;
-      if (nextLineIndex < lines.length) {
-        const nextLine = lines[nextLineIndex];
-        const lastProposedLine = finalNewLines[finalNewLines.length - 1];
-        if (
-          lastProposedLine !== undefined &&
-          lastProposedLine.trim() === nextLine.trim()
-        ) {
-          finalNewLines.pop();
-        }
-      }
 
       modifiedLines.splice(index, count, ...finalNewLines);
     } else if (op === 'append') {
@@ -423,12 +418,39 @@ async function calculateHashlineReplacement(
   const event = new EditStrategyEvent('hashline');
   logEditStrategy(config, event);
 
+  // Safety Heuristic: Warning on duplicated boundaries.
+  // This catches the common boundary-overreach pattern where the agent includes a closing delimiter
+  // in the replacement but sets `end` to the line before the delimiter, causing duplication.
+  const warnings: string[] = [];
+  for (const edit of pendingEdits) {
+    const { op, pos, end, lines: newLines } = edit;
+    if (op !== 'replace' || newLines.length === 0) continue;
+
+    const count = end ? end - pos + 1 : 1;
+    const endLine = pos + count - 1; // 1-indexed line number of the last replaced line
+    const nextSurvivingIdx = endLine; // 0-indexed index of the next line after `end`
+
+    if (nextSurvivingIdx >= originalLines.length) continue;
+
+    const nextSurvivingLine = originalLines[nextSurvivingIdx];
+    const lastInsertedLine = newLines[newLines.length - 1];
+    const trimmedNext = nextSurvivingLine.trim();
+    const trimmedLast = lastInsertedLine.trim();
+
+    if (trimmedLast.length > 0 && trimmedLast === trimmedNext) {
+      warnings.push(
+        `Possible boundary duplication: your last replacement line "\${trimmedLast}" is identical to the next surviving line in the file. If you meant to replace the entire block, your 'end' anchor likely stopped one line too early.`,
+      );
+    }
+  }
+
   return {
     newContent: restoreTrailingNewline(currentContent, modifiedCode),
     occurrences: (line_edits?.length ?? 0) + (edits?.length ?? 0),
     finalOldString: '', // Not used for hashline
     finalNewString: '', // Not used for hashline
     strategy: 'hashline',
+    warnings: warnings.length > 0 ? warnings : undefined,
   };
 }
 
@@ -663,6 +685,7 @@ interface CalculatedEdit {
   originalLineEnding: '\r\n' | '\n';
   strategy?: 'exact' | 'flexible' | 'regex' | 'fuzzy' | 'hashline';
   matchRanges?: Array<{ start: number; end: number }>;
+  warnings?: string[];
 }
 
 class EditToolInvocation
@@ -839,6 +862,7 @@ class EditToolInvocation
       originalLineEnding,
       strategy: secondAttemptResult.strategy,
       matchRanges: secondAttemptResult.matchRanges,
+      warnings: secondAttemptResult.warnings,
     };
   }
 
@@ -962,6 +986,7 @@ class EditToolInvocation
         originalLineEnding,
         strategy: replacementResult.strategy,
         matchRanges: replacementResult.matchRanges,
+        warnings: replacementResult.warnings,
       };
     }
 
@@ -1226,6 +1251,9 @@ ${snippet}`);
       const fuzzyFeedback = getFuzzyMatchFeedback(editData);
       if (fuzzyFeedback) {
         llmSuccessMessageParts.push(fuzzyFeedback);
+      }
+      if (editData.warnings && editData.warnings.length > 0) {
+        llmSuccessMessageParts.push('\n' + editData.warnings.join('\n'));
       }
       if (this.params.modified_by_user) {
         llmSuccessMessageParts.push(
