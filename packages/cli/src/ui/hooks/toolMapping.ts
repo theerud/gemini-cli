@@ -50,7 +50,7 @@ export function mapToDisplay(
       callId: call.request.callId,
       parentCallId: call.request.parentCallId,
       name: displayName,
-      toolName: call.request.name,
+      args: call.request.args,
       description,
       renderOutputAsMarkdown,
     };

@@ -436,7 +436,7 @@ describe('<ModelDialog />', () => {
       unmount();
     });
 
-    it('shows Flash Lite Preview model when flag is enabled', async () => {
+    it('shows Flash Lite Preview model regardless of tier when flag is enabled', async () => {
       mockGetProModelNoAccessSync.mockReturnValue(false);
       mockGetProModelNoAccess.mockResolvedValue(false);
       mockGetHasAccessToPreviewModel.mockReturnValue(true);
