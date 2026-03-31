@@ -276,14 +276,13 @@ A good instruction should concisely answer:
 
       **Hashline Guidance:**
       1. **Operations**:
-         - \`replace\`: Replaces a single line (provide \`pos\`) or a range (provide \`pos\` and \`end\`).
+         - \`replace\`: Replaces a single line (provide \`pos\`) or a range (provide \`pos\` and \`end\`). For a range, either replace only the body or replace the whole range. Do not split range boundaries.
          - \`append\` / \`prepend\`: Inserts lines after or before the \`pos\` anchor.
-      2. **Edit Shapes**:
-         - **Body-only (Shape A)**: Replace lines *between* headers/footers. Set \`pos\` to the first inner line and \`end\` to the last inner line.
-         - **Full-block (Shape B)**: Replace from header to footer inclusive. Set \`pos\` to the header and \`end\` to the footer. Re-emit the header/footer in \`lines\`.
-      3. **Deletion**: To delete lines entirely, use \`replace\` with an empty \`lines\` array (e.g., \`{ "op": "replace", "pos": "START#ID", "end": "END#ID", "lines": [] }\`).
-      4. **Safety**:
-         - **Shared Boundaries**: Avoid anchoring on lines like \`} else {\` or \`} catch {\`. Widen the range to consume the whole block instead.
+      2. **Deletion**: To delete lines entirely, use \`replace\` with an empty \`lines\` array (e.g., \`{ "op": "replace", "pos": "START#ID", "end": "END#ID", "lines": [] }\`).
+      3. **Batching**: In one \`edits\` array, batch all edits for one file. After any successful edit, re-read before editing that file again to prevent staleness.
+      4. **Safety & Delimiters**:
+         - When your replacement \`lines\` end with a closing delimiter (\`}\`, \`*/\`, \`)\`, \`]\`), verify \`end\` includes the original line carrying that delimiter. If \`end\` stops one line too early, the original delimiter survives and your content adds a second copy.
+         - **Self-check**: Compare the last line of \`lines\` with the line immediately after \`end\` in the file. If they match (e.g., both are \`}\`), extend \`end\` to include that line to avoid duplicate boundary lines.
          - **Self-Healing**: If you receive a \`HASHLINE MISMATCH DETECTED\` error, use the provided recovery snippet with updated \`LINE#ID\` anchors to immediately retry the edit.`
       : description,
     parametersJsonSchema: {
