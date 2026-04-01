@@ -354,38 +354,63 @@ async function calculateHashlineReplacement(
     pos: number;
     end?: number;
     lines: string[];
+    originalIdx: number;
   }
 
   const pendingEdits: InternalEdit[] = [];
 
   if (line_edits) {
-    for (const edit of line_edits) {
+    line_edits.forEach((edit, originalIdx) => {
       const pos = validateAnchor(edit.id);
       if (pos !== null) {
-        pendingEdits.push({ op: 'replace', pos, lines: [edit.new_content] });
+        pendingEdits.push({
+          op: 'replace',
+          pos,
+          lines: [edit.new_content],
+          originalIdx,
+        });
       }
-    }
+    });
   }
 
   if (edits) {
-    for (const edit of edits) {
+    edits.forEach((edit, i) => {
       const pos = validateAnchor(edit.pos);
       let end: number | undefined;
       if (edit.end) {
         end = validateAnchor(edit.end) ?? undefined;
       }
       if (pos !== null) {
-        pendingEdits.push({ op: edit.op, pos, end, lines: edit.lines });
+        pendingEdits.push({
+          op: edit.op,
+          pos,
+          end,
+          lines: edit.lines,
+          originalIdx: (line_edits?.length ?? 0) + i,
+        });
       }
-    }
+    });
   }
 
   if (mismatches.length > 0) {
     throw new HashlineMismatchError(mismatches);
   }
 
-  // Sort edits by position descending to apply them bottom-up
-  pendingEdits.sort((a, b) => b.pos - a.pos);
+  // Sort edits by position descending to apply them bottom-up.
+  // We use a precedence and original index tie-breaker to ensure stable, predictable results
+  // even when multiple edits target the same line.
+  pendingEdits.sort((a, b) => {
+    const aSort = a.end ?? a.pos;
+    const bSort = b.end ?? b.pos;
+    if (bSort !== aSort) return bSort - aSort;
+
+    // Tie-breaker: precedence (replace < append < prepend)
+    const precedence = { replace: 0, append: 1, prepend: 2 };
+    if (a.op !== b.op) return precedence[a.op] - precedence[b.op];
+
+    // Final tie-breaker: original order
+    return a.originalIdx - b.originalIdx;
+  });
 
   const originalLines = [...lines];
   const modifiedLines = [...lines];
