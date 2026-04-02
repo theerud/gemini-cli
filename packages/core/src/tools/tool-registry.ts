@@ -27,12 +27,12 @@ import { coreEvents } from '../utils/events.js';
 import {
   DISCOVERED_TOOL_PREFIX,
   TOOL_LEGACY_ALIASES,
-  ENTER_PLAN_MODE_TOOL_NAME,
-  EXIT_PLAN_MODE_TOOL_NAME,
   getToolAliases,
   WRITE_FILE_TOOL_NAME,
   EDIT_TOOL_NAME,
   UPDATE_TOPIC_TOOL_NAME,
+  ENTER_PLAN_MODE_TOOL_NAME,
+  EXIT_PLAN_MODE_TOOL_NAME,
 } from './tool-names.js';
 
 type ToolParams = Record<string, unknown>;
@@ -585,6 +585,14 @@ export class ToolRegistry {
       }
     }
 
+    const isPlanMode = this.config.getApprovalMode() === ApprovalMode.PLAN;
+    if (
+      (tool.name === ENTER_PLAN_MODE_TOOL_NAME && isPlanMode) ||
+      (tool.name === EXIT_PLAN_MODE_TOOL_NAME && !isPlanMode)
+    ) {
+      return false;
+    }
+
     const normalizedClassName = tool.constructor.name.replace(/^_+/, '');
     const possibleNames = [tool.name, normalizedClassName];
     if (tool instanceof DiscoveredMCPTool) {
@@ -597,21 +605,7 @@ export class ToolRegistry {
         possibleNames.push(`${tool.getFullyQualifiedPrefix()}${tool.name}`);
       }
     }
-
-    if (possibleNames.some((name) => excludeTools.has(name))) {
-      return false;
-    }
-
-    // Dynamic visibility for Plan Mode tools
-    const currentMode = this.config.getApprovalMode();
-    if (tool.name === ENTER_PLAN_MODE_TOOL_NAME) {
-      return currentMode !== ApprovalMode.PLAN;
-    }
-    if (tool.name === EXIT_PLAN_MODE_TOOL_NAME) {
-      return currentMode === ApprovalMode.PLAN;
-    }
-
-    return true;
+    return !possibleNames.some((name) => excludeTools.has(name));
   }
 
   /**

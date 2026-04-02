@@ -302,6 +302,11 @@ export class BrowserManager {
       POTENTIALLY_NAVIGATING_TOOLS.has(toolName) &&
       !signal?.aborted
     ) {
+      // Don't re-inject if explicitly switching to a page in the background
+      if (toolName === 'select_page' && args['bringToFront'] === false) {
+        return result;
+      }
+
       try {
         if (this.shouldInjectOverlay) {
           await injectAutomationOverlay(this, signal);
@@ -481,7 +486,32 @@ export class BrowserManager {
 
     // Build args for chrome-devtools-mcp
     const browserConfig = this.config.getBrowserAgentConfig();
-    const sessionMode = browserConfig.customConfig.sessionMode ?? 'persistent';
+    let sessionMode = browserConfig.customConfig.sessionMode ?? 'persistent';
+
+    // Detect sandbox environment.
+    // SANDBOX env var is set to 'sandbox-exec' (seatbelt) or the container
+    // name (Docker/Podman/gVisor/LXC) when running inside a sandbox.
+    // CI uses 'sandbox:none' as a metadata label — not a real sandbox.
+    const sandboxType = process.env['SANDBOX'];
+    const isContainerSandbox =
+      !!sandboxType &&
+      sandboxType !== 'sandbox-exec' &&
+      sandboxType !== 'sandbox:none';
+    const isSeatbeltSandbox =
+      sandboxType === 'sandbox-exec' && sessionMode !== 'existing';
+
+    // Seatbelt sandbox: force isolated + headless for filesystem compatibility.
+    // Chrome exists on the host, but persistent profiles may conflict with
+    // seatbelt restrictions. Isolated mode uses tmpdir (always writable).
+    if (isSeatbeltSandbox) {
+      if (sessionMode !== 'isolated') {
+        sessionMode = 'isolated';
+        coreEvents.emitFeedback(
+          'info',
+          '🔒 Sandbox: Using isolated browser session for compatibility.',
+        );
+      }
+    }
 
     const mcpArgs = ['--experimental-vision'];
 
@@ -494,20 +524,55 @@ export class BrowserManager {
       mcpArgs.push('--isolated');
     } else if (sessionMode === 'existing') {
       if (browserConfig.customConfig.browserUrl) {
-        mcpArgs.push('--browserUrl', browserConfig.customConfig.browserUrl);
+        const browserUrl = browserConfig.customConfig.browserUrl;
+        mcpArgs.push('--browserUrl', browserUrl);
+        coreEvents.emitFeedback(
+          'info',
+          `🔒 Connecting to Chrome via ${browserUrl}.`,
+        );
       } else if (browserConfig.customConfig.wsEndpoint) {
-        mcpArgs.push('--wsEndpoint', browserConfig.customConfig.wsEndpoint);
+        const wsEndpoint = browserConfig.customConfig.wsEndpoint;
+        mcpArgs.push('--wsEndpoint', wsEndpoint);
+        coreEvents.emitFeedback(
+          'info',
+          `🔒 Connecting to Chrome WebSocket via ${wsEndpoint}.`,
+        );
+      } else if (isContainerSandbox) {
+        // In container sandboxes, --autoConnect can't discover Chrome on the
+        // host (it uses local pipes/sockets). Use --browser-url with the
+        // resolved IP of host.docker.internal instead of the hostname, because
+        // Chrome's DevTools protocol rejects HTTP requests where the Host
+        // header is not 'localhost' or an IP address.
+        const dns = await import('node:dns');
+        let browserHost = 'host.docker.internal';
+        try {
+          const { address } = await dns.promises.lookup(browserHost);
+          browserHost = address;
+        } catch {
+          // Fallback: use hostname as-is if DNS resolution fails
+          debugLogger.log(
+            `Could not resolve host.docker.internal, using hostname directly`,
+          );
+        }
+        const browserUrl = `http://${browserHost}:9222`;
+        mcpArgs.push('--browser-url', browserUrl);
+        coreEvents.emitFeedback(
+          'info',
+          `🔒 Container sandbox: Connecting to Chrome via ${browserHost}:9222.`,
+        );
       } else {
         mcpArgs.push('--autoConnect');
+        const message =
+          '🔒 Browsing with your signed-in Chrome profile — cookies and saved logins will be visible to the agent.';
+        coreEvents.emitFeedback('info', message);
+        coreEvents.emitConsoleLog('info', message);
       }
-      const message =
-        '🔒 Browsing with your signed-in Chrome profile — cookies and saved logins will be visible to the agent.';
-      coreEvents.emitFeedback('info', message);
-      coreEvents.emitConsoleLog('info', message);
     }
 
-    // Add optional settings from config
-    if (browserConfig.customConfig.headless) {
+    // Add optional settings from config.
+    // Force headless in seatbelt sandbox since Chrome profile/display access
+    // may be restricted, and the user is running in a sandboxed environment.
+    if (browserConfig.customConfig.headless || isSeatbeltSandbox) {
       mcpArgs.push('--headless');
     }
     if (browserConfig.customConfig.profilePath) {
@@ -607,7 +672,6 @@ export class BrowserManager {
           await this.rawMcpClient!.connect(this.mcpTransport!);
           debugLogger.log('MCP client connected to chrome-devtools-mcp');
           await this.discoverTools();
-          this.registerInputBlockerHandler();
           // clear the action counter for each connection
           this.actionCounter = 0;
         })(),
@@ -810,46 +874,5 @@ export class BrowserManager {
     }
     // If none matched, then deny
     return false;
-  }
-
-  /**
-   * Registers a fallback notification handler on the MCP client to
-   * automatically re-inject the input blocker after any server-side
-   * notification (e.g. page navigation, resource updates).
-   *
-   * This covers ALL navigation types (link clicks, form submissions,
-   * history navigation) — not just explicit navigate_page tool calls.
-   */
-  private registerInputBlockerHandler(): void {
-    if (!this.rawMcpClient) {
-      return;
-    }
-
-    if (!this.config.shouldDisableBrowserUserInput()) {
-      return;
-    }
-
-    const existingHandler = this.rawMcpClient.fallbackNotificationHandler;
-    this.rawMcpClient.fallbackNotificationHandler = async (notification: {
-      method: string;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      params?: any;
-    }) => {
-      // Chain with any existing handler first.
-      if (existingHandler) {
-        await existingHandler(notification);
-      }
-
-      // Only re-inject on resource update notifications which indicate
-      // page content has changed (navigation, new page, etc.)
-      if (notification.method === 'notifications/resources/updated') {
-        debugLogger.log('Page content changed, re-injecting input blocker...');
-        void injectInputBlocker(this);
-      }
-    };
-
-    debugLogger.log(
-      'Registered global notification handler for input blocker re-injection',
-    );
   }
 }

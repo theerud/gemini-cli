@@ -14,6 +14,7 @@
  */
 
 import type { LocalAgentDefinition } from '../types.js';
+import { supersedeStaleSnapshots } from './snapshotSuperseder.js';
 import type { Config } from '../../config/config.js';
 import { z } from 'zod';
 import {
@@ -205,16 +206,18 @@ export const BrowserAgentDefinition = (
     // This is undefined here and will be set at invocation time
     toolConfig: undefined,
 
+    // Supersede stale take_snapshot outputs to reclaim context-window tokens.
+    // Each snapshot contains the full accessibility tree; only the most recent
+    // one is meaningful, so prior snapshots are replaced with a placeholder.
+    onBeforeTurn: (chat) => supersedeStaleSnapshots(chat),
+
     promptConfig: {
       query: `Your task is:
 <task>
 \${task}
 </task>
 
-Determine the best way to start:
-- If the relevant page is already open, use list_pages to find it and select_page to switch to it.
-- If you need a fresh start or the page isn't open, use new_page or navigate_page.
-Always call take_snapshot after your first navigation or page selection to see the current state.`,
+First, use <list_pages/> to check if there are any existing pages that can fulfill the user's request. If not, you MUST use <new_page/> to open the relevant URL unless the user explicitly provides different instructions.`,
       systemPrompt: buildBrowserSystemPrompt(
         visionEnabled,
         browserConfig.customConfig.allowedDomains,
