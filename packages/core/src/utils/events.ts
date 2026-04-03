@@ -14,6 +14,7 @@ import type {
   KeychainAvailabilityEvent,
 } from '../telemetry/types.js';
 import { debugLogger } from './debugLogger.js';
+import type { AuthType } from '../core/contentGenerator.js';
 
 /**
  * Defines the severity level for user-facing feedback.
@@ -195,6 +196,7 @@ export enum CoreEvent {
   QuotaChanged = 'quota-changed',
   TelemetryKeychainAvailability = 'telemetry-keychain-availability',
   TelemetryTokenStorageType = 'telemetry-token-storage-type',
+  AuthChanged = 'auth-changed',
 }
 
 /**
@@ -202,6 +204,15 @@ export enum CoreEvent {
  */
 export interface EditorSelectedPayload {
   editor?: EditorType;
+}
+/**
+ * Payload for the 'auth-changed' event.
+ */
+export interface AuthChangedPayload {
+  /**
+   * The new authentication type that was set.
+   */
+  authType: AuthType;
 }
 
 export interface CoreEvents extends ExtensionEvents {
@@ -211,6 +222,7 @@ export interface CoreEvents extends ExtensionEvents {
   [CoreEvent.Output]: [OutputPayload];
   [CoreEvent.MemoryChanged]: [MemoryChangedPayload];
   [CoreEvent.QuotaChanged]: [QuotaChangedPayload];
+  [CoreEvent.AuthChanged]: [AuthChangedPayload];
   [CoreEvent.ExternalEditorClosed]: never[];
   [CoreEvent.McpClientUpdate]: Array<Map<string, McpClient> | never>;
   [CoreEvent.OauthDisplayMessage]: string[];
@@ -401,6 +413,14 @@ export class CoreEventEmitter extends EventEmitter<CoreEvents> {
   ): void {
     const payload: QuotaChangedPayload = { remaining, limit, resetTime };
     this.emit(CoreEvent.QuotaChanged, payload);
+  }
+
+  /**
+   * Notifies subscribers that the authentication type has changed.
+   */
+  emitAuthChanged(authType: AuthType): void {
+    const payload: AuthChangedPayload = { authType };
+    this.emit(CoreEvent.AuthChanged, payload);
   }
 
   /**

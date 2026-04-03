@@ -204,6 +204,7 @@ const mockCoreEvents = vi.hoisted(() => ({
   emitModelChanged: vi.fn(),
   emitConsoleLog: vi.fn(),
   emitQuotaChanged: vi.fn(),
+  emitAuthChanged: vi.fn(),
   on: vi.fn(),
 }));
 

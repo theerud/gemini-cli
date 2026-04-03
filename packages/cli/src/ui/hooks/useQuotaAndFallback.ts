@@ -75,6 +75,9 @@ export function useQuotaAndFallback({
       error,
     ): Promise<FallbackIntent | null> => {
       const contentGeneratorConfig = config.getContentGeneratorConfig();
+      const otherAuthTypes: AuthType[] = Object.values(AuthType).filter(
+        (t) => t !== contentGeneratorConfig?.authType,
+      );
 
       let message: string;
       let isTerminalQuotaError = false;
@@ -185,6 +188,7 @@ export function useQuotaAndFallback({
             isTerminalQuotaError,
             isModelNotFoundError,
             authType: contentGeneratorConfig?.authType,
+            readyAuthTypes: otherAuthTypes,
           });
         },
       );
@@ -238,6 +242,12 @@ export function useQuotaAndFallback({
     (choice: FallbackIntent) => {
       if (!proQuotaRequest) return;
 
+      if (choice === 'switch_auth') {
+        setProQuotaRequest(null);
+        isDialogPending.current = false;
+        onShowAuthSelection();
+        return;
+      }
       const intent: FallbackIntent = choice;
       proQuotaRequest.resolve(intent);
       setProQuotaRequest(null);
@@ -259,7 +269,13 @@ export function useQuotaAndFallback({
         }
       }
     },
-    [proQuotaRequest, historyManager, config, setModelSwitchedFromQuotaError],
+    [
+      proQuotaRequest,
+      historyManager,
+      config,
+      setModelSwitchedFromQuotaError,
+      onShowAuthSelection,
+    ],
   );
 
   const handleValidationChoice = useCallback(

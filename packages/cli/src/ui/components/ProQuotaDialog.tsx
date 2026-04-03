@@ -8,7 +8,7 @@ import type React from 'react';
 import { Box, Text } from 'ink';
 import { RadioButtonSelect } from './shared/RadioButtonSelect.js';
 import { theme } from '../semantic-colors.js';
-import { AuthType } from '@google/gemini-cli-core';
+import { AuthType, type FallbackIntent } from '@google/gemini-cli-core';
 import { isUltraTier } from '../../utils/tierUtils.js';
 
 interface ProQuotaDialogProps {
@@ -18,10 +18,9 @@ interface ProQuotaDialogProps {
   isTerminalQuotaError: boolean;
   isModelNotFoundError?: boolean;
   authType?: AuthType;
+  readyAuthTypes?: AuthType[];
   tierName?: string;
-  onChoice: (
-    choice: 'retry_later' | 'retry_once' | 'retry_always' | 'upgrade',
-  ) => void;
+  onChoice: (choice: FallbackIntent) => void;
 }
 
 export function ProQuotaDialog({
@@ -31,6 +30,7 @@ export function ProQuotaDialog({
   isTerminalQuotaError,
   isModelNotFoundError,
   authType,
+  readyAuthTypes,
   tierName,
   onChoice,
 }: ProQuotaDialogProps): React.JSX.Element {
@@ -73,6 +73,15 @@ export function ProQuotaDialog({
         value: 'retry_later' as const,
         key: 'retry_later',
       },
+      ...(readyAuthTypes?.length
+        ? [
+            {
+              label: 'Switch to different authentication...',
+              value: 'switch_auth' as const,
+              key: 'switch_auth',
+            },
+          ]
+        : []),
     ];
   } else {
     // capacity error
@@ -92,12 +101,19 @@ export function ProQuotaDialog({
         value: 'retry_later' as const,
         key: 'retry_later',
       },
+      ...(readyAuthTypes?.length
+        ? [
+            {
+              label: 'Switch to different authentication...',
+              value: 'switch_auth' as const,
+              key: 'switch_auth',
+            },
+          ]
+        : []),
     ];
   }
 
-  const handleSelect = (
-    choice: 'retry_later' | 'retry_once' | 'retry_always' | 'upgrade',
-  ) => {
+  const handleSelect = (choice: FallbackIntent) => {
     onChoice(choice);
   };
 

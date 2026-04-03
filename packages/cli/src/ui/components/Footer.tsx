@@ -177,7 +177,7 @@ export const Footer: React.FC = () => {
   const settings = useSettings();
   const { vimEnabled, vimMode } = useVimMode();
 
-  const authType = config.getContentGeneratorConfig()?.authType;
+  const authType = uiState.currentAuthType;
   const [email, setEmail] = useState<string | undefined>();
 
   useEffect(() => {

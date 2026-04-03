@@ -24,6 +24,8 @@ import { AuthState } from '../types.js';
 import { validateAuthMethodWithSettings } from './useAuth.js';
 import { relaunchApp } from '../../utils/processUtils.js';
 
+import { AUTH_LABELS } from './authLabels.js';
+
 interface AuthDialogProps {
   config: Config;
   settings: LoadedSettings;
@@ -31,6 +33,8 @@ interface AuthDialogProps {
   authError: string | null;
   onAuthError: (error: string | null) => void;
   setAuthContext: (context: { requiresRestart?: boolean }) => void;
+  isAuthPersistent: boolean;
+  setIsAuthPersistent: (value: boolean) => void;
 }
 
 export function AuthDialog({
@@ -40,11 +44,13 @@ export function AuthDialog({
   authError,
   onAuthError,
   setAuthContext,
+  isAuthPersistent,
+  setIsAuthPersistent,
 }: AuthDialogProps): React.JSX.Element {
   const [exiting, setExiting] = useState(false);
   let items = [
     {
-      label: 'Sign in with Google',
+      label: AUTH_LABELS[AuthType.LOGIN_WITH_GOOGLE],
       value: AuthType.LOGIN_WITH_GOOGLE,
       key: AuthType.LOGIN_WITH_GOOGLE,
     },
@@ -66,12 +72,12 @@ export function AuthDialog({
           ]
         : []),
     {
-      label: 'Use Gemini API Key',
+      label: AUTH_LABELS[AuthType.USE_GEMINI],
       value: AuthType.USE_GEMINI,
       key: AuthType.USE_GEMINI,
     },
     {
-      label: 'Vertex AI',
+      label: AUTH_LABELS[AuthType.USE_VERTEX_AI],
       value: AuthType.USE_VERTEX_AI,
       key: AuthType.USE_VERTEX_AI,
     },
@@ -114,7 +120,11 @@ export function AuthDialog({
   }
 
   const onSelect = useCallback(
-    async (authType: AuthType | undefined, scope: LoadableSettingScope) => {
+    async (
+      authType: AuthType | undefined,
+      scope: LoadableSettingScope,
+      persist: boolean,
+    ) => {
       if (exiting) {
         return;
       }
@@ -126,7 +136,10 @@ export function AuthDialog({
         }
         await clearCachedCredentialFile();
 
-        settings.setValue(scope, 'security.auth.selectedType', authType);
+        if (persist) {
+          settings.setValue(scope, 'security.auth.selectedType', authType);
+        }
+
         if (
           authType === AuthType.LOGIN_WITH_GOOGLE &&
           config.isBrowserLaunchSuppressed()
@@ -143,8 +156,21 @@ export function AuthDialog({
           setAuthState(AuthState.AwaitingApiKeyInput);
           return;
         }
+
+        // For other auth types, refresh immediately if persist is false (otherwise useAuth handles it)
+        if (!persist) {
+          await config.refreshAuth(authType);
+        }
       }
-      setAuthState(AuthState.Unauthenticated);
+      if (authType) {
+        if (persist) {
+          setAuthState(AuthState.Unauthenticated);
+        } else {
+          setAuthState(AuthState.Authenticated);
+        }
+      } else {
+        setAuthState(AuthState.Unauthenticated);
+      }
     },
     [settings, config, setAuthState, exiting, setAuthContext],
   );
@@ -155,12 +181,16 @@ export function AuthDialog({
       onAuthError(error);
     } else {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      onSelect(authMethod, SettingScope.User);
+      onSelect(authMethod, SettingScope.User, isAuthPersistent);
     }
   };
 
   useKeypress(
     (key) => {
+      if (key.sequence === 'p') {
+        setIsAuthPersistent(!isAuthPersistent);
+        return true;
+      }
       if (key.name === 'escape') {
         // Prevent exit if there is an error message.
         // This means they user is not authenticated yet.
@@ -175,7 +205,7 @@ export function AuthDialog({
           return true;
         }
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        onSelect(undefined, SettingScope.User);
+        onSelect(undefined, SettingScope.User, isAuthPersistent);
         return true;
       }
       return false;
@@ -228,6 +258,12 @@ export function AuthDialog({
               onAuthError(null);
             }}
           />
+        </Box>
+        <Box marginTop={1}>
+          <Text color={theme.text.primary}>
+            {isAuthPersistent ? '⦿' : '○'} Save as default (Press &apos;p&apos;
+            to toggle)
+          </Text>
         </Box>
         {authError && (
           <Box marginTop={1}>

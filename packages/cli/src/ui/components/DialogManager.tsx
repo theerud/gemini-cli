@@ -312,6 +312,8 @@ export const DialogManager = ({
           settings={settings}
           setAuthState={uiActions.setAuthState}
           authError={uiState.authError}
+          isAuthPersistent={uiState.isAuthPersistent}
+          setIsAuthPersistent={uiActions.setIsAuthPersistent}
           onAuthError={uiActions.onAuthError}
           setAuthContext={uiActions.setAuthContext}
         />
