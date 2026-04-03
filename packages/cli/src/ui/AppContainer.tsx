@@ -434,6 +434,10 @@ export const AppContainer = (props: AppContainerProps) => {
 
   const [currentModel, setCurrentModel] = useState(config.getModel());
 
+  const [currentAuthType, setCurrentAuthType] = useState<AuthType | undefined>(
+    config.getContentGeneratorConfig()?.authType,
+  );
+  const [isAuthPersistent, setIsAuthPersistent] = useState(true);
   const [userTier, setUserTier] = useState<UserTierId | undefined>(undefined);
   const [quotaStats, setQuotaStats] = useState<QuotaStats | undefined>(() => {
     const remaining = config.getQuotaRemaining();
@@ -568,6 +572,10 @@ export const AppContainer = (props: AppContainerProps) => {
       setCurrentModel(config.getModel());
     };
 
+    const handleAuthChanged = (payload: { authType: AuthType }) => {
+      setCurrentAuthType(payload.authType);
+    };
+
     const handleQuotaChanged = (payload: {
       remaining: number | undefined;
       limit: number | undefined;
@@ -582,9 +590,11 @@ export const AppContainer = (props: AppContainerProps) => {
 
     coreEvents.on(CoreEvent.ModelChanged, handleModelChanged);
     coreEvents.on(CoreEvent.QuotaChanged, handleQuotaChanged);
+    coreEvents.on(CoreEvent.AuthChanged, handleAuthChanged);
     return () => {
       coreEvents.off(CoreEvent.ModelChanged, handleModelChanged);
       coreEvents.off(CoreEvent.QuotaChanged, handleQuotaChanged);
+      coreEvents.off(CoreEvent.AuthChanged, handleAuthChanged);
     };
   }, [config]);
 
@@ -817,7 +827,11 @@ export const AppContainer = (props: AppContainerProps) => {
 
   // Create handleAuthSelect wrapper for backward compatibility
   const handleAuthSelect = useCallback(
-    async (authType: AuthType | undefined, scope: LoadableSettingScope) => {
+    async (
+      authType: AuthType | undefined,
+      scope: LoadableSettingScope,
+      persist: boolean = true,
+    ) => {
       if (authType) {
         const previousAuthType =
           config.getContentGeneratorConfig()?.authType ?? 'unknown';
@@ -827,7 +841,9 @@ export const AppContainer = (props: AppContainerProps) => {
           setAuthContext({});
         }
         await clearCachedCredentialFile();
-        settings.setValue(scope, 'security.auth.selectedType', authType);
+        if (persist) {
+          settings.setValue(scope, 'security.auth.selectedType', authType);
+        }
 
         try {
           config.setRemoteAdminSettings(undefined);
@@ -883,6 +899,13 @@ Logging in with Google... Restarting Gemini CLI to continue.
 
         await saveApiKey(apiKey);
         await reloadApiKey();
+        if (isAuthPersistent) {
+          settings.setValue(
+            SettingScope.User,
+            'security.auth.selectedType',
+            AuthType.USE_GEMINI,
+          );
+        }
         await config.refreshAuth(AuthType.USE_GEMINI);
         setAuthState(AuthState.Authenticated);
       } catch (e) {
@@ -891,7 +914,14 @@ Logging in with Google... Restarting Gemini CLI to continue.
         );
       }
     },
-    [setAuthState, onAuthError, reloadApiKey, config],
+    [
+      setAuthState,
+      onAuthError,
+      reloadApiKey,
+      config,
+      isAuthPersistent,
+      settings,
+    ],
   );
 
   const handleApiKeyCancel = useCallback(() => {
@@ -2433,6 +2463,8 @@ Logging in with Google... Restarting Gemini CLI to continue.
       isConfigInitialized,
       authError,
       accountSuspensionInfo,
+      currentAuthType,
+      isAuthPersistent,
       isAuthDialogOpen,
       isAwaitingApiKeyInput: authState === AuthState.AwaitingApiKeyInput,
       apiKeyDefaultValue,
@@ -2648,6 +2680,8 @@ Logging in with Google... Restarting Gemini CLI to continue.
       adminSettingsChanged,
       newAgents,
       showIsExpandableHint,
+      currentAuthType,
+      isAuthPersistent,
     ],
   );
 
@@ -2696,6 +2730,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       addMessage,
       popAllMessages,
       handleApiKeySubmit,
+      setIsAuthPersistent,
       handleApiKeyCancel,
       setBannerVisible,
       setShortcutsHelpVisible,

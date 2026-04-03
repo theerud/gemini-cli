@@ -74,6 +74,8 @@ describe('AuthDialog', () => {
     authError: string | null;
     onAuthError: (error: string | null) => void;
     setAuthContext: (context: { requiresRestart?: boolean }) => void;
+    isAuthPersistent: boolean;
+    setIsAuthPersistent: (value: boolean) => void;
   };
   beforeEach(() => {
     vi.resetAllMocks();
@@ -98,6 +100,8 @@ describe('AuthDialog', () => {
       authError: null,
       onAuthError: vi.fn(),
       setAuthContext: vi.fn(),
+      isAuthPersistent: true,
+      setIsAuthPersistent: vi.fn(),
     };
   });
 

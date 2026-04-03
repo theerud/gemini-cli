@@ -41,6 +41,7 @@ export interface ProQuotaDialogRequest {
   isTerminalQuotaError: boolean;
   isModelNotFoundError?: boolean;
   authType?: AuthType;
+  readyAuthTypes?: AuthType[];
   resolve: (intent: FallbackIntent) => void;
 }
 
@@ -99,6 +100,8 @@ export interface UIState {
   isConfigInitialized: boolean;
   authError: string | null;
   accountSuspensionInfo: AccountSuspensionInfo | null;
+  currentAuthType: AuthType | undefined;
+  isAuthPersistent: boolean;
   isAuthDialogOpen: boolean;
   isAwaitingApiKeyInput: boolean;
   apiKeyDefaultValue?: string;

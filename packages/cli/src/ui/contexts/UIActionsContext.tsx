@@ -10,6 +10,7 @@ import { type IdeIntegrationNudgeResult } from '../IdeIntegrationNudge.js';
 import { type FolderTrustChoice } from '../components/FolderTrustDialog.js';
 import {
   type AuthType,
+  type FallbackIntent,
   type EditorType,
   type AgentDefinition,
 } from '@google/gemini-cli-core';
@@ -30,6 +31,7 @@ export interface UIActions {
   handleAuthSelect: (
     authType: AuthType | undefined,
     scope: LoadableSettingScope,
+    persist?: boolean,
   ) => void;
   setAuthState: (state: AuthState) => void;
   onAuthError: (error: string | null) => void;
@@ -59,9 +61,7 @@ export interface UIActions {
   refreshStatic: () => void;
   handleFinalSubmit: (value: string) => Promise<void>;
   handleClearScreen: () => void;
-  handleProQuotaChoice: (
-    choice: 'retry_later' | 'retry_once' | 'retry_always' | 'upgrade',
-  ) => void;
+  handleProQuotaChoice: (choice: FallbackIntent) => void;
   handleValidationChoice: (choice: 'verify' | 'change_auth' | 'cancel') => void;
   handleOverageMenuChoice: (choice: OverageMenuIntent) => void;
   handleEmptyWalletChoice: (choice: EmptyWalletIntent) => void;
@@ -73,6 +73,7 @@ export interface UIActions {
   addMessage: (message: string) => void;
   popAllMessages: () => string | undefined;
   handleApiKeySubmit: (apiKey: string) => Promise<void>;
+  setIsAuthPersistent: (value: boolean) => void;
   handleApiKeyCancel: () => void;
   setBannerVisible: (visible: boolean) => void;
   setShortcutsHelpVisible: (visible: boolean) => void;

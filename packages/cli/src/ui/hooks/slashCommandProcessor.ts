@@ -244,6 +244,7 @@ export const useSlashCommandProcessor = (
         removeComponent: () => setCustomDialog(null),
         toggleBackgroundTasks: actions.toggleBackgroundTasks,
         toggleShortcutsHelp: actions.toggleShortcutsHelp,
+        openAuthDialog: actions.openAuthDialog,
       },
       session: {
         stats: session.stats,

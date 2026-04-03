@@ -92,6 +92,7 @@ export interface CommandContext {
     removeComponent: () => void;
     toggleBackgroundTasks: () => void;
     toggleShortcutsHelp: () => void;
+    openAuthDialog: () => void;
   };
   // Session-specific data
   session: {

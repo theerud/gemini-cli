@@ -1611,6 +1611,8 @@ export class Config implements McpContext, AgentLoopContext {
     if ((await this.getProModelNoAccess()) && isAutoModel(this.model)) {
       this.setModel(PREVIEW_GEMINI_FLASH_MODEL);
     }
+
+    coreEvents.emitAuthChanged(authMethod);
   }
 
   async getExperimentsAsync(): Promise<Experiments | undefined> {
