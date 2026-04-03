@@ -743,6 +743,24 @@ const SETTINGS_SCHEMA = {
           'Use an alternate screen buffer for the UI, preserving shell history.',
         showInDialog: true,
       },
+      renderProcess: {
+        type: 'boolean',
+        label: 'Render Process',
+        category: 'UI',
+        requiresRestart: true,
+        default: true,
+        description: 'Enable Ink render process for the UI.',
+        showInDialog: true,
+      },
+      terminalBuffer: {
+        type: 'boolean',
+        label: 'Terminal Buffer',
+        category: 'UI',
+        requiresRestart: true,
+        default: true,
+        description: 'Use the new terminal buffer architecture for rendering.',
+        showInDialog: true,
+      },
       useBackgroundColor: {
         type: 'boolean',
         label: 'Use Background Color',
@@ -1202,7 +1220,8 @@ const SETTINGS_SCHEMA = {
             category: 'Advanced',
             requiresRestart: true,
             default: undefined as string | undefined,
-            description: 'Model override for the visual agent.',
+            description:
+              "Model for the visual agent's analyze_screenshot tool. When set, enables the tool.",
             showInDialog: false,
           },
           allowedDomains: {
@@ -2176,6 +2195,16 @@ const SETTINGS_SCHEMA = {
         default: false,
         description:
           'Replace the built-in save_memory tool with a memory manager subagent that supports adding, removing, de-duplicating, and organizing memories.',
+        showInDialog: true,
+      },
+      generalistProfile: {
+        type: 'boolean',
+        label: 'Use the generalist profile to manage agent contexts.',
+        category: 'Experimental',
+        requiresRestart: true,
+        default: false,
+        description:
+          'Suitable for general coding and software development tasks.',
         showInDialog: true,
       },
       contextManagement: {
