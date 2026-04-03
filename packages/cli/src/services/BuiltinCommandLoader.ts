@@ -53,6 +53,7 @@ import { restoreCommand } from '../ui/commands/restoreCommand.js';
 import { resumeCommand } from '../ui/commands/resumeCommand.js';
 import { statsCommand } from '../ui/commands/statsCommand.js';
 import { themeCommand } from '../ui/commands/themeCommand.js';
+import { switchAuthCommand } from '../ui/commands/switchAuthCommand.js';
 import { toolsCommand } from '../ui/commands/toolsCommand.js';
 import { skillsCommand } from '../ui/commands/skillsCommand.js';
 import { settingsCommand } from '../ui/commands/settingsCommand.js';
@@ -196,6 +197,7 @@ export class BuiltinCommandLoader implements ICommandLoader {
       },
       statsCommand,
       themeCommand,
+      switchAuthCommand,
       toolsCommand,
       ...(this.config?.isSkillsSupportEnabled()
         ? this.config?.getSkillManager()?.isAdminEnabled() === false

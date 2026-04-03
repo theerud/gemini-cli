@@ -7,7 +7,9 @@ exports[`AuthDialog > Snapshots > renders correctly with auth error 1`] = `
 │                                                                                                  │
 │   How would you like to authenticate for this project?                                           │
 │                                                                                                  │
-│   (selected) Sign in with Google(not selected) Use Gemini API Key(not selected) Vertex AI        │
+│   (selected) Google Account(not selected) Gemini API Key(not selected) Vertex AI                 │
+│                                                                                                  │
+│   ⦿ Save as default (Press 'p' to toggle)                                                        │
 │                                                                                                  │
 │   Something went wrong                                                                           │
 │                                                                                                  │
@@ -28,7 +30,9 @@ exports[`AuthDialog > Snapshots > renders correctly with default props 1`] = `
 │                                                                                                  │
 │   How would you like to authenticate for this project?                                           │
 │                                                                                                  │
-│   (selected) Sign in with Google(not selected) Use Gemini API Key(not selected) Vertex AI        │
+│   (selected) Google Account(not selected) Gemini API Key(not selected) Vertex AI                 │
+│                                                                                                  │
+│   ⦿ Save as default (Press 'p' to toggle)                                                        │
 │                                                                                                  │
 │   (Use Enter to select)                                                                          │
 │                                                                                                  │
@@ -47,7 +51,9 @@ exports[`AuthDialog > Snapshots > renders correctly with enforced auth type 1`] 
 │                                                                                                  │
 │   How would you like to authenticate for this project?                                           │
 │                                                                                                  │
-│   (selected) Use Gemini API Key                                                                  │
+│   (selected) Gemini API Key                                                                      │
+│                                                                                                  │
+│   ⦿ Save as default (Press 'p' to toggle)                                                        │
 │                                                                                                  │
 │   (Use Enter to select)                                                                          │
 │                                                                                                  │
