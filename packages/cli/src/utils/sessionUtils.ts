@@ -607,7 +607,7 @@ export function convertSessionToHistoryFormats(
         tools: msg.toolCalls.map((tool) => ({
           callId: tool.id,
           name: tool.displayName || tool.name,
-          toolName: tool.name,
+          args: tool.args,
           description: tool.description || '',
           renderOutputAsMarkdown: tool.renderOutputAsMarkdown ?? true,
           status:
