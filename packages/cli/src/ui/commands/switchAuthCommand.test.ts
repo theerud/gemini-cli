@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { switchAuthCommand } from './switchAuthCommand.js';
 import { AuthType } from '@google/gemini-cli-core';
+import { SettingScope } from '../../config/settings.js';
 import { MessageType } from '../types.js';
 import { type CommandContext } from './types.js';
 vi.mock('@google/gemini-cli-core', async (importOriginal) => {
@@ -51,7 +52,7 @@ describe('switchAuthCommand', () => {
     );
     expect(result).toBeUndefined();
     expect(
-      mockContext.services.agentContext.config.refreshAuth,
+      mockContext.services.agentContext!.config.refreshAuth,
     ).toHaveBeenCalledWith(AuthType.LOGIN_WITH_GOOGLE);
     expect(mockContext.services.settings.setValue).not.toHaveBeenCalled();
     expect(mockContext.ui.addItem).toHaveBeenCalledWith(
@@ -69,7 +70,7 @@ describe('switchAuthCommand', () => {
     );
     expect(result).toBeUndefined();
     expect(
-      mockContext.services.agentContext.config.refreshAuth,
+      mockContext.services.agentContext!.config.refreshAuth,
     ).toHaveBeenCalledWith(AuthType.LOGIN_WITH_GOOGLE);
     expect(mockContext.services.settings.setValue).toHaveBeenCalledWith(
       SettingScope.User,
@@ -88,7 +89,7 @@ describe('switchAuthCommand', () => {
     const result = await switchAuthCommand.action!(mockContext, 'unknown-type');
     expect(result).toBeUndefined();
     expect(
-      mockContext.services.agentContext.config.refreshAuth,
+      mockContext.services.agentContext!.config.refreshAuth,
     ).not.toHaveBeenCalled();
     expect(mockContext.ui.addItem).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -106,7 +107,9 @@ describe('switchAuthCommand', () => {
       () =>
         ({
           getCachedGoogleAccount: vi.fn().mockReturnValue(null),
-        }) as unknown as typeof import('@google/gemini-cli-core').UserAccountManager,
+        }) as unknown as InstanceType<
+          typeof import('@google/gemini-cli-core').UserAccountManager
+        >,
     );
 
     const result = await switchAuthCommand.action!(
@@ -118,7 +121,7 @@ describe('switchAuthCommand', () => {
       dialog: 'auth',
     });
     expect(
-      mockContext.services.agentContext.config.refreshAuth,
+      mockContext.services.agentContext!.config.refreshAuth,
     ).not.toHaveBeenCalled();
     expect(mockContext.ui.addItem).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -128,9 +131,9 @@ describe('switchAuthCommand', () => {
   });
 
   it('handles refreshAuth error', async () => {
-    mockContext.services.agentContext.config.refreshAuth.mockRejectedValueOnce(
-      new Error('Network error'),
-    );
+    vi.mocked(
+      mockContext.services.agentContext!.config.refreshAuth,
+    ).mockRejectedValueOnce(new Error('Network error'));
     const result = await switchAuthCommand.action!(
       mockContext,
       AuthType.LOGIN_WITH_GOOGLE,
