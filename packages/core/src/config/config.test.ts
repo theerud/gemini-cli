@@ -750,6 +750,45 @@ describe('Server Config (config.ts)', () => {
       ).not.toHaveBeenCalledWith();
     });
 
+    it('should strip thoughts when switching between different Gemini API keys', async () => {
+      const config = new Config(baseParams);
+
+      vi.mocked(createContentGeneratorConfig).mockImplementation(
+        async (_: Config, authType: AuthType | undefined, apiKey?: string) =>
+          ({
+            authType,
+            apiKey,
+          }) as Partial<ContentGeneratorConfig> as ContentGeneratorConfig,
+      );
+
+      await config.refreshAuth(AuthType.USE_GEMINI, 'key1');
+      await config.refreshAuth(AuthType.USE_GEMINI, 'key2');
+
+      const loopContext: AgentLoopContext = config;
+      expect(
+        loopContext.geminiClient.stripThoughtsFromHistory,
+      ).toHaveBeenCalled();
+    });
+
+    it('should strip thoughts when switching from OAuth to GenAI', async () => {
+      const config = new Config(baseParams);
+
+      vi.mocked(createContentGeneratorConfig).mockImplementation(
+        async (_: Config, authType: AuthType | undefined) =>
+          ({
+            authType,
+          }) as Partial<ContentGeneratorConfig> as ContentGeneratorConfig,
+      );
+
+      await config.refreshAuth(AuthType.LOGIN_WITH_GOOGLE);
+      await config.refreshAuth(AuthType.USE_GEMINI);
+
+      const loopContext: AgentLoopContext = config;
+      expect(
+        loopContext.geminiClient.stripThoughtsFromHistory,
+      ).toHaveBeenCalled();
+    });
+
     it('should switch to flash model if user has no Pro access and model is auto', async () => {
       vi.mocked(getExperiments).mockResolvedValue({
         experimentIds: [],
