@@ -30,7 +30,6 @@ import {
   EDIT_PARAM_OLD_STRING,
   EDIT_PARAM_NEW_STRING,
   EDIT_PARAM_ALLOW_MULTIPLE,
-  EDIT_PARAM_LINE_EDITS,
   EDIT_PARAM_EDITS,
   EDIT_PARAM_OP,
   EDIT_PARAM_POS,
@@ -207,28 +206,6 @@ A good instruction should concisely answer:
   };
 
   if (enableHashline) {
-    properties[EDIT_PARAM_LINE_EDITS] = {
-      type: 'array',
-      description:
-        'Optional: Line-based edits using Hashline identifiers (e.g., ["42#WS3"]). If provided, the tool will prioritize these and skip string-based matching. Edits are applied as an atomic transaction.',
-      items: {
-        type: 'object',
-        properties: {
-          id: {
-            type: 'string',
-            description:
-              'The Hashline ID of the line to edit (e.g., "42#WS3").',
-          },
-          new_content: {
-            type: 'string',
-            description:
-              "The new content for this line. Note: Setting this to an empty string replaces the line with a blank line. To delete the line entirely, use the 'edits' parameter with 'op': 'replace' and an empty 'lines' array.",
-          },
-        },
-        required: ['id', 'new_content'],
-      },
-    };
-
     properties[EDIT_PARAM_EDITS] = {
       type: 'array',
       description:
