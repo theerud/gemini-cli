@@ -305,12 +305,9 @@ async function calculateHashlineReplacement(
   context: ReplacementContext,
 ): Promise<ReplacementResult | null> {
   const { currentContent, params } = context;
-  const { line_edits, edits } = params;
+  const { edits } = params;
 
-  if (
-    (!line_edits || line_edits.length === 0) &&
-    (!edits || edits.length === 0)
-  ) {
+  if (!edits || edits.length === 0) {
     return null;
   }
 
@@ -360,20 +357,6 @@ async function calculateHashlineReplacement(
 
   const pendingEdits: InternalEdit[] = [];
 
-  if (line_edits) {
-    line_edits.forEach((edit, originalIdx) => {
-      const pos = validateAnchor(edit.id);
-      if (pos !== null) {
-        pendingEdits.push({
-          op: 'replace',
-          pos,
-          lines: [edit.new_content],
-          originalIdx,
-        });
-      }
-    });
-  }
-
   if (edits) {
     edits.forEach((edit, i) => {
       const pos = validateAnchor(edit.pos);
@@ -387,7 +370,7 @@ async function calculateHashlineReplacement(
           pos,
           end,
           lines: edit.lines,
-          originalIdx: (line_edits?.length ?? 0) + i,
+          originalIdx: i,
         });
       }
     });
@@ -471,7 +454,7 @@ async function calculateHashlineReplacement(
 
   return {
     newContent: restoreTrailingNewline(currentContent, modifiedCode),
-    occurrences: (line_edits?.length ?? 0) + (edits?.length ?? 0),
+    occurrences: edits?.length ?? 0,
     finalOldString: '', // Not used for hashline
     finalNewString: '', // Not used for hashline
     strategy: 'hashline',
@@ -486,10 +469,7 @@ export async function calculateReplacement(
   const { currentContent, params } = context;
 
   // Try hashline replacement first if parameters are provided
-  if (
-    (params.line_edits && params.line_edits.length > 0) ||
-    (params.edits && params.edits.length > 0)
-  ) {
+  if (params.edits && params.edits.length > 0) {
     try {
       const hashlineResult = await calculateHashlineReplacement(
         config,
@@ -575,7 +555,7 @@ export function getErrorReplaceResult(
     undefined;
 
   if (finalOldString === 'HASH_MISMATCH') {
-    let raw = `Failed to edit, one or more Hashline identifiers (LINE#HASH) in 'line_edits' or 'edits' do not match the current state of ${params.file_path}. The file may have been modified. Use ${READ_FILE_TOOL_NAME} with 'include_hashes: true' to get the latest identifiers.`;
+    let raw = `Failed to edit, one or more Hashline identifiers (LINE#HASH) in 'edits' do not match the current state of ${params.file_path}. The file may have been modified. Use ${READ_FILE_TOOL_NAME} with 'include_hashes: true' to get the latest identifiers.`;
 
     if (hashlineError instanceof HashlineMismatchError) {
       raw = formatMismatchDiagnostic(hashlineError.mismatches, currentLines);
@@ -598,7 +578,7 @@ export function getErrorReplaceResult(
       raw: `Failed to edit, Expected 1 occurrence but found ${occurrences} for old_string in file: ${params.file_path}. If you intended to replace multiple occurrences, set 'allow_multiple' to true.`,
       type: ToolErrorType.EDIT_EXPECTED_OCCURRENCE_MISMATCH,
     };
-  } else if (finalOldString === finalNewString && !params.line_edits) {
+  } else if (finalOldString === finalNewString) {
     error = {
       display: `No changes to apply. The old_string and new_string are identical.`,
       raw: `No changes to apply. The old_string and new_string are identical in file: ${params.file_path}`,
@@ -647,20 +627,6 @@ export interface EditToolParams {
    * Initially proposed content.
    */
   ai_proposed_content?: string;
-
-  /**
-   * Optional: Line-based edits using Hashline identifiers.
-   */
-  line_edits?: Array<{
-    /**
-     * The Hashline ID of the line to edit (e.g., "42#WS3").
-     */
-    id: string;
-    /**
-     * The new content for this line.
-     */
-    new_content: string;
-  }>;
 
   /**
    * Optional: Advanced line-based edits using Hashline identifiers.
@@ -920,10 +886,8 @@ class EditToolInvocation
     }
 
     const oldStr = params.old_string ?? '';
-    const hasLineEdits = !!(params.line_edits && params.line_edits.length > 0);
     const hasEdits = !!(params.edits && params.edits.length > 0);
-    const isNewFile =
-      oldStr === '' && !fileExists && !hasLineEdits && !hasEdits;
+    const isNewFile = oldStr === '' && !fileExists && !hasEdits;
 
     if (isNewFile) {
       return {
@@ -967,7 +931,7 @@ class EditToolInvocation
       };
     }
 
-    if (oldStr === '' && !hasLineEdits && !hasEdits) {
+    if (oldStr === '' && !hasEdits) {
       return {
         currentContent,
         newContent: currentContent,
@@ -1108,10 +1072,6 @@ class EditToolInvocation
       this.config.getTargetDir(),
     );
 
-    if (this.params.line_edits && this.params.line_edits.length > 0) {
-      const count = this.params.line_edits.length;
-      return `Edit ${shortenPath(relativePath)}: Applied ${count} line-based edit${count === 1 ? '' : 's'}`;
-    }
     if (this.params.edits && this.params.edits.length > 0) {
       const count = this.params.edits.length;
       return `Edit ${shortenPath(relativePath)}: Applied ${count} advanced hashline edit${count === 1 ? '' : 's'}`;
@@ -1468,7 +1428,6 @@ export class EditTool
           new_string: modifiedProposedContent,
           modified_by_user: true,
           // Clear hashline-based edits to ensure the manual edit takes precedence.
-          line_edits: undefined,
           edits: undefined,
         };
       },

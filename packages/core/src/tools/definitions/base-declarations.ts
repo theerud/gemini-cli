@@ -68,7 +68,6 @@ export const EDIT_PARAM_INSTRUCTION = 'instruction';
 export const EDIT_PARAM_OLD_STRING = 'old_string';
 export const EDIT_PARAM_NEW_STRING = 'new_string';
 export const EDIT_PARAM_ALLOW_MULTIPLE = 'allow_multiple';
-export const EDIT_PARAM_LINE_EDITS = 'line_edits';
 export const EDIT_PARAM_EDITS = 'edits';
 export const EDIT_PARAM_OP = 'op';
 export const EDIT_PARAM_POS = 'pos';
