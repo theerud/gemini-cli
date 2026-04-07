@@ -1512,20 +1512,10 @@ export class Config implements McpContext, AgentLoopContext {
     baseUrl?: string,
     customHeaders?: Record<string, string>,
   ) {
+    const oldAuthType = this.contentGeneratorConfig?.authType;
+    const oldApiKey = this.contentGeneratorConfig?.apiKey;
+
     // Reset availability service when switching auth
-    this.modelAvailabilityService.reset();
-
-    // Vertex and Genai have incompatible encryption and sending history with
-    // thoughtSignature from Genai to Vertex will fail, we need to strip them
-    if (
-      this.contentGeneratorConfig?.authType === AuthType.USE_GEMINI &&
-      authMethod !== AuthType.USE_GEMINI
-    ) {
-      // Restore the conversation history to the new client
-      this._geminiClient.stripThoughtsFromHistory();
-    }
-
-    // Reset availability status when switching auth (e.g. from limited key to OAuth)
     this.modelAvailabilityService.reset();
 
     // Clear stale authType to ensure getGemini31LaunchedSync doesn't return stale results
@@ -1541,6 +1531,23 @@ export class Config implements McpContext, AgentLoopContext {
       baseUrl,
       customHeaders,
     );
+
+    if (this.contentGeneratorConfig) {
+      const isVertexToGenAI =
+        oldAuthType === AuthType.USE_VERTEX_AI &&
+        authMethod === AuthType.USE_GEMINI;
+
+      const authTypeChanged = oldAuthType !== authMethod;
+      const apiKeyChanged = oldApiKey !== newContentGeneratorConfig.apiKey;
+
+      // Incompatible encryption or session context between different auth sessions
+      // causes 400 errors (Corrupted thought signature). Always strip thoughts
+      // from history when auth state changes, except for Vertex -> GenAI.
+      if ((authTypeChanged && !isVertexToGenAI) || apiKeyChanged) {
+        this._geminiClient.stripThoughtsFromHistory();
+      }
+    }
+
     this.contentGenerator = await createContentGenerator(
       newContentGeneratorConfig,
       this,
