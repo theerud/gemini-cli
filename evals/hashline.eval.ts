@@ -26,10 +26,10 @@ export function item() { return "value"; }
 describe('Hashline Protocol Evaluation', () => {
   /**
    * CASE 1: Hashline Efficiency
-   * Measures token usage when using line_edits vs traditional matching.
+   * Measures token usage when using hashline vs traditional matching.
    */
   evalTest('USUALLY_PASSES', {
-    name: 'Hashline Efficiency - should use precise line_edits',
+    name: 'Hashline Efficiency - should use precise edits array',
     params: {
       settings: {
         experimental: { enableHashline: true },
@@ -49,10 +49,10 @@ describe('Hashline Protocol Evaluation', () => {
       expect(replaceCall, 'Model should have called replace').toBeTruthy();
       const args = JSON.parse(replaceCall!.toolRequest.args);
       expect(
-        args.line_edits,
-        'Model should have used line_edits parameter',
+        args.edits,
+        'Model should have used edits parameter',
       ).toBeDefined();
-      expect(args.line_edits.length).toBe(1);
+      expect(args.edits.length).toBe(1);
       const content = rig.readFile('src/efficiency.ts');
       expect(content).toContain('SUCCESS');
     },
