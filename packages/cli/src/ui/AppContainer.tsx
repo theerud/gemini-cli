@@ -61,7 +61,6 @@ import {
   getErrorMessage,
   getAllGeminiMdFilenames,
   AuthType,
-  clearCachedCredentialFile,
   type ResumedSessionData,
   recordExitFail,
   ShellExecutionService,
@@ -825,7 +824,6 @@ export const AppContainer = (props: AppContainerProps) => {
         } else {
           setAuthContext({});
         }
-        await clearCachedCredentialFile();
         if (persist) {
           settings.setValue(scope, 'security.auth.selectedType', authType);
         }
@@ -1012,6 +1010,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       },
       toggleShortcutsHelp: () => setShortcutsHelpVisible((visible) => !visible),
       setText: stableSetText,
+      setIsAuthPersistent,
     }),
     [
       setAuthState,
@@ -1031,6 +1030,7 @@ Logging in with Google... Restarting Gemini CLI to continue.
       toggleDebugProfiler,
       setShortcutsHelpVisible,
       stableSetText,
+      setIsAuthPersistent,
     ],
   );
 

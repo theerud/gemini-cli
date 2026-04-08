@@ -93,6 +93,7 @@ export interface CommandContext {
     toggleBackgroundTasks: () => void;
     toggleShortcutsHelp: () => void;
     openAuthDialog: () => void;
+    setIsAuthPersistent: (value: boolean) => void;
   };
   // Session-specific data
   session: {

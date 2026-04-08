@@ -14,11 +14,7 @@ import {
   type LoadableSettingScope,
   type LoadedSettings,
 } from '../../config/settings.js';
-import {
-  AuthType,
-  clearCachedCredentialFile,
-  type Config,
-} from '@google/gemini-cli-core';
+import { AuthType, type Config } from '@google/gemini-cli-core';
 import { useKeypress } from '../hooks/useKeypress.js';
 import { AuthState } from '../types.js';
 import { validateAuthMethodWithSettings } from './useAuth.js';
@@ -134,7 +130,6 @@ export function AuthDialog({
         } else {
           setAuthContext({});
         }
-        await clearCachedCredentialFile();
 
         if (persist) {
           settings.setValue(scope, 'security.auth.selectedType', authType);

@@ -1595,7 +1595,7 @@ describe('Settings Loading and Merging', () => {
         const settings1 = loadSettings(MOCK_WORKSPACE_DIR);
         const settings2 = loadSettings(MOCK_WORKSPACE_DIR);
 
-        expect(mockedRead).toHaveBeenCalledTimes(5); // system, systemDefaults, user, workspace, and potentially an env file
+        expect(mockedRead).toHaveBeenCalledTimes(12); // system, systemDefaults, user, workspace, and env files
         expect(settings1).toBe(settings2);
       });
 
@@ -1611,7 +1611,7 @@ describe('Settings Loading and Merging', () => {
         const settings1 = loadSettings(workspace1);
         const settings2 = loadSettings(workspace2);
 
-        expect(mockedRead).toHaveBeenCalledTimes(10); // 5 for each workspace
+        expect(mockedRead).toHaveBeenCalledTimes(24); // 12 for each workspace
         expect(settings1).not.toBe(settings2);
       });
 
@@ -1622,12 +1622,12 @@ describe('Settings Loading and Merging', () => {
         (mockFsExistsSync as Mock).mockReturnValue(true);
 
         const settings1 = loadSettings(MOCK_WORKSPACE_DIR);
-        expect(mockedRead).toHaveBeenCalledTimes(5);
+        expect(mockedRead).toHaveBeenCalledTimes(12);
 
         saveSettings(settings1.user);
 
         const settings2 = loadSettings(MOCK_WORKSPACE_DIR);
-        expect(mockedRead).toHaveBeenCalledTimes(10); // Should have re-read from disk
+        expect(mockedRead).toHaveBeenCalledTimes(24); // Should have re-read from disk
         expect(settings1).not.toBe(settings2);
       });
 
@@ -1643,7 +1643,7 @@ describe('Settings Loading and Merging', () => {
         const settings1W1 = loadSettings(workspace1);
         const settings1W2 = loadSettings(workspace2);
 
-        expect(mockedRead).toHaveBeenCalledTimes(10);
+        expect(mockedRead).toHaveBeenCalledTimes(24);
 
         // Save settings for workspace 1
         saveSettings(settings1W1.workspace);
@@ -1651,8 +1651,8 @@ describe('Settings Loading and Merging', () => {
         const settings2W1 = loadSettings(workspace1);
         const settings2W2 = loadSettings(workspace2);
 
-        // Both workspace caches should have been cleared and re-read from disk (+10 reads)
-        expect(mockedRead).toHaveBeenCalledTimes(20);
+        // Both workspace caches should have been cleared and re-read from disk (+24 reads)
+        expect(mockedRead).toHaveBeenCalledTimes(48);
         expect(settings1W1).not.toBe(settings2W1);
         expect(settings1W2).not.toBe(settings2W2);
       });

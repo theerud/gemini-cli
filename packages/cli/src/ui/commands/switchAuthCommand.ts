@@ -100,6 +100,7 @@ export const switchAuthCommand: SlashCommand = {
           type: MessageType.WARNING,
           text: `${AUTH_LABELS[authType] || authType} is not configured. Opening setup dialog...`,
         });
+        context.ui.setIsAuthPersistent(persist);
         return {
           type: 'dialog',
           dialog: 'auth',
