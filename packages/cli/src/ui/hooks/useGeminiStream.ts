@@ -732,7 +732,6 @@ export const useGeminiStream = (
   ] = useState<{
     onComplete: (result: { userSelection: 'disable' | 'keep' }) => void;
   } | null>(null);
-  const lastOriginalPromptRef = useRef<string>('');
 
   const activePtyId =
     activeShellPtyId ?? activeBackgroundExecutionId ?? undefined;
@@ -1046,7 +1045,6 @@ export const useGeminiStream = (
         );
         return { queryToSend: null, shouldProceed: false };
       }
-
       return { queryToSend: localQueryToSendToGemini, shouldProceed: true };
     },
     [
@@ -1618,11 +1616,6 @@ export const useGeminiStream = (
             prompt_id = config.getSessionId() + '########' + getPromptCount();
           }
           return promptIdContext.run(prompt_id, async () => {
-            // Capture original prompt before injection for Plan Mode and telemetry
-            if (!options?.isContinuation && typeof query === 'string') {
-              lastOriginalPromptRef.current = query;
-            }
-
             const { queryToSend, shouldProceed } = await prepareQueryForGemini(
               query,
               userMessageTimestamp,
