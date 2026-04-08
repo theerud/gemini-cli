@@ -300,6 +300,13 @@ export const useGeminiStream = (
           (tc) => !pushedToolCallIdsRef.current.has(tc.request.callId),
         );
         if (toolsToPush.length > 0) {
+          const newPushed = new Set(pushedToolCallIdsRef.current);
+          toolsToPush.forEach((tc) => {
+            newPushed.add(tc.request.callId);
+            pushedToolCallIdsRef.current.add(tc.request.callId);
+          });
+          setPushedToolCallIds(newPushed);
+
           const isCompactModeEnabled =
             settings.merged.ui?.compactToolOutput === true;
           const firstToolToPush = toolsToPush[0];
