@@ -40,6 +40,7 @@ describe('switchAuthCommand', () => {
         addItem: vi.fn(),
         removeComponent: vi.fn(),
         openAuthDialog: vi.fn(),
+        setIsAuthPersistent: vi.fn(),
       },
     } as unknown as CommandContext;
     vi.clearAllMocks();

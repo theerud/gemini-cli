@@ -66,6 +66,7 @@ import { runExitCleanup } from '../../utils/cleanup.js';
 
 interface SlashCommandProcessorActions {
   openAuthDialog: () => void;
+  setIsAuthPersistent: (value: boolean) => void;
   openThemeDialog: () => void;
   openEditorDialog: () => void;
   openPrivacyNotice: () => void;
@@ -245,6 +246,7 @@ export const useSlashCommandProcessor = (
         toggleBackgroundTasks: actions.toggleBackgroundTasks,
         toggleShortcutsHelp: actions.toggleShortcutsHelp,
         openAuthDialog: actions.openAuthDialog,
+        setIsAuthPersistent: actions.setIsAuthPersistent,
       },
       session: {
         stats: session.stats,
