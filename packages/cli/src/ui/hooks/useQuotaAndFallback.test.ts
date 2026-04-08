@@ -157,7 +157,7 @@ describe('useQuotaAndFallback', () => {
 
       expect(result.current.proQuotaRequest).not.toBeNull();
       expect(result.current.proQuotaRequest?.message).not.toContain(
-        '/auth to switch to API key.',
+        '/switch-auth or /auth to switch to API key.',
       );
     });
 
