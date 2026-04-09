@@ -447,7 +447,7 @@ export const AppContainer = (props: AppContainerProps) => {
 
   const [isConfigInitialized, setConfigInitialized] = useState(false);
 
-  const logger = useLogger(config.storage);
+  const logger = useLogger(config);
   const { inputHistory, addInput, initializeFromLogger } =
     useInputHistoryStore();
 

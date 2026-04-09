@@ -346,7 +346,7 @@ their corresponding top-level category object in your `settings.json` file.
 
 - **`ui.terminalBuffer`** (boolean):
   - **Description:** Use the new terminal buffer architecture for rendering.
-  - **Default:** `true`
+  - **Default:** `false`
   - **Requires restart:** Yes
 
 - **`ui.useBackgroundColor`** (boolean):
@@ -1578,7 +1578,10 @@ their corresponding top-level category object in your `settings.json` file.
 #### `advanced`
 
 - **`advanced.autoConfigureMemory`** (boolean):
-  - **Description:** Automatically configure Node.js memory limits
+  - **Description:** Automatically configure Node.js memory limits. Note:
+    Because memory is allocated during the initial process boot, this setting is
+    only read from the global user settings file and ignores workspace-level
+    overrides.
   - **Default:** `true`
   - **Requires restart:** Yes
 
