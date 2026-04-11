@@ -22,6 +22,7 @@ import {
   type ToolResult,
   type ToolResultDisplay,
   type PolicyUpdateOptions,
+  type ExecuteOptions,
 } from './tools.js';
 import { buildFilePathArgsPattern } from '../policy/utils.js';
 import type { MessageBus } from '../confirmation-bus/message-bus.js';
@@ -1091,7 +1092,7 @@ class EditToolInvocation
    * @param params Parameters for the edit operation
    * @returns Result of the edit operation
    */
-  async execute(signal: AbortSignal): Promise<ToolResult> {
+  async execute({ abortSignal: signal }: ExecuteOptions): Promise<ToolResult> {
     const validationError = this.config.validatePathAccess(this.resolvedPath);
     if (validationError) {
       return {

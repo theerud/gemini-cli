@@ -3358,6 +3358,7 @@ export class Config implements McpContext, AgentLoopContext {
 
   setShellExecutionConfig(config: ShellExecutionConfig): void {
     this.shellExecutionConfig = {
+      ...this.shellExecutionConfig,
       terminalWidth:
         config.terminalWidth ?? this.shellExecutionConfig.terminalWidth,
       terminalHeight:

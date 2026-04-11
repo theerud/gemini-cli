@@ -60,7 +60,9 @@ describe('ReadFileTool - Hashline Integration', () => {
     };
 
     const invocation = tool.build(params);
-    const result = await invocation.execute(new AbortController().signal);
+    const result = await invocation.execute({
+      abortSignal: new AbortController().signal,
+    });
 
     expect(result.llmContent).toMatch(/1#[A-Z2-9]{3}:line 1/);
     expect(result.llmContent).toMatch(/2#[A-Z2-9]{3}:line 2/);

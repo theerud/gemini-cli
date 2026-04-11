@@ -23,6 +23,7 @@ import {
   Kind,
   type ToolResult,
   type ToolInvocation,
+  type ExecuteOptions,
 } from '../../tools/tools.js';
 import { Environment } from '@google/genai';
 import type { MessageBus } from '../../confirmation-bus/message-bus.js';
@@ -85,7 +86,7 @@ class AnalyzeScreenshotInvocation extends BaseToolInvocation<
     return `Visual analysis: "${instruction}"`;
   }
 
-  async execute(signal: AbortSignal): Promise<ToolResult> {
+  async execute({ abortSignal: signal }: ExecuteOptions): Promise<ToolResult> {
     try {
       const instruction = String(this.params['instruction'] ?? '');
 
