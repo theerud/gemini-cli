@@ -152,11 +152,15 @@ export function getReplaceDeclaration(
 ): FunctionDeclaration {
   const description =
     descriptionOverride ||
-    `Replaces text within a file. By default, the tool expects to find and replace exactly ONE occurrence of \`${EDIT_PARAM_OLD_STRING}\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. This tool requires providing significant context around the change to ensure precise targeting. Always use the ${READ_FILE_TOOL_NAME} tool to examine the file's current content before attempting a text replacement.
+    `Replaces text within a file. ${
+      enableHashline
+        ? `You MUST prefer using the \`${EDIT_PARAM_EDITS}\` parameter with Hashline identifiers for precise, atomic, and single-turn batched edits over the \`${EDIT_PARAM_OLD_STRING}\` fallback. `
+        : ''
+    }By default, the tool expects to find and replace exactly ONE occurrence of \`${EDIT_PARAM_OLD_STRING}\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. This tool requires providing significant context around the change to ensure precise targeting. Always use the ${READ_FILE_TOOL_NAME} tool to examine the file's current content before attempting a text replacement.
 
       The user has the ability to modify the \`${EDIT_PARAM_NEW_STRING}\` content. If modified, this will be stated in the response.
 
-      Expectation for required parameters:
+      Expectation for string-based parameters (only required if NOT using the \`${EDIT_PARAM_EDITS}\` array):
       1. \`${EDIT_PARAM_OLD_STRING}\` MUST be the exact literal text to replace (including all whitespace, indentation, newlines, and surrounding code etc.).
       2. \`${EDIT_PARAM_NEW_STRING}\` MUST be the exact literal text to replace \`${EDIT_PARAM_OLD_STRING}\` with (also including all whitespace, indentation, newlines, and surrounding code etc.). Ensure the resulting code is correct and idiomatic and that \`${EDIT_PARAM_OLD_STRING}\` and \`${EDIT_PARAM_NEW_STRING}\` are different.
       3. \`${EDIT_PARAM_INSTRUCTION}\` is the detailed instruction of what needs to be changed. It is important to Make it specific and detailed so developers or large language models can understand what needs to be changed and perform the changes on their own if necessary. 
