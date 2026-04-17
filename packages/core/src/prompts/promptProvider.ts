@@ -210,6 +210,7 @@ export class PromptProvider {
             topicUpdateNarration:
               context.config.isTopicUpdateNarrationEnabled(),
             memoryManagerEnabled: context.config.isMemoryManagerEnabled(),
+            hasHashline: context.config.getEnableHashline(),
           }),
         ),
         sandbox: this.withSection('sandbox', () => ({
