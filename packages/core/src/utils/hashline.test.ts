@@ -122,6 +122,24 @@ function b() {
       expect(lines[0]).toMatch(/^1#[A-Z2-9]{3}:line1$/);
       expect(lines[1]).toMatch(/^2#[A-Z2-9]{3}:line2$/);
     });
+
+    it('should support absolute numbering with an offset', () => {
+      const content = 'line10\nline11';
+      const annotated = annotateContent(content, 10);
+      const lines = annotated.split('\n');
+      expect(lines[0]).toMatch(/^10#[A-Z2-9]{3}:line10$/);
+      expect(lines[1]).toMatch(/^11#[A-Z2-9]{3}:line11$/);
+    });
+
+    it('should maintain hash stability when using pre-calculated hashes', () => {
+      const fullContent = 'const a = 1;\n\n}';
+      const fullHashes = generateFileHashes(fullContent);
+      const snippet = '}';
+      // Without pre-calculated hashes, '}' at start of snippet would hash differently
+      // than '}' at line 3 of fullContent (which is anchored to line 1).
+      const annotated = annotateContent(snippet, 3, [fullHashes[2]]);
+      expect(annotated).toBe(`3#${fullHashes[2]}:}`);
+    });
   });
 
   describe('HashlineMismatchError', () => {
