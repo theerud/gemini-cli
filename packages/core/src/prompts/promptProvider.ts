@@ -227,6 +227,7 @@ export class PromptProvider {
               context.config.getEnableShellOutputEfficiency(),
             interactiveShellEnabled: context.config.isInteractiveShellEnabled(),
             topicUpdateNarration: isTopicUpdateNarrationEnabled,
+            hasHashline: context.config.getEnableHashline(),
             memoryV2Enabled: context.config.isMemoryV2Enabled(),
             userProjectMemoryPath: context.config.isMemoryV2Enabled()
               ? getProjectMemoryIndexFilePath(context.config.storage)
