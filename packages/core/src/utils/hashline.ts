@@ -199,12 +199,21 @@ export function generateFileHashes(content: string): string[] {
 
 /**
  * Annotates file content with Hashline identifiers.
+ *
+ * @param content The raw content to annotate.
+ * @param offset The 1-based line number of the first line (defaults to 1).
+ * @param hashes Optional pre-calculated hashes for each line.
+ * @returns The annotated content.
  */
-export function annotateContent(content: string): string {
+export function annotateContent(
+  content: string,
+  offset: number = 1,
+  hashes?: string[],
+): string {
   const lines = content.split(/\r?\n/);
-  const hashes = generateFileHashes(content);
+  const finalHashes = hashes ?? generateFileHashes(content);
 
   return lines
-    .map((line, i) => formatHashline(i + 1, hashes[i], line))
+    .map((line, i) => formatHashline(offset + i, finalHashes[i], line))
     .join('\n');
 }

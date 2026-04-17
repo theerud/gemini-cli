@@ -434,7 +434,7 @@ export interface ProcessedFileReadResult {
   linesShown?: [number, number]; // For text files [startLine, endLine] (1-based for display)
 }
 
-import { annotateContent } from './hashline.js';
+import { annotateContent, generateFileHashes } from './hashline.js';
 
 /**
  * Reads and processes a single file, handling text, images, and PDFs.
@@ -555,7 +555,13 @@ export async function processSingleFileContent(
         let llmContent = formattedLines.join('\n');
 
         if (includeHashes) {
-          llmContent = annotateContent(llmContent);
+          const fullHashes = generateFileHashes(content);
+          const slicedHashes = fullHashes.slice(actualStart, sliceEnd);
+          llmContent = annotateContent(
+            llmContent,
+            actualStart + 1,
+            slicedHashes,
+          );
         }
 
         // By default, return nothing to streamline the common case of a successful read_file.
