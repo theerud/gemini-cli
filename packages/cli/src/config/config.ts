@@ -991,9 +991,12 @@ export async function loadCliConfig(
     experimentalJitContext: settings.experimental?.jitContext,
     enableHashline: settings.experimental?.enableHashline,
     experimentalMemoryManager: settings.experimental?.memoryManager,
+    experimentalAutoMemory: settings.experimental?.autoMemory,
     contextManagement,
     modelSteering: settings.experimental?.modelSteering,
-    topicUpdateNarration: settings.experimental?.topicUpdateNarration,
+    topicUpdateNarration:
+      settings.general?.topicUpdateNarration ??
+      settings.experimental?.topicUpdateNarration,
     noBrowser: !!process.env['NO_BROWSER'],
     summarizeToolOutput: settings.model?.summarizeToolOutput,
     ideMode,
