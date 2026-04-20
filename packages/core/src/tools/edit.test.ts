@@ -1058,7 +1058,9 @@ function doIt() {
       };
 
       const invocation = tool.build(params);
-      const result = await invocation.execute(new AbortController().signal);
+      const result = await invocation.execute({
+        abortSignal: new AbortController().signal,
+      });
 
       // It should NOT be ATTEMPT_TO_CREATE_EXISTING_FILE.
       expect(result.error?.type).toBe(ToolErrorType.EDIT_NO_OCCURRENCE_FOUND);
