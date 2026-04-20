@@ -29,6 +29,8 @@ describe('Hashline Protocol Evaluation', () => {
    * Measures token usage when using hashline vs traditional matching.
    */
   evalTest('USUALLY_PASSES', {
+    suiteName: 'default',
+    suiteType: 'behavioral',
     name: 'Hashline Efficiency - should use precise edits array',
     params: {
       settings: {
@@ -63,6 +65,8 @@ describe('Hashline Protocol Evaluation', () => {
    * Verifies the model can use the new 'edits' parameter for ranges.
    */
   evalTest('USUALLY_PASSES', {
+    suiteName: 'default',
+    suiteType: 'behavioral',
     name: 'Hashline v2 - should use range-based edits',
     params: {
       settings: {
@@ -103,6 +107,8 @@ describe('Hashline Protocol Evaluation', () => {
    * Tests targeting a specific instance among many identical ones.
    */
   evalTest('USUALLY_PASSES', {
+    suiteName: 'default',
+    suiteType: 'behavioral',
     name: 'Hashline Robustness - should target correct repetitive line',
     params: {
       settings: {
@@ -129,6 +135,8 @@ describe('Hashline Protocol Evaluation', () => {
    * Measures behavior on the same repetitive task WITHOUT hashline.
    */
   evalTest('USUALLY_PASSES', {
+    suiteName: 'default',
+    suiteType: 'behavioral',
     name: 'Hashline Baseline - behavior without hashline',
     params: {
       settings: {
