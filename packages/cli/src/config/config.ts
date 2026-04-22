@@ -617,7 +617,7 @@ export async function loadCliConfig(
     .getExtensions()
     .find((ext) => ext.isActive && ext.plan?.directory)?.plan;
 
-  const experimentalJitContext = settings.experimental.jitContext;
+  const experimentalJitContext = settings.experimental.jitContext ?? true;
 
   let extensionRegistryURI =
     process.env['GEMINI_CLI_EXTENSION_REGISTRY_URI'] ??
@@ -991,9 +991,9 @@ export async function loadCliConfig(
     enableEventDrivenScheduler: true,
     skillsSupport: settings.skills?.enabled ?? true,
     disabledSkills: settings.skills?.disabled,
-    experimentalJitContext: settings.experimental?.jitContext,
+    experimentalJitContext,
     enableHashline: settings.experimental?.enableHashline,
-    experimentalMemoryManager: settings.experimental?.memoryManager,
+    experimentalMemoryV2: settings.experimental?.memoryV2,
     experimentalAutoMemory: settings.experimental?.autoMemory,
     contextManagement,
     modelSteering: settings.experimental?.modelSteering,
@@ -1033,6 +1033,7 @@ export async function loadCliConfig(
     recordResponses: argv.recordResponses,
     retryFetchErrors: settings.general?.retryFetchErrors,
     billing: settings.billing,
+    vertexAiRouting: settings.billing?.vertexAi,
     maxAttempts: settings.general?.maxAttempts,
     ptyInfo: ptyInfo?.name,
     disableLLMCorrection: settings.tools?.disableLLMCorrection,
