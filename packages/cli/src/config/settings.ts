@@ -499,7 +499,7 @@ export class LoadedSettings {
   }
 }
 
-function findEnvFiles(workspaceDir: string): string[] {
+function findEnvFiles(workspaceDir: string, isTrusted: boolean): string[] {
   const envFiles: string[] = [];
   const homeGeminiEnvPath = path.join(homedir(), GEMINI_DIR, '.env');
   if (fs.existsSync(homeGeminiEnvPath)) {
@@ -513,13 +513,15 @@ function findEnvFiles(workspaceDir: string): string[] {
   let currentDir = path.resolve(workspaceDir);
   while (true) {
     // prefer gemini-specific .env under GEMINI_DIR
-    const geminiEnvPath = path.join(currentDir, GEMINI_DIR, '.env');
-    if (fs.existsSync(geminiEnvPath) && !envFiles.includes(geminiEnvPath)) {
-      envFiles.push(geminiEnvPath);
-    }
-    const envPath = path.join(currentDir, '.env');
-    if (fs.existsSync(envPath) && !envFiles.includes(envPath)) {
-      envFiles.push(envPath);
+    if (isTrusted) {
+      const geminiEnvPath = path.join(currentDir, GEMINI_DIR, '.env');
+      if (fs.existsSync(geminiEnvPath) && !envFiles.includes(geminiEnvPath)) {
+        envFiles.push(geminiEnvPath);
+      }
+      const envPath = path.join(currentDir, '.env');
+      if (fs.existsSync(envPath) && !envFiles.includes(envPath)) {
+        envFiles.push(envPath);
+      }
     }
     const parentDir = path.dirname(currentDir);
     if (parentDir === currentDir || !parentDir) {
@@ -563,10 +565,10 @@ export function loadEnvironment(
   workspaceDir: string,
   isWorkspaceTrustedFn = isWorkspaceTrusted,
 ): void {
-  const envFiles = findEnvFiles(workspaceDir);
   const trustResult = isWorkspaceTrustedFn(settings, workspaceDir);
-
   const isTrusted = trustResult.isTrusted ?? false;
+  const envFiles = findEnvFiles(workspaceDir, isTrusted);
+
   // Check settings OR check process.argv directly since this might be called
   // before arguments are fully parsed. This is a best-effort sniffing approach
   // that happens early in the CLI lifecycle. It is designed to detect the
@@ -601,8 +603,8 @@ export function loadEnvironment(
       for (const key in parsedEnv) {
         if (Object.hasOwn(parsedEnv, key)) {
           let value = parsedEnv[key];
-          // If the workspace is untrusted but we are sandboxed, only allow whitelisted variables.
-          if (!isTrusted && isSandboxed) {
+          // If the workspace is untrusted, only allow whitelisted variables.
+          if (!isTrusted) {
             if (!AUTH_ENV_VAR_WHITELIST.includes(key)) {
               continue;
             }
