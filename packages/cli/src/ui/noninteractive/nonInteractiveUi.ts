@@ -45,5 +45,6 @@ export function createNonInteractiveUI(): CommandContext['ui'] {
     toggleShortcutsHelp: () => {},
     openAuthDialog: () => {},
     setIsAuthPersistent: () => {},
+    toggleVoiceMode: () => {},
   };
 }
