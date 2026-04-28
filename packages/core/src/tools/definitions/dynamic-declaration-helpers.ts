@@ -230,7 +230,7 @@ A good instruction should concisely answer:
           [EDIT_PARAM_END]: {
             type: 'string',
             description:
-              "Optional: The Hashline ID of the end anchor line for range replacements. Only used with op: 'replace'.",
+              "The Hashline ID of the end anchor line for range replacements. Required for 'replace' operations (set to same as 'pos' for single-line replacement).",
           },
           [EDIT_PARAM_LINES]: {
             type: 'array',
@@ -257,9 +257,9 @@ A good instruction should concisely answer:
 
       **Hashline Guidance:**
       1. **Operations**:
-         - \`replace\`: Replaces a single line (provide \`pos\`) or a range (provide \`pos\` and \`end\`). For a range, either replace only the body or replace the whole range. Do not split range boundaries.
+         - \`replace\`: Replaces lines from \`pos\` to \`end\`. Both \`pos\` and \`end\` are REQUIRED. For a single line, set \`end\` to the same as \`pos\`. For a range, replace the entire body. Do not split range boundaries.
          - \`append\` / \`prepend\`: Inserts lines after or before the \`pos\` anchor.
-      2. **Deletion**: To delete lines entirely, use \`replace\` with an empty \`lines\` array (e.g., \`{ "op": "replace", "pos": "START#ID", "end": "END#ID", "lines": [] }\`).
+      2. **Deletion**: To delete lines entirely, use \`replace\` with an empty \`lines\` array (e.g., \`{ "op": "replace", "pos": "START#HS", "end": "END#HS", "lines": [] }\`).
       3. **Batching**: In one \`edits\` array, batch all edits for one file. After any successful edit, re-read before editing that file again to prevent staleness.
       4. **Safety & Delimiters**:
          - When your replacement \`lines\` end with a closing delimiter (\`}\`, \`*/\`, \`)\`, \`]\`), verify \`end\` includes the original line carrying that delimiter. If \`end\` stops one line too early, the original delimiter survives and your content adds a second copy.

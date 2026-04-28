@@ -1054,7 +1054,9 @@ function doIt() {
         instruction: 'test',
         old_string: '',
         new_string: '',
-        edits: [{ op: 'replace', pos: '1#ANY', lines: ['new content'] }],
+        edits: [
+          { op: 'replace', pos: '1#AN', end: '1#AN', lines: ['new content'] },
+        ],
       };
 
       const invocation = tool.build(params);
@@ -1076,7 +1078,7 @@ function doIt() {
         old_string: '',
         new_string: '',
         edits: [
-          { op: 'replace', pos: '1#ABC', lines: ['l1'] },
+          { op: 'replace', pos: '1#AB', end: '1#AB', lines: ['l1'] },
           { op: 'append', pos: '2#DEF', lines: ['l2'] },
         ],
       };
