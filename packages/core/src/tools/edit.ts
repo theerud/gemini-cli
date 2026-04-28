@@ -361,6 +361,13 @@ async function calculateHashlineReplacement(
   if (edits) {
     edits.forEach((edit, i) => {
       const pos = validateAnchor(edit.pos);
+      if (edit.op === 'replace' && !edit.end) {
+        mismatches.push({
+          line: pos ?? 0,
+          expected: 'MISSING_END_ANCHOR',
+          actual: 'REPLACE_OP_REQUIRES_END',
+        });
+      }
       let end: number | undefined;
       if (edit.end) {
         end = validateAnchor(edit.end) ?? undefined;
@@ -633,27 +640,39 @@ export interface EditToolParams {
    * Optional: Advanced line-based edits using Hashline identifiers.
    * Supports range replacement, append, and prepend.
    */
-  edits?: Array<{
-    /**
-     * The operation to perform:
-     * - 'replace': replace lines from 'pos' to 'end' (or just 'pos' if 'end' is omitted)
-     * - 'append': insert lines after 'pos'
-     * - 'prepend': insert lines before 'pos'
-     */
-    op: 'replace' | 'append' | 'prepend';
-    /**
-     * The Hashline ID of the anchor line (e.g., "42#WS3").
-     */
-    pos: string;
-    /**
-     * Optional: The Hashline ID of the end anchor line for range replacements.
-     */
-    end?: string;
-    /**
-     * The new content lines for this operation.
-     */
-    lines: string[];
-  }>;
+  edits?: Array<
+    | {
+        op: 'replace';
+        /**
+         * The Hashline ID of the anchor line (e.g., "42#WS").
+         */
+        pos: string;
+        /**
+         * The Hashline ID of the end anchor line for range replacements.
+         * Required for 'replace' operations. Set to same as 'pos' for single-line replacement.
+         */
+        end: string;
+        /**
+         * The new content lines for this operation.
+         */
+        lines: string[];
+      }
+    | {
+        op: 'append' | 'prepend';
+        /**
+         * The Hashline ID of the anchor line (e.g., "42#WS").
+         */
+        pos: string;
+        /**
+         * The Hashline ID of the end anchor line. Not used for append/prepend.
+         */
+        end?: string;
+        /**
+         * The new content lines for this operation.
+         */
+        lines: string[];
+      }
+  >;
 }
 
 export function isEditToolParams(args: unknown): args is EditToolParams {

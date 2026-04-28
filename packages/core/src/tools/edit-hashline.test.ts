@@ -115,7 +115,7 @@ describe('Edit Tool - Hashline Integration', () => {
       file_path: filePath,
       instruction: 'edit',
       edits: [
-        { op: 'replace', pos: '2#XX', lines: ['invalid'] },
+        { op: 'replace', pos: '2#XX', end: '2#XX', lines: ['invalid'] },
         { op: 'append', pos: '4#OU', lines: ['invalid'] },
       ],
     };
@@ -130,7 +130,7 @@ describe('Edit Tool - Hashline Integration', () => {
     expect(result.occurrences).toBe(0);
     expect(result.finalOldString).toBe('HASH_MISMATCH');
     expect(result.hashlineError).toBeInstanceOf(HashlineMismatchError);
-    expect(result.hashlineError?.mismatches).toHaveLength(2);
+    expect(result.hashlineError?.mismatches).toHaveLength(3);
   });
 
   it('should apply safety heuristic for "replace" correctly preserving braces', async () => {
@@ -144,6 +144,7 @@ describe('Edit Tool - Hashline Integration', () => {
         {
           op: 'replace',
           pos: ids[1], // line 2
+          end: ids[1],
           lines: ['line 2 modified', 'line 3'], // Duplicates line 3
         },
       ],
