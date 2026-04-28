@@ -124,7 +124,7 @@ export function getReadFileDeclaration(
   if (enableHashline) {
     properties[READ_FILE_PARAM_INCLUDE_HASHES] = {
       description:
-        'Optional: If true, returned content will include Hashline identifiers (INDEX#HASH:) for each line. These identifiers are used as anchors for precise editing.',
+        'Optional: If true, returned content will include Hashline identifiers (INDEX#HS:) for each line. These identifiers are used as anchors for precise editing.',
       type: 'boolean',
     };
   }
@@ -133,7 +133,7 @@ export function getReadFileDeclaration(
     name: READ_FILE_TOOL_NAME,
     description: enableHashline
       ? description +
-        `\n\nSet \`${READ_FILE_PARAM_INCLUDE_HASHES}: true\` to obtain line identifiers (LINE#HASH) for use with the precision \`${EDIT_PARAM_EDITS}\` mode in the \`${EDIT_TOOL_NAME}\` tool.`
+        `\n\nSet \`${READ_FILE_PARAM_INCLUDE_HASHES}: true\` to obtain line identifiers (LINE#HS) for use with the precision \`${EDIT_PARAM_EDITS}\` mode in the \`${EDIT_TOOL_NAME}\` tool.`
       : description,
     parametersJsonSchema: {
       type: 'object',
@@ -213,7 +213,7 @@ A good instruction should concisely answer:
     properties[EDIT_PARAM_EDITS] = {
       type: 'array',
       description:
-        'Optional: Advanced line-based edits using Hashline identifiers (e.g., "42#WS3"). If provided, the tool will prioritize these and skip string-based matching. Edits are applied as an atomic transaction.',
+        'Optional: Advanced line-based edits using Hashline identifiers (e.g., "42#WS"). If provided, the tool will prioritize these and skip string-based matching. Edits are applied as an atomic transaction.',
       items: {
         type: 'object',
         properties: {
@@ -225,7 +225,7 @@ A good instruction should concisely answer:
           },
           [EDIT_PARAM_POS]: {
             type: 'string',
-            description: 'The Hashline ID of the anchor line (e.g., "42#WS3").',
+            description: 'The Hashline ID of the anchor line (e.g., "42#WS").',
           },
           [EDIT_PARAM_END]: {
             type: 'string',
