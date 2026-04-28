@@ -16,10 +16,10 @@ import {
 
 describe('hashline utility', () => {
   describe('generateHash', () => {
-    it('should generate a 3-character hash', () => {
+    it('should generate a 2-character hash', () => {
       const hash = generateHash('export function hello() {', 1);
-      expect(hash).toHaveLength(3);
-      expect(hash).toMatch(/^[A-Z2-9]{3}$/);
+      expect(hash).toHaveLength(2);
+      expect(hash).toMatch(/^[A-Z2-9]{2}$/);
     });
 
     it('should be whitespace-neutral', () => {
@@ -32,8 +32,8 @@ describe('hashline utility', () => {
       {
         desc: 'different contextHash',
         inputs: [
-          { content: '}', index: 10, context: 'AAA' },
-          { content: '}', index: 20, context: 'BBB' },
+          { content: '}', index: 10, context: 'AA' },
+          { content: '}', index: 20, context: 'BB' },
         ] as Array<{ content: string; index: number; context?: string }>,
         expectedEqual: false,
       },
@@ -99,18 +99,18 @@ function b() {
 
   describe('parseHashline', () => {
     it('should correctly parse a formatted line', () => {
-      const line = '42#WS3:  export function run() {';
+      const line = '42#WS:  export function run() {';
       const parsed = parseHashline(line);
       expect(parsed).toEqual({
         index: 42,
-        hash: 'WS3',
+        hash: 'WS',
         content: '  export function run() {',
       });
     });
 
     it('should return null for invalid format', () => {
       expect(parseHashline('invalid line')).toBeNull();
-      expect(parseHashline('42#W:content')).toBeNull(); // Hash too short
+      expect(parseHashline('42#W:content')).toBeNull(); // Hash too short (now 2)
     });
   });
 
@@ -119,16 +119,16 @@ function b() {
       const content = 'line1\nline2';
       const annotated = annotateContent(content);
       const lines = annotated.split('\n');
-      expect(lines[0]).toMatch(/^1#[A-Z2-9]{3}:line1$/);
-      expect(lines[1]).toMatch(/^2#[A-Z2-9]{3}:line2$/);
+      expect(lines[0]).toMatch(/^1#[A-Z2-9]{2}:line1$/);
+      expect(lines[1]).toMatch(/^2#[A-Z2-9]{2}:line2$/);
     });
 
     it('should support absolute numbering with an offset', () => {
       const content = 'line10\nline11';
       const annotated = annotateContent(content, 10);
       const lines = annotated.split('\n');
-      expect(lines[0]).toMatch(/^10#[A-Z2-9]{3}:line10$/);
-      expect(lines[1]).toMatch(/^11#[A-Z2-9]{3}:line11$/);
+      expect(lines[0]).toMatch(/^10#[A-Z2-9]{2}:line10$/);
+      expect(lines[1]).toMatch(/^11#[A-Z2-9]{2}:line11$/);
     });
 
     it('should maintain hash stability when using pre-calculated hashes', () => {
@@ -144,7 +144,7 @@ function b() {
 
   describe('HashlineMismatchError', () => {
     it('should hold mismatch details', () => {
-      const mismatches = [{ line: 5, expected: 'ABC', actual: 'DEF' }];
+      const mismatches = [{ line: 5, expected: 'AB', actual: 'DE' }];
       const error = new HashlineMismatchError(mismatches);
       expect(error.mismatches).toEqual(mismatches);
       expect(error.message).toBe('Hashline mismatch detected');
@@ -158,7 +158,7 @@ function b() {
       );
       const lines = content.split('\n');
       const hashes = generateFileHashes(content);
-      const mismatches = [{ line: 5, expected: 'WRONG', actual: hashes[4] }];
+      const mismatches = [{ line: 5, expected: 'WR', actual: hashes[4] }];
 
       const diagnostic = formatMismatchDiagnostic(mismatches, lines);
 

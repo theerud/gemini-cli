@@ -54,9 +54,7 @@ describe('Edit Tool - Hashline Integration', () => {
     });
 
     expect(result.strategy).toBe('hashline');
-    expect(result.newContent).toBe(
-      'line 1\nline 2-3 modified\nline 4\nline 5',
-    );
+    expect(result.newContent).toBe('line 1\nline 2-3 modified\nline 4\nline 5');
     expect(result.occurrences).toBe(1);
   });
 
@@ -117,8 +115,8 @@ describe('Edit Tool - Hashline Integration', () => {
       file_path: filePath,
       instruction: 'edit',
       edits: [
-        { op: 'replace', pos: '2#XXX', lines: ['invalid'] },
-        { op: 'append', pos: '4#OUT', lines: ['invalid'] },
+        { op: 'replace', pos: '2#XX', lines: ['invalid'] },
+        { op: 'append', pos: '4#OU', lines: ['invalid'] },
       ],
     };
 
