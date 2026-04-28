@@ -64,8 +64,8 @@ describe('ReadFileTool - Hashline Integration', () => {
       abortSignal: new AbortController().signal,
     });
 
-    expect(result.llmContent).toMatch(/1#[A-Z2-9]{3}:line 1/);
-    expect(result.llmContent).toMatch(/2#[A-Z2-9]{3}:line 2/);
+    expect(result.llmContent).toMatch(/1#[A-Z2-9]{2}:line 1/);
+    expect(result.llmContent).toMatch(/2#[A-Z2-9]{2}:line 2/);
 
     existsSpy.mockRestore();
     statSpy.mockRestore();

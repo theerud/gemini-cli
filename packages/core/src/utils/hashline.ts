@@ -19,7 +19,7 @@ const ALPHABET_BASE = HASH_ALPHABET.length;
  * @param content The raw content of the line.
  * @param index The 1-based index of the line.
  * @param contextHash A stable hash from a previous line to anchor symbolic lines (braces, empty lines).
- * @returns A 3-character hash string.
+ * @returns A 2-character hash string.
  */
 export function generateHash(
   content: string,
@@ -46,12 +46,12 @@ export function generateHash(
 
   const hashBuffer = crypto.createHash('sha256').update(seed).digest();
 
-  // Use first 3 bytes to generate a 3-character ID.
-  // UInt24 max is 16,777,215. 32^3 is 32,768.
-  // We have plenty of entropy for 3 characters.
-  let val = hashBuffer.readUIntBE(0, 3);
+  // Use first 2 bytes to generate a 2-character ID.
+  // UInt16 max is 65,535. 32^2 is 1,024.
+  // We have plenty of entropy for 2 characters.
+  let val = hashBuffer.readUIntBE(0, 2);
   let result = '';
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 2; i++) {
     result += HASH_ALPHABET[val % ALPHABET_BASE];
     val = Math.floor(val / ALPHABET_BASE);
   }
@@ -78,7 +78,7 @@ export function parseHashline(line: string): {
   hash: string;
   content: string;
 } | null {
-  const match = line.match(/^(\d+)#([A-Z2-9]{3}):(.*)$/);
+  const match = line.match(/^(\d+)#([A-Z2-9]{2}):(.*)$/);
   if (!match) return null;
 
   return {
