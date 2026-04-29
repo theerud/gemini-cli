@@ -219,9 +219,9 @@ A good instruction should concisely answer:
         properties: {
           [EDIT_PARAM_OP]: {
             type: 'string',
-            enum: ['replace', 'append', 'prepend'],
+            enum: ['replace', 'delete', 'append', 'prepend'],
             description:
-              "The operation to perform: 'replace' (replaces lines from 'pos' to 'end'), 'append' (inserts lines after 'pos'), or 'prepend' (inserts lines before 'pos').",
+              "The operation to perform: 'replace' (replaces lines from 'pos' to 'end'), 'delete' (removes lines from 'pos' to 'end'), 'append' (inserts lines after 'pos'), or 'prepend' (inserts lines before 'pos').",
           },
           [EDIT_PARAM_POS]: {
             type: 'string',
@@ -230,16 +230,16 @@ A good instruction should concisely answer:
           [EDIT_PARAM_END]: {
             type: 'string',
             description:
-              "The Hashline ID of the end anchor line for range replacements. Required for 'replace' operations (set to same as 'pos' for single-line replacement).",
+              "The Hashline ID of the end anchor line for range replacements or deletions. Required for 'replace' and 'delete' operations (set to same as 'pos' for single-line replacement/deletion).",
           },
           [EDIT_PARAM_LINES]: {
             type: 'array',
             items: { type: 'string' },
             description:
-              "The new content lines for this operation. To delete a range of lines, set 'op' to 'replace' and provide an empty 'lines' array.",
+              "The new content lines for this operation. Required for 'replace', 'append', and 'prepend'. Do not provide for 'delete'.",
           },
         },
-        required: [EDIT_PARAM_OP, EDIT_PARAM_POS, EDIT_PARAM_LINES],
+        required: [EDIT_PARAM_OP, EDIT_PARAM_POS],
       },
     };
   }
@@ -257,9 +257,10 @@ A good instruction should concisely answer:
 
       **Hashline Guidance:**
       1. **Operations**:
-         - \`replace\`: Replaces lines from \`pos\` to \`end\`. Both \`pos\` and \`end\` are REQUIRED. For a single line, set \`end\` to the same as \`pos\`. For a range, replace the entire body. Do not split range boundaries.
+         - \`replace\`: Replaces lines from \`pos\` to \`end\`. Both \`pos\` and \`end\` are REQUIRED. For a single line, set \`end\` to the same as \`pos\`.
+         - \`delete\`: Removes lines from \`pos\` to \`end\`. Both \`pos\` and \`end\` are REQUIRED. For a single line, set \`end\` to the same as \`pos\`. Do not provide \`lines\`.
          - \`append\` / \`prepend\`: Inserts lines after or before the \`pos\` anchor.
-      2. **Deletion**: To delete lines entirely, use \`replace\` with an empty \`lines\` array (e.g., \`{ "op": "replace", "pos": "START#HS", "end": "END#HS", "lines": [] }\`).
+      2. **Deletion**: To delete lines, use the \`delete\` operation with \`pos\` and \`end\` anchors. Example: \`{ "op": "delete", "pos": "START#HS", "end": "END#HS" }\`.
       3. **Batching**: In one \`edits\` array, batch all edits for one file. After any successful edit, re-read before editing that file again to prevent staleness.
       4. **Safety & Delimiters**:
          - When your replacement \`lines\` end with a closing delimiter (\`}\`, \`*/\`, \`)\`, \`]\`), verify \`end\` includes the original line carrying that delimiter. If \`end\` stops one line too early, the original delimiter survives and your content adds a second copy.
