@@ -349,7 +349,7 @@ async function calculateHashlineReplacement(
   };
 
   interface InternalEdit {
-    op: 'replace' | 'append' | 'prepend';
+    op: 'replace' | 'delete' | 'append' | 'prepend';
     pos: number;
     end?: number;
     lines: string[];
@@ -361,11 +361,11 @@ async function calculateHashlineReplacement(
   if (edits) {
     edits.forEach((edit, i) => {
       const pos = validateAnchor(edit.pos);
-      if (edit.op === 'replace' && !edit.end) {
+      if ((edit.op === 'replace' || edit.op === 'delete') && !edit.end) {
         mismatches.push({
           line: pos ?? 0,
           expected: 'MISSING_END_ANCHOR',
-          actual: 'REPLACE_OP_REQUIRES_END',
+          actual: `${edit.op.toUpperCase()}_OP_REQUIRES_END`,
         });
       }
       let end: number | undefined;
@@ -377,7 +377,7 @@ async function calculateHashlineReplacement(
           op: edit.op,
           pos,
           end,
-          lines: edit.lines,
+          lines: 'lines' in edit ? edit.lines : [],
           originalIdx: i,
         });
       }
@@ -396,8 +396,8 @@ async function calculateHashlineReplacement(
     const bSort = b.end ?? b.pos;
     if (bSort !== aSort) return bSort - aSort;
 
-    // Tie-breaker: precedence (replace < append < prepend)
-    const precedence = { replace: 0, append: 1, prepend: 2 };
+    // Tie-breaker: precedence (replace/delete < append < prepend)
+    const precedence = { replace: 0, delete: 0, append: 1, prepend: 2 };
     if (a.op !== b.op) return precedence[a.op] - precedence[b.op];
 
     // Final tie-breaker: original order
@@ -418,7 +418,7 @@ async function calculateHashlineReplacement(
       );
     });
 
-    if (op === 'replace') {
+    if (op === 'replace' || op === 'delete') {
       const count = end ? end - pos + 1 : 1;
 
       modifiedLines.splice(index, count, ...finalNewLines);
@@ -656,6 +656,18 @@ export interface EditToolParams {
          * The new content lines for this operation.
          */
         lines: string[];
+      }
+    | {
+        op: 'delete';
+        /**
+         * The Hashline ID of the anchor line (e.g., "42#WS").
+         */
+        pos: string;
+        /**
+         * The Hashline ID of the end anchor line for range deletions.
+         * Required for 'delete' operations. Set to same as 'pos' for single-line deletion.
+         */
+        end: string;
       }
     | {
         op: 'append' | 'prepend';

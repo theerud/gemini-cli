@@ -58,6 +58,33 @@ describe('Edit Tool - Hashline Integration', () => {
     expect(result.occurrences).toBe(1);
   });
 
+  it('should apply "delete" range successfully', async () => {
+    const originalContent = 'line 1\nline 2\nline 3\nline 4\nline 5';
+    const ids = getIds(originalContent);
+
+    const params: EditToolParams = {
+      file_path: filePath,
+      instruction: 'edit',
+      edits: [
+        {
+          op: 'delete',
+          pos: ids[1], // line 2
+          end: ids[3], // line 4
+        },
+      ],
+    };
+
+    const result = await calculateReplacement(mockConfig, {
+      params,
+      currentContent: originalContent,
+      abortSignal: new AbortController().signal,
+    });
+
+    expect(result.strategy).toBe('hashline');
+    expect(result.newContent).toBe('line 1\nline 5');
+    expect(result.occurrences).toBe(1);
+  });
+
   it('should apply "append" successfully', async () => {
     const originalContent = 'line 1\nline 2\nline 3';
     const ids = getIds(originalContent);
