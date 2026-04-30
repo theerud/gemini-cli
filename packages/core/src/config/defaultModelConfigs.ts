@@ -576,7 +576,7 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
         },
         stateTransitions: {
           terminal: 'terminal',
-          transient: 'sticky_retry',
+          transient: 'terminal',
           not_found: 'terminal',
           unknown: 'terminal',
         },
@@ -584,6 +584,7 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
       {
         model: 'gemini-3-flash-preview',
         isLastResort: true,
+        maxAttempts: 10,
         actions: {
           terminal: 'prompt',
           transient: 'prompt',
@@ -592,7 +593,42 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
         },
         stateTransitions: {
           terminal: 'terminal',
+          transient: 'terminal',
+          not_found: 'terminal',
+          unknown: 'terminal',
+        },
+      },
+    ],
+    'auto-preview': [
+      {
+        model: 'gemini-3-pro-preview',
+        maxAttempts: 3,
+        actions: {
+          terminal: 'prompt',
+          transient: 'silent',
+          not_found: 'prompt',
+          unknown: 'prompt',
+        },
+        stateTransitions: {
+          terminal: 'terminal',
           transient: 'sticky_retry',
+          not_found: 'terminal',
+          unknown: 'terminal',
+        },
+      },
+      {
+        model: 'gemini-3-flash-preview',
+        isLastResort: true,
+        maxAttempts: 10,
+        actions: {
+          terminal: 'prompt',
+          transient: 'prompt',
+          not_found: 'prompt',
+          unknown: 'prompt',
+        },
+        stateTransitions: {
+          terminal: 'terminal',
+          transient: 'terminal',
           not_found: 'terminal',
           unknown: 'terminal',
         },
@@ -617,6 +653,7 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
       {
         model: 'gemini-2.5-flash',
         isLastResort: true,
+        maxAttempts: 10,
         actions: {
           terminal: 'prompt',
           transient: 'prompt',
@@ -625,7 +662,42 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
         },
         stateTransitions: {
           terminal: 'terminal',
+          transient: 'terminal',
+          not_found: 'terminal',
+          unknown: 'terminal',
+        },
+      },
+    ],
+    'auto-default': [
+      {
+        model: 'gemini-2.5-pro',
+        maxAttempts: 3,
+        actions: {
+          terminal: 'prompt',
+          transient: 'silent',
+          not_found: 'prompt',
+          unknown: 'prompt',
+        },
+        stateTransitions: {
+          terminal: 'terminal',
           transient: 'sticky_retry',
+          not_found: 'terminal',
+          unknown: 'terminal',
+        },
+      },
+      {
+        model: 'gemini-2.5-flash',
+        isLastResort: true,
+        maxAttempts: 10,
+        actions: {
+          terminal: 'prompt',
+          transient: 'prompt',
+          not_found: 'prompt',
+          unknown: 'prompt',
+        },
+        stateTransitions: {
+          terminal: 'terminal',
+          transient: 'terminal',
           not_found: 'terminal',
           unknown: 'terminal',
         },
@@ -657,7 +729,7 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
         },
         stateTransitions: {
           terminal: 'terminal',
-          transient: 'sticky_retry',
+          transient: 'terminal',
           not_found: 'terminal',
           unknown: 'terminal',
         },
@@ -672,7 +744,7 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
         },
         stateTransitions: {
           terminal: 'terminal',
-          transient: 'sticky_retry',
+          transient: 'terminal',
           not_found: 'terminal',
           unknown: 'terminal',
         },
@@ -688,7 +760,7 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
         },
         stateTransitions: {
           terminal: 'terminal',
-          transient: 'sticky_retry',
+          transient: 'terminal',
           not_found: 'terminal',
           unknown: 'terminal',
         },
