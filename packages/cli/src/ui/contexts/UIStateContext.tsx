@@ -104,6 +104,8 @@ export interface UIState {
   isAuthPersistent: boolean;
   isAuthDialogOpen: boolean;
   isAwaitingApiKeyInput: boolean;
+  isAwaitingLoginRestart: boolean;
+  loginRestartMessage?: string;
   apiKeyDefaultValue?: string;
   editorError: string | null;
   isEditorDialogOpen: boolean;
