@@ -807,7 +807,6 @@ describe('useGeminiStream', () => {
       expect.any(AbortSignal),
       'prompt-id-2',
       undefined,
-      false,
       expectedMergedResponse,
     );
   });
@@ -1534,7 +1533,6 @@ describe('useGeminiStream', () => {
         expect.any(AbortSignal),
         'prompt-id-4',
         undefined,
-        false,
         toolCallResponseParts,
       );
     });
@@ -1639,7 +1637,7 @@ describe('useGeminiStream', () => {
 
       simulateEscapeKeyPress();
 
-      expect(cancelSubmitSpy).toHaveBeenCalledWith(false);
+      expect(cancelSubmitSpy).toHaveBeenCalledWith(false, false);
     });
 
     it('should call setShellInputFocused(false) when escape is pressed', async () => {
@@ -2029,7 +2027,6 @@ describe('useGeminiStream', () => {
           expect.any(AbortSignal),
           expect.any(String),
           undefined,
-          false,
           '/my-custom-command',
         );
 
@@ -2058,7 +2055,6 @@ describe('useGeminiStream', () => {
           expect.any(AbortSignal),
           expect.any(String),
           undefined,
-          false,
           '/emptycmd',
         );
       });
@@ -2079,7 +2075,6 @@ describe('useGeminiStream', () => {
           expect.any(AbortSignal),
           expect.any(String),
           undefined,
-          false,
           '// This is a line comment',
         );
       });
@@ -2100,7 +2095,6 @@ describe('useGeminiStream', () => {
           expect.any(AbortSignal),
           expect.any(String),
           undefined,
-          false,
           '/* This is a block comment */',
         );
       });
@@ -3060,7 +3054,6 @@ describe('useGeminiStream', () => {
       expect.any(AbortSignal), // Argument 2: An AbortSignal
       expect.any(String), // Argument 3: The prompt_id string
       undefined,
-      false,
       rawQuery,
     );
   });
@@ -3711,7 +3704,6 @@ describe('useGeminiStream', () => {
           expect.any(AbortSignal),
           expect.any(String),
           undefined,
-          false,
           'test query',
         );
       });
@@ -3861,7 +3853,6 @@ describe('useGeminiStream', () => {
           expect.any(AbortSignal),
           expect.any(String),
           undefined,
-          false,
           'second query',
         );
       });
@@ -4006,7 +3997,6 @@ describe('useGeminiStream', () => {
             expect.any(AbortSignal),
             expect.any(String),
             undefined,
-            false,
             'test query',
           );
         });

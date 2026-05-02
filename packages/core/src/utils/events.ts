@@ -14,6 +14,7 @@ import type {
   KeychainAvailabilityEvent,
 } from '../telemetry/types.js';
 import { debugLogger } from './debugLogger.js';
+import type { ApprovalMode } from '../policy/types.js';
 import type { AuthType } from '../core/contentGenerator.js';
 
 /**
@@ -51,6 +52,20 @@ export interface ModelChangedPayload {
    * The new model that was set.
    */
   model: string;
+}
+
+/**
+ * Payload for the 'approval-mode-changed' event.
+ */
+export interface ApprovalModeChangedPayload {
+  /**
+   * The session ID associated with the mode change.
+   */
+  sessionId: string;
+  /**
+   * The new approval mode.
+   */
+  mode: ApprovalMode;
 }
 
 /**
@@ -182,6 +197,7 @@ export interface QuotaChangedPayload {
 export enum CoreEvent {
   UserFeedback = 'user-feedback',
   ModelChanged = 'model-changed',
+  ApprovalModeChanged = 'approval-mode-changed',
   ConsoleLog = 'console-log',
   Output = 'output',
   MemoryChanged = 'memory-changed',
@@ -226,6 +242,7 @@ export interface AuthChangedPayload {
 export interface CoreEvents extends ExtensionEvents {
   [CoreEvent.UserFeedback]: [UserFeedbackPayload];
   [CoreEvent.ModelChanged]: [ModelChangedPayload];
+  [CoreEvent.ApprovalModeChanged]: [ApprovalModeChangedPayload];
   [CoreEvent.ConsoleLog]: [ConsoleLogPayload];
   [CoreEvent.Output]: [OutputPayload];
   [CoreEvent.MemoryChanged]: [MemoryChangedPayload];
@@ -337,6 +354,14 @@ export class CoreEventEmitter extends EventEmitter<CoreEvents> {
   emitModelChanged(model: string): void {
     const payload: ModelChangedPayload = { model };
     this.emit(CoreEvent.ModelChanged, payload);
+  }
+
+  /**
+   * Notifies subscribers that the approval mode has changed.
+   */
+  emitApprovalModeChanged(sessionId: string, mode: ApprovalMode): void {
+    const payload: ApprovalModeChangedPayload = { sessionId, mode };
+    this.emit(CoreEvent.ApprovalModeChanged, payload);
   }
 
   /**
