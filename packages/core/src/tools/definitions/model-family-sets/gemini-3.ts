@@ -46,9 +46,6 @@ import {
   GREP_PARAM_AFTER,
   GREP_PARAM_BEFORE,
   GREP_PARAM_NO_IGNORE,
-  EDIT_PARAM_OLD_STRING,
-  EDIT_PARAM_NEW_STRING,
-  EDIT_PARAM_ALLOW_MULTIPLE,
   LS_PARAM_IGNORE,
   WEB_SEARCH_PARAM_QUERY,
   WEB_FETCH_PARAM_PROMPT,
@@ -332,12 +329,7 @@ export const GEMINI_3_SET: CoreToolSet = {
       enableToolSandboxing,
     ),
 
-  replace: (enableHashline) =>
-    getReplaceDeclaration(
-      enableHashline,
-      `Replaces text within a file. By default, the tool expects to find and replace exactly ONE occurrence of \`${EDIT_PARAM_OLD_STRING}\`. If you want to replace multiple occurrences of the exact same string, set \`${EDIT_PARAM_ALLOW_MULTIPLE}\` to true. This tool requires providing significant context around the change to ensure precise targeting.
-The user has the ability to modify the \`${EDIT_PARAM_NEW_STRING}\` content. If modified, this will be stated in the response.`,
-    ),
+  replace: (enableHashline) => getReplaceDeclaration(enableHashline),
 
   google_web_search: {
     name: WEB_SEARCH_TOOL_NAME,
