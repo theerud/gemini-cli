@@ -500,7 +500,11 @@ export class LoadedSettings {
   }
 }
 
-function findEnvFiles(workspaceDir: string, isTrusted: boolean): string[] {
+function findEnvFiles(
+  workspaceDir: string,
+  isTrusted: boolean,
+  ignoreLocalEnv: boolean,
+): string[] {
   const envFiles: string[] = [];
   const homeGeminiEnvPath = path.join(homedir(), GEMINI_DIR, '.env');
   if (fs.existsSync(homeGeminiEnvPath)) {
@@ -521,7 +525,9 @@ function findEnvFiles(workspaceDir: string, isTrusted: boolean): string[] {
       }
       const envPath = path.join(currentDir, '.env');
       if (fs.existsSync(envPath) && !envFiles.includes(envPath)) {
-        envFiles.push(envPath);
+        if (!ignoreLocalEnv || currentDir === homedir()) {
+          envFiles.push(envPath);
+        }
       }
     }
     const parentDir = path.dirname(currentDir);
@@ -597,7 +603,6 @@ export function loadEnvironment(
 ): void {
   const trustResult = isWorkspaceTrustedFn(settings, workspaceDir);
   const isTrusted = trustResult.isTrusted ?? false;
-  const envFiles = findEnvFiles(workspaceDir, isTrusted);
 
   // Check settings OR check process.argv directly since this might be called
   // before arguments are fully parsed. This is a best-effort sniffing approach
@@ -613,6 +618,12 @@ export function loadEnvironment(
     !!settings.tools?.sandbox ||
     relevantArgs.includes('-s') ||
     relevantArgs.includes('--sandbox');
+
+  const shouldIgnoreEnv =
+    !!settings.advanced?.ignoreLocalEnv ||
+    relevantArgs.includes('--ignore-env');
+
+  const envFiles = findEnvFiles(workspaceDir, isTrusted, shouldIgnoreEnv);
 
   // Cloud Shell environment variable handling
   if (process.env['CLOUD_SHELL'] === 'true') {
