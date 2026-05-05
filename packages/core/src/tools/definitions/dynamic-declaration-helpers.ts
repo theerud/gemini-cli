@@ -155,7 +155,7 @@ export function getReplaceDeclaration(
   const description =
     descriptionOverride ||
     (enableHashline
-      ? `Surgically modifies files using precise line-based identifiers. This is the REQUIRED tool for all edits to existing files. ${preferenceGuidance} By default, the tool expects to find and replace exactly ONE occurrence of \`${EDIT_PARAM_OLD_STRING}\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. Always use the ${READ_FILE_TOOL_NAME} tool to examine the file's current content before attempting a text replacement.
+      ? `Surgically modifies files using precise line-based identifiers. ${preferenceGuidance} By default, the tool expects to find and replace exactly ONE occurrence of \`${EDIT_PARAM_OLD_STRING}\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. Always use the ${READ_FILE_TOOL_NAME} tool to examine the file's current content before attempting a text replacement.
 The user has the ability to modify the \`${EDIT_PARAM_NEW_STRING}\` content. If modified, this will be stated in the response.`
       : `Replaces text within a file. ${preferenceGuidance} By default, the tool expects to find and replace exactly ONE occurrence of \`${EDIT_PARAM_OLD_STRING}\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. This tool requires providing significant context around the change to ensure precise targeting. Always use the ${READ_FILE_TOOL_NAME} tool to examine the file's current content before attempting a text replacement.
 

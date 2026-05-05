@@ -599,7 +599,7 @@ A good instruction should concisely answer:
 
 exports[`coreTools snapshots for specific models > Model: gemini-2.5-pro > snapshot for tool: replace_hashline 1`] = `
 {
-  "description": "Surgically modifies files using precise line-based identifiers. This is the REQUIRED tool for all edits to existing files. This tool is preferred for surgical edits to existing files as it minimizes token usage, simplifies code reviews, and avoids accidental deletions. By default, the tool expects to find and replace exactly ONE occurrence of \`old_string\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. Always use the read_file tool to examine the file's current content before attempting a text replacement.
+  "description": "Surgically modifies files using precise line-based identifiers. This tool is preferred for surgical edits to existing files as it minimizes token usage, simplifies code reviews, and avoids accidental deletions. By default, the tool expects to find and replace exactly ONE occurrence of \`old_string\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. Always use the read_file tool to examine the file's current content before attempting a text replacement.
 The user has the ability to modify the \`new_string\` content. If modified, this will be stated in the response.
 
 Use the \`edits\` parameter with Hashline identifiers (obtained from \`read_file\`) for precise, atomic edits. This is the highly preferred method. String-based fallback parameters (\`old_string\`, \`new_string\`) are heavily discouraged.
@@ -1565,7 +1565,7 @@ A good instruction should concisely answer:
 
 exports[`coreTools snapshots for specific models > Model: gemini-3-pro-preview > snapshot for tool: replace_hashline 1`] = `
 {
-  "description": "Surgically modifies files using precise line-based identifiers. This is the REQUIRED tool for all edits to existing files. This tool is preferred for surgical edits to existing files as it minimizes token usage, simplifies code reviews, and avoids accidental deletions. By default, the tool expects to find and replace exactly ONE occurrence of \`old_string\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. Always use the read_file tool to examine the file's current content before attempting a text replacement.
+  "description": "Surgically modifies files using precise line-based identifiers. This tool is preferred for surgical edits to existing files as it minimizes token usage, simplifies code reviews, and avoids accidental deletions. By default, the tool expects to find and replace exactly ONE occurrence of \`old_string\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. Always use the read_file tool to examine the file's current content before attempting a text replacement.
 The user has the ability to modify the \`new_string\` content. If modified, this will be stated in the response.
 
 Use the \`edits\` parameter with Hashline identifiers (obtained from \`read_file\`) for precise, atomic edits. This is the highly preferred method. String-based fallback parameters (\`old_string\`, \`new_string\`) are heavily discouraged.
@@ -1792,7 +1792,7 @@ exports[`coreTools snapshots for specific models > Model: gemini-3-pro-preview >
 
 exports[`coreTools snapshots for specific models > Model: gemini-3-pro-preview > snapshot for tool: write_file 1`] = `
 {
-  "description": "Writes the complete content to a file, automatically creating missing parent directories. Overwrites existing files. The user has the ability to modify 'content' before it is saved. Best for new or small files; use 'replace' for targeted edits to large files.",
+  "description": "Writes the complete content to a file, automatically creating missing parent directories. Overwrites existing files. The user has the ability to modify 'content' before it is saved. Best for new or small files; use 'replace' for targeted edits to large files to minimize token usage and simplify reviews.",
   "name": "write_file",
   "parametersJsonSchema": {
     "properties": {
