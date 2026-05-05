@@ -65,6 +65,7 @@ export interface CoreMandatesOptions {
   interactive: boolean;
   hasSkills: boolean;
   hasHierarchicalMemory: boolean;
+  hasHashline?: boolean;
   contextFilenames?: string[];
   topicUpdateNarration: boolean;
 }
@@ -76,6 +77,7 @@ export interface PrimaryWorkflowsOptions {
   enableEnterPlanModeTool: boolean;
   enableGrep: boolean;
   enableGlob: boolean;
+  hasHashline?: boolean;
   approvedPlan?: { path: string };
   taskTracker?: string;
   topicUpdateNarration: boolean;
@@ -243,12 +245,11 @@ Use the following guidelines to optimize your search and read patterns.
 - Prefer using tools like ${GREP_TOOL_NAME} to identify points of interest instead of reading lots of files individually.
 - If you need to read multiple ranges in a file, do so parallel, in as few turns as possible.
 - It is more important to reduce extra turns, but please also try to minimize unnecessarily large file reads and search results, when doing so doesn't result in extra turns. Do this by always providing conservative limits and scopes to tools like ${READ_FILE_TOOL_NAME} and ${GREP_TOOL_NAME}.
-- ${READ_FILE_TOOL_NAME} fails if ${EDIT_PARAM_OLD_STRING} is ambiguous, causing extra turns. Take care to read enough with ${READ_FILE_TOOL_NAME} and ${GREP_TOOL_NAME} to make the edit unambiguous.
-- You can compensate for the risk of missing results with scoped or limited searches by doing multiple searches in parallel.
-- Your primary goal is still to do your best quality work. Efficiency is an important, but secondary concern.
-</guidelines>
-
-<examples>
+- ${
+    options.hasHashline
+      ? `To ensure surgical precision and avoid ambiguity errors, prioritize reading files with \`include_hashes: true\` so you can use the precise \`edits\` array in ${EDIT_TOOL_NAME}.`
+      : `${EDIT_TOOL_NAME} fails if ${EDIT_PARAM_OLD_STRING} is ambiguous, causing extra turns. Take care to read enough with ${READ_FILE_TOOL_NAME} and ${GREP_TOOL_NAME} to make the edit unambiguous.`
+  }
 - **Searching:** utilize search tools like ${GREP_TOOL_NAME} and ${GLOB_TOOL_NAME} with a conservative result count (\`${GREP_PARAM_TOTAL_MAX_MATCHES}\`) and a narrow scope (\`${GREP_PARAM_INCLUDE_PATTERN}\` and \`${GREP_PARAM_EXCLUDE_PATTERN}\` parameters).
 - **Searching and editing:** utilize search tools like ${GREP_TOOL_NAME} with a conservative result count and a narrow scope. Use \`${GREP_PARAM_CONTEXT}\`, \`${GREP_PARAM_BEFORE}\`, and/or \`${GREP_PARAM_AFTER}\` to request enough context to avoid the need to read the file before editing matches.
 - **Understanding:** minimize turns needed to understand a file. It's most efficient to read small files in their entirety.

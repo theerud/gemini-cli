@@ -150,6 +150,7 @@ export class PromptProvider {
           hasHierarchicalMemory,
           contextFilenames,
           topicUpdateNarration: isTopicUpdateNarrationEnabled,
+          hasHashline: context.config.getEnableHashline(),
         })),
         subAgents: this.withSection(
           'agentContexts',
@@ -195,6 +196,7 @@ export class PromptProvider {
                 : undefined,
               taskTracker: trackerDir,
               topicUpdateNarration: isTopicUpdateNarrationEnabled,
+              hasHashline: context.config.getEnableHashline(),
             };
           },
           !isPlanMode,
