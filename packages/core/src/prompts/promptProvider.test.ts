@@ -87,6 +87,7 @@ describe('PromptProvider', () => {
       isTrackerEnabled: vi.fn().mockReturnValue(false),
       getHasAccessToPreviewModel: vi.fn().mockReturnValue(true),
       getGemini31LaunchedSync: vi.fn().mockReturnValue(true),
+      getEnableHashline: vi.fn().mockReturnValue(false),
     } as unknown as Config;
   });
 
