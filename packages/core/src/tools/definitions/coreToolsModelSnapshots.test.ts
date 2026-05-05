@@ -35,6 +35,8 @@ import {
   ENTER_PLAN_MODE_DEFINITION,
   getExitPlanModeDefinition,
   getActivateSkillDefinition,
+  getReadFileDefinition,
+  getEditDefinition,
 } from './coreTools.js';
 
 describe('coreTools snapshots for specific models', () => {
@@ -62,6 +64,7 @@ describe('coreTools snapshots for specific models', () => {
   const modelIds = ['gemini-2.5-pro', 'gemini-3-pro-preview'];
   const tools = [
     { name: 'read_file', definition: READ_FILE_DEFINITION },
+    { name: 'read_file_hashline', definition: getReadFileDefinition(true) },
     { name: 'write_file', definition: WRITE_FILE_DEFINITION },
     { name: 'grep_search', definition: GREP_DEFINITION },
     { name: 'grep_search_ripgrep', definition: RIP_GREP_DEFINITION },
@@ -72,6 +75,7 @@ describe('coreTools snapshots for specific models', () => {
       definition: getShellDefinition(true, true, true),
     },
     { name: 'replace', definition: EDIT_DEFINITION },
+    { name: 'replace_hashline', definition: getEditDefinition(true) },
     { name: 'google_web_search', definition: WEB_SEARCH_DEFINITION },
     { name: 'web_fetch', definition: WEB_FETCH_DEFINITION },
     { name: 'read_many_files', definition: READ_MANY_FILES_DEFINITION },

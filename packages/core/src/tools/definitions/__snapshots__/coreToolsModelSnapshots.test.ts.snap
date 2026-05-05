@@ -435,6 +435,39 @@ exports[`coreTools snapshots for specific models > Model: gemini-2.5-pro > snaps
 }
 `;
 
+exports[`coreTools snapshots for specific models > Model: gemini-2.5-pro > snapshot for tool: read_file_hashline 1`] = `
+{
+  "description": "Reads and returns the content of a specified file. If the file is large, the content will be truncated. The tool's response will clearly indicate if truncation has occurred and will provide details on how to read more of the file using the 'start_line' and 'end_line' parameters. Handles text, images (PNG, JPG, GIF, WEBP, SVG, BMP), audio files (MP3, WAV, AIFF, AAC, OGG, FLAC), and PDF files. For text files, it can read specific line ranges.
+
+Set \`include_hashes: true\` to obtain line identifiers (LINE#HS) for use with the precision \`edits\` mode in the \`replace\` tool.",
+  "name": "read_file",
+  "parametersJsonSchema": {
+    "properties": {
+      "end_line": {
+        "description": "Optional: The 1-based line number to end reading at (inclusive).",
+        "type": "number",
+      },
+      "file_path": {
+        "description": "The path to the file to read.",
+        "type": "string",
+      },
+      "include_hashes": {
+        "description": "Optional: If true, returned content will include Hashline identifiers (INDEX#HS:) for each line. These identifiers are used as anchors for precise editing.",
+        "type": "boolean",
+      },
+      "start_line": {
+        "description": "Optional: The 1-based line number to start reading from.",
+        "type": "number",
+      },
+    },
+    "required": [
+      "file_path",
+    ],
+    "type": "object",
+  },
+}
+`;
+
 exports[`coreTools snapshots for specific models > Model: gemini-2.5-pro > snapshot for tool: read_many_files 1`] = `
 {
   "description": "Reads content from multiple files specified by glob patterns within a configured target directory. For text files, it concatenates their content into a single string. It is primarily designed for text-based files. However, it can also process image (e.g., .png, .jpg), audio (e.g., .mp3, .wav), and PDF (.pdf) files if their file names or extensions are explicitly included in the 'include' argument. For these explicitly requested non-text files, their data is read and included in a format suitable for model consumption (e.g., base64 encoded).
@@ -503,11 +536,11 @@ Use this tool when the user's query implies needing the content of several files
 
 exports[`coreTools snapshots for specific models > Model: gemini-2.5-pro > snapshot for tool: replace 1`] = `
 {
-  "description": "Replaces text within a file. By default, the tool expects to find and replace exactly ONE occurrence of \`old_string\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. This tool requires providing significant context around the change to ensure precise targeting. Always use the read_file tool to examine the file's current content before attempting a text replacement.
+  "description": "Replaces text within a file. This tool is preferred for surgical edits to existing files as it minimizes token usage, simplifies code reviews, and avoids accidental deletions. By default, the tool expects to find and replace exactly ONE occurrence of \`old_string\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. This tool requires providing significant context around the change to ensure precise targeting. Always use the read_file tool to examine the file's current content before attempting a text replacement.
 
       The user has the ability to modify the \`new_string\` content. If modified, this will be stated in the response.
 
-      Expectation for required parameters:
+      Expectation for string-based parameters:
       1. \`old_string\` MUST be the exact literal text to replace (including all whitespace, indentation, newlines, and surrounding code etc.).
       2. \`new_string\` MUST be the exact literal text to replace \`old_string\` with (also including all whitespace, indentation, newlines, and surrounding code etc.). Ensure the resulting code is correct and idiomatic and that \`old_string\` and \`new_string\` are different.
       3. \`instruction\` is the detailed instruction of what needs to be changed. It is important to Make it specific and detailed so developers or large language models can understand what needs to be changed and perform the changes on their own if necessary. 
@@ -558,6 +591,109 @@ A good instruction should concisely answer:
       "instruction",
       "old_string",
       "new_string",
+    ],
+    "type": "object",
+  },
+}
+`;
+
+exports[`coreTools snapshots for specific models > Model: gemini-2.5-pro > snapshot for tool: replace_hashline 1`] = `
+{
+  "description": "Surgically modifies files using precise line-based identifiers. This is the REQUIRED tool for all edits to existing files. This tool is preferred for surgical edits to existing files as it minimizes token usage, simplifies code reviews, and avoids accidental deletions. By default, the tool expects to find and replace exactly ONE occurrence of \`old_string\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. Always use the read_file tool to examine the file's current content before attempting a text replacement.
+The user has the ability to modify the \`new_string\` content. If modified, this will be stated in the response.
+
+Use the \`edits\` parameter with Hashline identifiers (obtained from \`read_file\`) for precise, atomic edits. This is the highly preferred method. String-based fallback parameters (\`old_string\`, \`new_string\`) are heavily discouraged.
+
+      **Hashline Guidance:**
+      1. **Operations**:
+         - \`replace\`: Replaces lines from \`pos\` to \`end\`. Both \`pos\` and \`end\` are REQUIRED. For a single line, set \`end\` to the same as \`pos\`.
+         - \`delete\`: Removes lines from \`pos\` to \`end\`. Both \`pos\` and \`end\` are REQUIRED. For a single line, set \`end\` to the same as \`pos\`. Do not provide \`lines\`.
+         - \`append\` / \`prepend\`: Inserts lines after or before the \`pos\` anchor.
+      2. **Deletion**: To delete lines, use the \`delete\` operation with \`pos\` and \`end\` anchors. Example: \`{ "op": "delete", "pos": "START#HS", "end": "END#HS" }\`.
+      3. **Batching**: In one \`edits\` array, batch all edits for one file. After any successful edit, re-read before editing that file again to prevent staleness.
+      4. **Safety & Delimiters**:
+         - When your replacement \`lines\` end with a closing delimiter (\`}\`, \`*/\`, \`)\`, \`]\`), verify \`end\` includes the original line carrying that delimiter. If \`end\` stops one line too early, the original delimiter survives and your content adds a second copy.
+         - **Self-check**: Compare the last line of \`lines\` with the line immediately after \`end\` in the file. If they match (e.g., both are \`}\`), extend \`end\` to include that line to avoid duplicate boundary lines.
+         - **Self-Healing**: If you receive a \`HASHLINE MISMATCH DETECTED\` error, use the provided recovery snippet with updated \`LINE#ID\` anchors to immediately retry the edit.",
+  "name": "replace",
+  "parametersJsonSchema": {
+    "properties": {
+      "allow_multiple": {
+        "description": "If true, the tool will replace all occurrences of \`old_string\`. If false (default), it will only succeed if exactly one occurrence is found.",
+        "type": "boolean",
+      },
+      "edits": {
+        "description": "Optional: Advanced line-based edits using Hashline identifiers (e.g., "42#WS"). If provided, the tool will prioritize these and skip string-based matching. Edits are applied as an atomic transaction.",
+        "items": {
+          "properties": {
+            "end": {
+              "description": "The Hashline ID of the end anchor line for range replacements or deletions. Required for 'replace' and 'delete' operations (set to same as 'pos' for single-line replacement/deletion).",
+              "type": "string",
+            },
+            "lines": {
+              "description": "The new content lines for this operation. Required for 'replace', 'append', and 'prepend'. Do not provide for 'delete'.",
+              "items": {
+                "type": "string",
+              },
+              "type": "array",
+            },
+            "op": {
+              "description": "The operation to perform: 'replace' (replaces lines from 'pos' to 'end'), 'delete' (removes lines from 'pos' to 'end'), 'append' (inserts lines after 'pos'), or 'prepend' (inserts lines before 'pos').",
+              "enum": [
+                "replace",
+                "delete",
+                "append",
+                "prepend",
+              ],
+              "type": "string",
+            },
+            "pos": {
+              "description": "The Hashline ID of the anchor line (e.g., "42#WS").",
+              "type": "string",
+            },
+          },
+          "required": [
+            "op",
+            "pos",
+          ],
+          "type": "object",
+        },
+        "type": "array",
+      },
+      "file_path": {
+        "description": "The path to the file to modify.",
+        "type": "string",
+      },
+      "instruction": {
+        "description": "A clear, semantic instruction for the code change, acting as a high-quality prompt for an expert LLM assistant. It must be self-contained and explain the goal of the change.
+
+A good instruction should concisely answer:
+1.  WHY is the change needed? (e.g., "To fix a bug where users can be null...")
+2.  WHERE should the change happen? (e.g., "...in the 'renderUserProfile' function...")
+3.  WHAT is the high-level change? (e.g., "...add a null check for the 'user' object...")
+4.  WHAT is the desired outcome? (e.g., "...so that it displays a loading spinner instead of crashing.")
+
+**GOOD Example:** "In the 'calculateTotal' function, correct the sales tax calculation by updating the 'taxRate' constant from 0.05 to 0.075 to reflect the new regional tax laws."
+
+**BAD Examples:**
+- "Change the text." (Too vague)
+- "Fix the bug." (Doesn't explain the bug or the fix)
+- "Replace the line with this new line." (Brittle, just repeats the other parameters)
+",
+        "type": "string",
+      },
+      "new_string": {
+        "description": "[Legacy Fallback]: The exact literal text to replace \`old_string\` with. Highly discouraged when Hashline is enabled.",
+        "type": "string",
+      },
+      "old_string": {
+        "description": "[Legacy Fallback]: The exact literal text to replace. Highly discouraged when Hashline is enabled.",
+        "type": "string",
+      },
+    },
+    "required": [
+      "file_path",
+      "instruction",
     ],
     "type": "object",
   },
@@ -1265,6 +1401,39 @@ exports[`coreTools snapshots for specific models > Model: gemini-3-pro-preview >
 }
 `;
 
+exports[`coreTools snapshots for specific models > Model: gemini-3-pro-preview > snapshot for tool: read_file_hashline 1`] = `
+{
+  "description": "Reads and returns the content of a specified file. To maintain context efficiency, you MUST use 'start_line' and 'end_line' for targeted, surgical reads of specific sections. For your safety, the tool will automatically truncate output exceeding 2000 lines, 2000 characters per line, or 20MB in size; however, triggering these limits is considered token-inefficient. Always retrieve only the minimum content necessary for your next step. Handles text, images (PNG, JPG, GIF, WEBP, SVG, BMP), audio files (MP3, WAV, AIFF, AAC, OGG, FLAC), and PDF files.
+
+Set \`include_hashes: true\` to obtain line identifiers (LINE#HS) for use with the precision \`edits\` mode in the \`replace\` tool.",
+  "name": "read_file",
+  "parametersJsonSchema": {
+    "properties": {
+      "end_line": {
+        "description": "Optional: The 1-based line number to end reading at (inclusive).",
+        "type": "number",
+      },
+      "file_path": {
+        "description": "The path to the file to read.",
+        "type": "string",
+      },
+      "include_hashes": {
+        "description": "Optional: If true, returned content will include Hashline identifiers (INDEX#HS:) for each line. These identifiers are used as anchors for precise editing.",
+        "type": "boolean",
+      },
+      "start_line": {
+        "description": "Optional: The 1-based line number to start reading from.",
+        "type": "number",
+      },
+    },
+    "required": [
+      "file_path",
+    ],
+    "type": "object",
+  },
+}
+`;
+
 exports[`coreTools snapshots for specific models > Model: gemini-3-pro-preview > snapshot for tool: read_many_files 1`] = `
 {
   "description": "Reads content from multiple files specified by glob patterns within a configured target directory. For text files, it concatenates their content into a single string. It is primarily designed for text-based files. However, it can also process image (e.g., .png, .jpg), audio (e.g., .mp3, .wav), and PDF (.pdf) files if their file names or extensions are explicitly included in the 'include' argument. For these explicitly requested non-text files, their data is read and included in a format suitable for model consumption (e.g., base64 encoded).
@@ -1333,8 +1502,18 @@ Use this tool when the user's query implies needing the content of several files
 
 exports[`coreTools snapshots for specific models > Model: gemini-3-pro-preview > snapshot for tool: replace 1`] = `
 {
-  "description": "Replaces text within a file. By default, the tool expects to find and replace exactly ONE occurrence of \`old_string\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. This tool requires providing significant context around the change to ensure precise targeting.
-The user has the ability to modify the \`new_string\` content. If modified, this will be stated in the response.",
+  "description": "Replaces text within a file. This tool is preferred for surgical edits to existing files as it minimizes token usage, simplifies code reviews, and avoids accidental deletions. By default, the tool expects to find and replace exactly ONE occurrence of \`old_string\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. This tool requires providing significant context around the change to ensure precise targeting. Always use the read_file tool to examine the file's current content before attempting a text replacement.
+
+      The user has the ability to modify the \`new_string\` content. If modified, this will be stated in the response.
+
+      Expectation for string-based parameters:
+      1. \`old_string\` MUST be the exact literal text to replace (including all whitespace, indentation, newlines, and surrounding code etc.).
+      2. \`new_string\` MUST be the exact literal text to replace \`old_string\` with (also including all whitespace, indentation, newlines, and surrounding code etc.). Ensure the resulting code is correct and idiomatic and that \`old_string\` and \`new_string\` are different.
+      3. \`instruction\` is the detailed instruction of what needs to be changed. It is important to Make it specific and detailed so developers or large language models can understand what needs to be changed and perform the changes on their own if necessary. 
+      4. NEVER escape \`old_string\` or \`new_string\`, that would break the exact literal text requirement.
+      **Important:** If ANY of the above are not satisfied, the tool will fail. CRITICAL for \`old_string\`: Must uniquely identify the instance(s) to change. Include at least 3 lines of context BEFORE and AFTER the target text, matching whitespace and indentation precisely. If this string matches multiple locations and \`allow_multiple\` is not true, the tool will fail.
+      5. Prefer to break down complex and long changes into multiple smaller atomic calls to this tool. Always check the content of the file after changes or not finding a string to match.
+      **Multiple replacements:** Set \`allow_multiple\` to true if you want to replace ALL occurrences that match \`old_string\` exactly.",
   "name": "replace",
   "parametersJsonSchema": {
     "properties": {
@@ -1378,6 +1557,109 @@ A good instruction should concisely answer:
       "instruction",
       "old_string",
       "new_string",
+    ],
+    "type": "object",
+  },
+}
+`;
+
+exports[`coreTools snapshots for specific models > Model: gemini-3-pro-preview > snapshot for tool: replace_hashline 1`] = `
+{
+  "description": "Surgically modifies files using precise line-based identifiers. This is the REQUIRED tool for all edits to existing files. This tool is preferred for surgical edits to existing files as it minimizes token usage, simplifies code reviews, and avoids accidental deletions. By default, the tool expects to find and replace exactly ONE occurrence of \`old_string\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. Always use the read_file tool to examine the file's current content before attempting a text replacement.
+The user has the ability to modify the \`new_string\` content. If modified, this will be stated in the response.
+
+Use the \`edits\` parameter with Hashline identifiers (obtained from \`read_file\`) for precise, atomic edits. This is the highly preferred method. String-based fallback parameters (\`old_string\`, \`new_string\`) are heavily discouraged.
+
+      **Hashline Guidance:**
+      1. **Operations**:
+         - \`replace\`: Replaces lines from \`pos\` to \`end\`. Both \`pos\` and \`end\` are REQUIRED. For a single line, set \`end\` to the same as \`pos\`.
+         - \`delete\`: Removes lines from \`pos\` to \`end\`. Both \`pos\` and \`end\` are REQUIRED. For a single line, set \`end\` to the same as \`pos\`. Do not provide \`lines\`.
+         - \`append\` / \`prepend\`: Inserts lines after or before the \`pos\` anchor.
+      2. **Deletion**: To delete lines, use the \`delete\` operation with \`pos\` and \`end\` anchors. Example: \`{ "op": "delete", "pos": "START#HS", "end": "END#HS" }\`.
+      3. **Batching**: In one \`edits\` array, batch all edits for one file. After any successful edit, re-read before editing that file again to prevent staleness.
+      4. **Safety & Delimiters**:
+         - When your replacement \`lines\` end with a closing delimiter (\`}\`, \`*/\`, \`)\`, \`]\`), verify \`end\` includes the original line carrying that delimiter. If \`end\` stops one line too early, the original delimiter survives and your content adds a second copy.
+         - **Self-check**: Compare the last line of \`lines\` with the line immediately after \`end\` in the file. If they match (e.g., both are \`}\`), extend \`end\` to include that line to avoid duplicate boundary lines.
+         - **Self-Healing**: If you receive a \`HASHLINE MISMATCH DETECTED\` error, use the provided recovery snippet with updated \`LINE#ID\` anchors to immediately retry the edit.",
+  "name": "replace",
+  "parametersJsonSchema": {
+    "properties": {
+      "allow_multiple": {
+        "description": "If true, the tool will replace all occurrences of \`old_string\`. If false (default), it will only succeed if exactly one occurrence is found.",
+        "type": "boolean",
+      },
+      "edits": {
+        "description": "Optional: Advanced line-based edits using Hashline identifiers (e.g., "42#WS"). If provided, the tool will prioritize these and skip string-based matching. Edits are applied as an atomic transaction.",
+        "items": {
+          "properties": {
+            "end": {
+              "description": "The Hashline ID of the end anchor line for range replacements or deletions. Required for 'replace' and 'delete' operations (set to same as 'pos' for single-line replacement/deletion).",
+              "type": "string",
+            },
+            "lines": {
+              "description": "The new content lines for this operation. Required for 'replace', 'append', and 'prepend'. Do not provide for 'delete'.",
+              "items": {
+                "type": "string",
+              },
+              "type": "array",
+            },
+            "op": {
+              "description": "The operation to perform: 'replace' (replaces lines from 'pos' to 'end'), 'delete' (removes lines from 'pos' to 'end'), 'append' (inserts lines after 'pos'), or 'prepend' (inserts lines before 'pos').",
+              "enum": [
+                "replace",
+                "delete",
+                "append",
+                "prepend",
+              ],
+              "type": "string",
+            },
+            "pos": {
+              "description": "The Hashline ID of the anchor line (e.g., "42#WS").",
+              "type": "string",
+            },
+          },
+          "required": [
+            "op",
+            "pos",
+          ],
+          "type": "object",
+        },
+        "type": "array",
+      },
+      "file_path": {
+        "description": "The path to the file to modify.",
+        "type": "string",
+      },
+      "instruction": {
+        "description": "A clear, semantic instruction for the code change, acting as a high-quality prompt for an expert LLM assistant. It must be self-contained and explain the goal of the change.
+
+A good instruction should concisely answer:
+1.  WHY is the change needed? (e.g., "To fix a bug where users can be null...")
+2.  WHERE should the change happen? (e.g., "...in the 'renderUserProfile' function...")
+3.  WHAT is the high-level change? (e.g., "...add a null check for the 'user' object...")
+4.  WHAT is the desired outcome? (e.g., "...so that it displays a loading spinner instead of crashing.")
+
+**GOOD Example:** "In the 'calculateTotal' function, correct the sales tax calculation by updating the 'taxRate' constant from 0.05 to 0.075 to reflect the new regional tax laws."
+
+**BAD Examples:**
+- "Change the text." (Too vague)
+- "Fix the bug." (Doesn't explain the bug or the fix)
+- "Replace the line with this new line." (Brittle, just repeats the other parameters)
+",
+        "type": "string",
+      },
+      "new_string": {
+        "description": "[Legacy Fallback]: The exact literal text to replace \`old_string\` with. Highly discouraged when Hashline is enabled.",
+        "type": "string",
+      },
+      "old_string": {
+        "description": "[Legacy Fallback]: The exact literal text to replace. Highly discouraged when Hashline is enabled.",
+        "type": "string",
+      },
+    },
+    "required": [
+      "file_path",
+      "instruction",
     ],
     "type": "object",
   },

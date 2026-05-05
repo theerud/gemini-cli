@@ -150,24 +150,25 @@ export function getReplaceDeclaration(
   enableHashline: boolean,
   descriptionOverride?: string,
 ): FunctionDeclaration {
+  const preferenceGuidance = `This tool is preferred for surgical edits to existing files as it minimizes token usage, simplifies code reviews, and avoids accidental deletions.`;
+
   const description =
     descriptionOverride ||
-    `Replaces text within a file. ${
-      enableHashline
-        ? `You MUST prefer using the \`${EDIT_PARAM_EDITS}\` parameter with Hashline identifiers for precise, atomic, and single-turn batched edits over the \`${EDIT_PARAM_OLD_STRING}\` fallback. `
-        : ''
-    }By default, the tool expects to find and replace exactly ONE occurrence of \`${EDIT_PARAM_OLD_STRING}\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. This tool requires providing significant context around the change to ensure precise targeting. Always use the ${READ_FILE_TOOL_NAME} tool to examine the file's current content before attempting a text replacement.
+    (enableHashline
+      ? `Surgically modifies files using precise line-based identifiers. This is the REQUIRED tool for all edits to existing files. ${preferenceGuidance} By default, the tool expects to find and replace exactly ONE occurrence of \`${EDIT_PARAM_OLD_STRING}\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. Always use the ${READ_FILE_TOOL_NAME} tool to examine the file's current content before attempting a text replacement.
+The user has the ability to modify the \`${EDIT_PARAM_NEW_STRING}\` content. If modified, this will be stated in the response.`
+      : `Replaces text within a file. ${preferenceGuidance} By default, the tool expects to find and replace exactly ONE occurrence of \`${EDIT_PARAM_OLD_STRING}\`. If you want to replace multiple occurrences of the exact same string, set \`allow_multiple\` to true. This tool requires providing significant context around the change to ensure precise targeting. Always use the ${READ_FILE_TOOL_NAME} tool to examine the file's current content before attempting a text replacement.
 
       The user has the ability to modify the \`${EDIT_PARAM_NEW_STRING}\` content. If modified, this will be stated in the response.
 
-      Expectation for string-based parameters (only required if NOT using the \`${EDIT_PARAM_EDITS}\` array):
+      Expectation for string-based parameters:
       1. \`${EDIT_PARAM_OLD_STRING}\` MUST be the exact literal text to replace (including all whitespace, indentation, newlines, and surrounding code etc.).
       2. \`${EDIT_PARAM_NEW_STRING}\` MUST be the exact literal text to replace \`${EDIT_PARAM_OLD_STRING}\` with (also including all whitespace, indentation, newlines, and surrounding code etc.). Ensure the resulting code is correct and idiomatic and that \`${EDIT_PARAM_OLD_STRING}\` and \`${EDIT_PARAM_NEW_STRING}\` are different.
       3. \`${EDIT_PARAM_INSTRUCTION}\` is the detailed instruction of what needs to be changed. It is important to Make it specific and detailed so developers or large language models can understand what needs to be changed and perform the changes on their own if necessary. 
       4. NEVER escape \`${EDIT_PARAM_OLD_STRING}\` or \`${EDIT_PARAM_NEW_STRING}\`, that would break the exact literal text requirement.
       **Important:** If ANY of the above are not satisfied, the tool will fail. CRITICAL for \`${EDIT_PARAM_OLD_STRING}\`: Must uniquely identify the instance(s) to change. Include at least 3 lines of context BEFORE and AFTER the target text, matching whitespace and indentation precisely. If this string matches multiple locations and \`${EDIT_PARAM_ALLOW_MULTIPLE}\` is not true, the tool will fail.
       5. Prefer to break down complex and long changes into multiple smaller atomic calls to this tool. Always check the content of the file after changes or not finding a string to match.
-      **Multiple replacements:** Set \`${EDIT_PARAM_ALLOW_MULTIPLE}\` to true if you want to replace ALL occurrences that match \`${EDIT_PARAM_OLD_STRING}\` exactly.`;
+      **Multiple replacements:** Set \`${EDIT_PARAM_ALLOW_MULTIPLE}\` to true if you want to replace ALL occurrences that match \`${EDIT_PARAM_OLD_STRING}\` exactly.`);
 
   const properties: Record<string, unknown> = {
     [PARAM_FILE_PATH]: {
@@ -193,13 +194,15 @@ A good instruction should concisely answer:
       type: 'string',
     },
     [EDIT_PARAM_OLD_STRING]: {
-      description:
-        'The exact literal text to replace, preferably unescaped. For single replacements (default), include at least 3 lines of context BEFORE and AFTER the target text, matching whitespace and indentation precisely. If this string is not the exact literal text (i.e. you escaped it) or does not match exactly, the tool will fail.',
+      description: enableHashline
+        ? '[Legacy Fallback]: The exact literal text to replace. Highly discouraged when Hashline is enabled.'
+        : 'The exact literal text to replace, preferably unescaped. For single replacements (default), include at least 3 lines of context BEFORE and AFTER the target text, matching whitespace and indentation precisely. If this string is not the exact literal text (i.e. you escaped it) or does not match exactly, the tool will fail.',
       type: 'string',
     },
     [EDIT_PARAM_NEW_STRING]: {
-      description:
-        "The exact literal text to replace `old_string` with, preferably unescaped. Provide the EXACT text. Ensure the resulting code is correct and idiomatic. Do not use omission placeholders like '(rest of methods ...)', '...', or 'unchanged code'; provide exact literal code.",
+      description: enableHashline
+        ? '[Legacy Fallback]: The exact literal text to replace `old_string` with. Highly discouraged when Hashline is enabled.'
+        : "The exact literal text to replace `old_string` with, preferably unescaped. Provide the EXACT text. Ensure the resulting code is correct and idiomatic. Do not use omission placeholders like '(rest of methods ...)', '...', or 'unchanged code'; provide exact literal code.",
       type: 'string',
     },
     [EDIT_PARAM_ALLOW_MULTIPLE]: {
@@ -253,7 +256,7 @@ A good instruction should concisely answer:
     name: EDIT_TOOL_NAME,
     description: enableHashline
       ? description +
-        `\n\nUse the \`${EDIT_PARAM_EDITS}\` parameter with Hashline identifiers (obtained from \`${READ_FILE_TOOL_NAME}\`) for precise, atomic edits.
+        `\n\nUse the \`${EDIT_PARAM_EDITS}\` parameter with Hashline identifiers (obtained from \`${READ_FILE_TOOL_NAME}\`) for precise, atomic edits. This is the highly preferred method. String-based fallback parameters (\`${EDIT_PARAM_OLD_STRING}\`, \`${EDIT_PARAM_NEW_STRING}\`) are heavily discouraged.
 
       **Hashline Guidance:**
       1. **Operations**:
