@@ -250,6 +250,11 @@ Use the following guidelines to optimize your search and read patterns.
       ? `To ensure surgical precision and avoid ambiguity errors, prioritize reading files with \`include_hashes: true\` so you can use the precise \`edits\` array in ${EDIT_TOOL_NAME}.`
       : `${EDIT_TOOL_NAME} fails if ${EDIT_PARAM_OLD_STRING} is ambiguous, causing extra turns. Take care to read enough with ${READ_FILE_TOOL_NAME} and ${GREP_TOOL_NAME} to make the edit unambiguous.`
   }
+- You can compensate for the risk of missing results with scoped or limited searches by doing multiple searches in parallel.
+- Your primary goal is still to do your best quality work. Efficiency is an important, but secondary concern.
+</guidelines>
+
+<examples>
 - **Searching:** utilize search tools like ${GREP_TOOL_NAME} and ${GLOB_TOOL_NAME} with a conservative result count (\`${GREP_PARAM_TOTAL_MAX_MATCHES}\`) and a narrow scope (\`${GREP_PARAM_INCLUDE_PATTERN}\` and \`${GREP_PARAM_EXCLUDE_PATTERN}\` parameters).
 - **Searching and editing:** utilize search tools like ${GREP_TOOL_NAME} with a conservative result count and a narrow scope. Use \`${GREP_PARAM_CONTEXT}\`, \`${GREP_PARAM_BEFORE}\`, and/or \`${GREP_PARAM_AFTER}\` to request enough context to avoid the need to read the file before editing matches.
 - **Understanding:** minimize turns needed to understand a file. It's most efficient to read small files in their entirety.
