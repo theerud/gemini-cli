@@ -224,7 +224,7 @@ A good instruction should concisely answer:
             type: 'string',
             enum: ['replace', 'delete', 'append', 'prepend'],
             description:
-              "The operation to perform: 'replace' (replaces lines from 'pos' to 'end'), 'delete' (removes lines from 'pos' to 'end'), 'append' (inserts lines after 'pos'), or 'prepend' (inserts lines before 'pos').",
+              "The operation to perform. 'replace' replaces lines from 'pos' to 'end'; 'delete' removes lines from 'pos' to 'end'; 'append' inserts lines after 'pos'; 'prepend' inserts lines before 'pos'.",
           },
           [EDIT_PARAM_POS]: {
             type: 'string',
@@ -239,7 +239,7 @@ A good instruction should concisely answer:
             type: 'array',
             items: { type: 'string' },
             description:
-              "The new content lines for this operation. Required for 'replace', 'append', and 'prepend'. Do not provide for 'delete'.",
+              "The new content lines for this operation. This array must contain only the exact literal code or text to be written. Do not include any tool-call formatting, operation labels, or JSON structure in these lines. Required for 'replace', 'append', and 'prepend'. Do not provide for 'delete'.",
           },
         },
         required: [EDIT_PARAM_OP, EDIT_PARAM_POS],
@@ -259,13 +259,12 @@ A good instruction should concisely answer:
         `\n\nUse the \`${EDIT_PARAM_EDITS}\` parameter with Hashline identifiers (obtained from \`${READ_FILE_TOOL_NAME}\`) for precise, atomic edits. This is the highly preferred method. String-based fallback parameters (\`${EDIT_PARAM_OLD_STRING}\`, \`${EDIT_PARAM_NEW_STRING}\`) are heavily discouraged.
 
       **Hashline Guidance:**
-      1. **Operations**:
-         - \`replace\`: Replaces lines from \`pos\` to \`end\`. Both \`pos\` and \`end\` are REQUIRED. For a single line, set \`end\` to the same as \`pos\`.
-         - \`delete\`: Removes lines from \`pos\` to \`end\`. Both \`pos\` and \`end\` are REQUIRED. For a single line, set \`end\` to the same as \`pos\`. Do not provide \`lines\`.
-         - \`append\` / \`prepend\`: Inserts lines after or before the \`pos\` anchor.
-      2. **Deletion**: To delete lines, use the \`delete\` operation with \`pos\` and \`end\` anchors. Example: \`{ "op": "delete", "pos": "START#HS", "end": "END#HS" }\`.
-      3. **Batching**: In one \`edits\` array, batch all edits for one file. After any successful edit, re-read before editing that file again to prevent staleness.
-      4. **Safety & Delimiters**:
+      1. **Operations**: Use 'replace', 'delete', 'append', or 'prepend'.
+         - Range edits ('replace', 'delete') REQUIRE both 'pos' and 'end' anchors. For a single line, set 'end' to the same as 'pos'.
+         - Single-point edits ('append', 'prepend') require only the 'pos' anchor.
+         - Do not provide a 'lines' array for 'delete'.
+      2. **Batching**: In one \`edits\` array, batch all edits for one file. After any successful edit, re-read before editing that file again to prevent staleness.
+      3. **Safety & Delimiters**:
          - When your replacement \`lines\` end with a closing delimiter (\`}\`, \`*/\`, \`)\`, \`]\`), verify \`end\` includes the original line carrying that delimiter. If \`end\` stops one line too early, the original delimiter survives and your content adds a second copy.
          - **Self-check**: Compare the last line of \`lines\` with the line immediately after \`end\` in the file. If they match (e.g., both are \`}\`), extend \`end\` to include that line to avoid duplicate boundary lines.
          - **Self-Healing**: If you receive a \`HASHLINE MISMATCH DETECTED\` error, use the provided recovery snippet with updated \`LINE#ID\` anchors to immediately retry the edit.`
