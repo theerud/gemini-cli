@@ -23,6 +23,7 @@ import {
   type ToolResultDisplay,
   type PolicyUpdateOptions,
   type ExecuteOptions,
+  type FileDiff,
 } from './tools.js';
 import { buildFilePathArgsPattern } from '../policy/utils.js';
 import type { MessageBus } from '../confirmation-bus/message-bus.js';
@@ -699,6 +700,12 @@ export function isEditToolParams(args: unknown): args is EditToolParams {
   );
 }
 
+function fileDiffToSummary(diff: FileDiff, editData: CalculatedEdit) {
+  return diff.diffStat
+    ? `${diff.diffStat.model_added_lines} added, ${diff.diffStat.model_removed_lines} removed`
+    : `${editData.occurrences} replacements`;
+}
+
 interface CalculatedEdit {
   currentContent: string | null;
   newContent: string;
@@ -1288,8 +1295,24 @@ ${snippet}`);
         llmContent = appendJitContext(llmContent, jitContext);
       }
 
+      const resultSummary =
+        typeof displayResult === 'string'
+          ? displayResult
+          : fileDiffToSummary(displayResult, editData);
+
       return {
         llmContent,
+        display: {
+          name: this._toolDisplayName,
+          description: this.getDescription(),
+          resultSummary,
+          result: {
+            type: 'diff',
+            path: this.resolvedPath,
+            beforeText: editData.currentContent ?? '',
+            afterText: editData.newContent,
+          },
+        },
         returnDisplay: displayResult,
       };
     } catch (error) {
