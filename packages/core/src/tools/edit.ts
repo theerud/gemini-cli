@@ -851,6 +851,7 @@ class EditToolInvocation
         ...params,
         old_string: fixedEdit.search,
         new_string: fixedEdit.replace,
+        edits: undefined,
       },
       currentContent: contentForLlmEditFixer,
       abortSignal,
