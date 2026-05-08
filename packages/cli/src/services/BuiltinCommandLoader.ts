@@ -186,7 +186,7 @@ export class BuiltinCommandLoader implements ICommandLoader {
             },
           ]
         : [mcpCommand]),
-      memoryCommand,
+      memoryCommand(this.config),
       modelCommand,
       ...(this.config?.getFolderTrust() ? [permissionsCommand] : []),
       ...(this.config?.isPlanEnabled() ? [planCommand] : []),
