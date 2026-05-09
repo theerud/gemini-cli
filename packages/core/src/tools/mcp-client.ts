@@ -2142,6 +2142,22 @@ function createUrlTransport(
     | StreamableHTTPClientTransportOptions
     | SSEClientTransportOptions,
 ): StreamableHTTPClientTransport | SSEClientTransport {
+  // Wrap fetch to treat GET 404 as 405 so servers that do not support the
+  // optional SSE GET stream (e.g. n8n native MCP) are handled gracefully.
+  // The SDK already silently ignores 405; 404 is semantically equivalent here.
+  const baseFetch =
+    (transportOptions as StreamableHTTPClientTransportOptions).fetch ??
+    globalThis.fetch;
+  const httpOptions: StreamableHTTPClientTransportOptions = {
+    ...transportOptions,
+    fetch: async (url, init) => {
+      const res = await baseFetch(url, init);
+      return init?.method === 'GET' && res.status === 404
+        ? new Response(null, { status: 405, statusText: 'Method Not Allowed' })
+        : res;
+    },
+  };
+
   // Priority 1: httpUrl (deprecated)
   if (mcpServerConfig.httpUrl) {
     if (mcpServerConfig.url) {
@@ -2152,7 +2168,7 @@ function createUrlTransport(
     }
     return new StreamableHTTPClientTransport(
       new URL(mcpServerConfig.httpUrl),
-      transportOptions,
+      httpOptions,
     );
   }
 
@@ -2161,7 +2177,7 @@ function createUrlTransport(
     if (mcpServerConfig.type === 'http') {
       return new StreamableHTTPClientTransport(
         new URL(mcpServerConfig.url),
-        transportOptions,
+        httpOptions,
       );
     } else if (mcpServerConfig.type === 'sse') {
       return new SSEClientTransport(
@@ -2175,7 +2191,7 @@ function createUrlTransport(
   if (mcpServerConfig.url) {
     return new StreamableHTTPClientTransport(
       new URL(mcpServerConfig.url),
-      transportOptions,
+      httpOptions,
     );
   }
 
