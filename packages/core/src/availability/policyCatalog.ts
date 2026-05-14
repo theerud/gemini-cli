@@ -137,8 +137,19 @@ export function createSingleModelChain(model: string): ModelPolicyChain {
   return [definePolicy({ model, isLastResort: true })];
 }
 
-export function getFlashLitePolicyChain(): ModelPolicyChain {
-  return cloneChain(FLASH_LITE_CHAIN);
+export function getFlashLitePolicyChain(
+  options?: ModelPolicyOptions,
+): ModelPolicyChain {
+  const chain = cloneChain(FLASH_LITE_CHAIN);
+  if (!options) return chain;
+
+  // Filter out the 3.1 Preview model if it's not enabled or the user lacks preview access
+  return chain.filter((policy) => {
+    if (policy.model === PREVIEW_GEMINI_3_1_FLASH_LITE_MODEL) {
+      return options.useGemini31FlashLite && options.previewEnabled;
+    }
+    return true;
+  });
 }
 
 /**

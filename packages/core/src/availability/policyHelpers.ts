@@ -134,7 +134,10 @@ export function resolvePolicyChain(
       resolvedModel === DEFAULT_GEMINI_FLASH_LITE_MODEL ||
       resolvedModel === PREVIEW_GEMINI_3_1_FLASH_LITE_MODEL
     ) {
-      chain = getFlashLitePolicyChain();
+      chain = getFlashLitePolicyChain({
+        useGemini31FlashLite,
+        previewEnabled: hasAccessToPreview,
+      });
     } else if (isOriginallyGemini3 || isAutoPreferred || isAutoConfigured) {
       const isAutoSelection = isAutoPreferred || isAutoConfigured;
       if (hasAccessToPreview) {
