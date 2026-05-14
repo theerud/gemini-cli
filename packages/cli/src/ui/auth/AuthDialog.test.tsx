@@ -219,11 +219,11 @@ describe('AuthDialog', () => {
 
   describe('handleAuthSelect', () => {
     it('calls onAuthError if validation fails', async () => {
-      mockedValidateAuthMethod.mockReturnValue('Invalid method');
+      mockedValidateAuthMethod.mockResolvedValue('Invalid method');
       const { unmount } = await renderWithProviders(<AuthDialog {...props} />);
       const { onSelect: handleAuthSelect } =
         mockedRadioButtonSelect.mock.calls[0][0];
-      handleAuthSelect(AuthType.USE_GEMINI);
+      await handleAuthSelect(AuthType.USE_GEMINI);
 
       expect(mockedValidateAuthMethod).toHaveBeenCalledWith(
         AuthType.USE_GEMINI,
@@ -235,7 +235,7 @@ describe('AuthDialog', () => {
     });
 
     it('sets auth context with requiresRestart: true for LOGIN_WITH_GOOGLE', async () => {
-      mockedValidateAuthMethod.mockReturnValue(null);
+      mockedValidateAuthMethod.mockResolvedValue(null);
       const { unmount } = await renderWithProviders(<AuthDialog {...props} />);
       const { onSelect: handleAuthSelect } =
         mockedRadioButtonSelect.mock.calls[0][0];
@@ -249,7 +249,7 @@ describe('AuthDialog', () => {
 
     it('sets auth context with requiresRestart: true for USE_VERTEX_AI in Cloud Shell', async () => {
       vi.stubEnv('CLOUD_SHELL', 'true');
-      mockedValidateAuthMethod.mockReturnValue(null);
+      mockedValidateAuthMethod.mockResolvedValue(null);
       const { unmount } = await renderWithProviders(<AuthDialog {...props} />);
       const { onSelect: handleAuthSelect } =
         mockedRadioButtonSelect.mock.calls[0][0];
@@ -263,7 +263,7 @@ describe('AuthDialog', () => {
 
     it('sets auth context with empty object for USE_VERTEX_AI outside Cloud Shell', async () => {
       vi.stubEnv('CLOUD_SHELL', '');
-      mockedValidateAuthMethod.mockReturnValue(null);
+      mockedValidateAuthMethod.mockResolvedValue(null);
       const { unmount } = await renderWithProviders(<AuthDialog {...props} />);
       const { onSelect: handleAuthSelect } =
         mockedRadioButtonSelect.mock.calls[0][0];
@@ -274,7 +274,7 @@ describe('AuthDialog', () => {
     });
 
     it('sets auth context with empty object for other auth types', async () => {
-      mockedValidateAuthMethod.mockReturnValue(null);
+      mockedValidateAuthMethod.mockResolvedValue(null);
       const { unmount } = await renderWithProviders(<AuthDialog {...props} />);
       const { onSelect: handleAuthSelect } =
         mockedRadioButtonSelect.mock.calls[0][0];
@@ -285,7 +285,7 @@ describe('AuthDialog', () => {
     });
 
     it('always shows API key dialog even when env var is present', async () => {
-      mockedValidateAuthMethod.mockReturnValue(null);
+      mockedValidateAuthMethod.mockResolvedValue(null);
       vi.stubEnv('GEMINI_API_KEY', 'test-key-from-env');
       // props.settings.merged.security.auth.selectedType is undefined here, simulating initial setup
 
@@ -301,7 +301,7 @@ describe('AuthDialog', () => {
     });
 
     it('always shows API key dialog even when env var is empty string', async () => {
-      mockedValidateAuthMethod.mockReturnValue(null);
+      mockedValidateAuthMethod.mockResolvedValue(null);
       vi.stubEnv('GEMINI_API_KEY', ''); // Empty string
       // props.settings.merged.security.auth.selectedType is undefined here
 
@@ -317,7 +317,7 @@ describe('AuthDialog', () => {
     });
 
     it('shows API key dialog on initial setup if no env var is present', async () => {
-      mockedValidateAuthMethod.mockReturnValue(null);
+      mockedValidateAuthMethod.mockResolvedValue(null);
       // process.env['GEMINI_API_KEY'] is not set
       // props.settings.merged.security.auth.selectedType is undefined here, simulating initial setup
 
@@ -333,7 +333,7 @@ describe('AuthDialog', () => {
     });
 
     it('always shows API key dialog on re-auth even if env var is present', async () => {
-      mockedValidateAuthMethod.mockReturnValue(null);
+      mockedValidateAuthMethod.mockResolvedValue(null);
       vi.stubEnv('GEMINI_API_KEY', 'test-key-from-env');
       // Simulate switching from a different auth method (e.g., Google Login → API key)
       props.settings.merged.security.auth.selectedType =
@@ -357,7 +357,7 @@ describe('AuthDialog', () => {
         .mockImplementation(() => undefined as never);
       const logSpy = vi.spyOn(debugLogger, 'log').mockImplementation(() => {});
       vi.mocked(props.config.isBrowserLaunchSuppressed).mockReturnValue(true);
-      mockedValidateAuthMethod.mockReturnValue(null);
+      mockedValidateAuthMethod.mockResolvedValue(null);
 
       const { unmount } = await renderWithProviders(<AuthDialog {...props} />);
       const { onSelect: handleAuthSelect } =

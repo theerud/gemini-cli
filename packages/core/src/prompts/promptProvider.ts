@@ -231,13 +231,10 @@ export class PromptProvider {
             interactiveShellEnabled: context.config.isInteractiveShellEnabled(),
             topicUpdateNarration: isTopicUpdateNarrationEnabled,
             hasHashline: context.config.getEnableHashline(),
-            memoryV2Enabled: context.config.isMemoryV2Enabled(),
-            userProjectMemoryPath: context.config.isMemoryV2Enabled()
-              ? getProjectMemoryIndexFilePath(context.config.storage)
-              : undefined,
-            globalMemoryPath: context.config.isMemoryV2Enabled()
-              ? getGlobalMemoryFilePath()
-              : undefined,
+            userProjectMemoryPath: normalizePromptPath(
+              getProjectMemoryIndexFilePath(context.config.storage),
+            ),
+            globalMemoryPath: normalizePromptPath(getGlobalMemoryFilePath()),
           }),
         ),
         sandbox: this.withSection('sandbox', () => ({
@@ -339,6 +336,10 @@ export class PromptProvider {
       fs.writeFileSync(writePath, basePrompt);
     }
   }
+}
+
+function normalizePromptPath(filePath: string): string {
+  return filePath.replaceAll('\\', '/');
 }
 
 // --- Internal Context Helpers ---

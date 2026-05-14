@@ -32,16 +32,17 @@ const createMockConfig = (overrides: Partial<Config> = {}): Config => {
     getModel: () => 'gemini-2.5-pro',
     getGemini31LaunchedSync: () => false,
     getGemini31FlashLiteLaunchedSync: () => false,
-    getHasAccessToPreviewModel: () => true,
-    getExperimentalDynamicModelConfiguration: () => true,
     getUseCustomToolModelSync: () => {
       const useGemini31 = config.getGemini31LaunchedSync();
       const authType = config.getContentGeneratorConfig().authType;
       return useGemini31 && authType === AuthType.USE_GEMINI;
     },
     getContentGeneratorConfig: () => ({ authType: undefined }),
-    modelConfigService: new ModelConfigService(DEFAULT_MODEL_CONFIGS),
+    getHasAccessToPreviewModel: () => true,
     getMaxAttemptsPerTurn: () => 3,
+    getExperimentalDynamicModelConfiguration: () => false,
+    getReleaseChannel: () => 'preview',
+    modelConfigService: new ModelConfigService(DEFAULT_MODEL_CONFIGS),
     ...overrides,
   } as unknown as Config;
   return config;
@@ -210,6 +211,7 @@ describe('policyHelpers', () => {
     const testCases = [
       { name: 'Default Auto', model: DEFAULT_GEMINI_MODEL_AUTO },
       { name: 'Gemini 3 Auto', model: 'auto-gemini-3' },
+      { name: 'Unified Auto', model: 'auto' },
       { name: 'Flash Lite', model: DEFAULT_GEMINI_FLASH_LITE_MODEL },
       {
         name: 'Gemini 3 Auto (3.1 Enabled)',
@@ -238,7 +240,18 @@ describe('policyHelpers', () => {
     ];
 
     testCases.forEach(
-      ({ name, model, useGemini31, hasAccess, authType, wrapsAround }) => {
+      ({
+        name,
+        model,
+        useGemini31,
+        hasAccess,
+        authType,
+        wrapsAround,
+        ...rest
+      }) => {
+        const releaseChannel = (rest as Record<string, unknown>)[
+          'releaseChannel'
+        ] as string | undefined;
         it(`achieves parity for: ${name}`, () => {
           const createBaseConfig = (dynamic: boolean) =>
             createMockConfig({
@@ -248,6 +261,7 @@ describe('policyHelpers', () => {
               getGemini31FlashLiteLaunchedSync: () => false,
               getHasAccessToPreviewModel: () => hasAccess ?? true,
               getContentGeneratorConfig: () => ({ authType }),
+              getReleaseChannel: () => releaseChannel ?? 'preview',
               modelConfigService: new ModelConfigService(DEFAULT_MODEL_CONFIGS),
             });
 
