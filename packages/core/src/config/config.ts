@@ -1853,7 +1853,6 @@ export class Config implements McpContext, AgentLoopContext {
     this.modelQuotas.clear();
     this.lastRetrievedQuota = undefined;
     this.lastQuotaFetchTime = 0;
-    this.hasAccessToPreviewModel = null;
 
     // Force an event emission to clear the UI display
     coreEvents.emitQuotaChanged(undefined, undefined, undefined);
