@@ -177,6 +177,7 @@ import { startupProfiler } from '../telemetry/startupProfiler.js';
 import type { AgentDefinition } from '../agents/types.js';
 import { fetchAdminControls } from '../code_assist/admin/admin_controls.js';
 import { isSubpath, resolveToRealPath } from '../utils/paths.js';
+import { validatePath } from '../utils/path-validator.js';
 import { InjectionService } from './injectionService.js';
 import { ExecutionLifecycleService } from '../services/executionLifecycleService.js';
 import { WORKSPACE_POLICY_TIER } from '../policy/config.js';
@@ -841,6 +842,7 @@ export class Config implements McpContext, AgentLoopContext {
   private ideMode: boolean;
 
   private _activeModel: string;
+  private fallbackOverrides = new Map<string, string>();
   private readonly maxSessionTurns: number;
   private readonly listSessions: boolean;
   private readonly deleteSession: string | undefined;
@@ -1581,6 +1583,8 @@ export class Config implements McpContext, AgentLoopContext {
 
     // Reset availability service when switching auth
     this.modelAvailabilityService.reset();
+    this.fallbackOverrides.clear();
+    this.modelConfigService.clearRuntimeOverrides();
 
     // Clear stale authType to ensure getGemini31LaunchedSync doesn't return stale results
     // during the transition.
@@ -1848,6 +1852,8 @@ export class Config implements McpContext, AgentLoopContext {
     this._sessionId = sessionId;
     this.storage.setSessionId(sessionId);
     this.trackerService = undefined;
+    this.fallbackOverrides.clear();
+    this.modelConfigService.clearRuntimeOverrides();
     this.approvedPlanPath = undefined;
     this.topicState.reset();
     this.skillManager.reset();
@@ -1943,12 +1949,38 @@ export class Config implements McpContext, AgentLoopContext {
     this.modelAvailabilityService.reset();
   }
 
-  activateFallbackMode(model: string): void {
-    this.setModel(model, true);
+  activateFallbackMode(model: string, failedModel?: string): void {
+    if (this.getActiveModel() !== model) {
+      this.setModel(model, true);
+    }
+    if (failedModel) {
+      // Chained fallback mitigation: If we already have overrides that point to the model
+      // that just failed, we need to update them to point to the new fallback model.
+      // e.g. A -> B, then B fails and we fallback to C. We must update A to point to C.
+      for (const [source, target] of this.fallbackOverrides.entries()) {
+        if (target === failedModel) {
+          this.fallbackOverrides.set(source, model);
+          this.modelConfigService.registerRuntimeModelOverride({
+            match: { model: source },
+            modelConfig: { model },
+          });
+        }
+      }
+
+      this.fallbackOverrides.set(failedModel, model);
+      this.modelConfigService.registerRuntimeModelOverride({
+        match: { model: failedModel },
+        modelConfig: { model },
+      });
+    }
     const authType = this.getContentGeneratorConfig()?.authType;
     if (authType) {
       logFlashFallback(this, new FlashFallbackEvent(authType));
     }
+  }
+
+  getFallbackOverride(model: string): string | undefined {
+    return this.fallbackOverrides.get(model);
   }
 
   getActiveModel(): string {
@@ -3323,6 +3355,11 @@ export class Config implements McpContext, AgentLoopContext {
     absolutePath: string,
     checkType: 'read' | 'write' = 'write',
   ): string | null {
+    const pathValidation = validatePath(absolutePath);
+    if (!pathValidation.isValid) {
+      return `Invalid path: ${pathValidation.error}`;
+    }
+
     if (checkType === 'write' && hasScopedAutoMemoryExtractionWriteAccess()) {
       const resolvedPath = resolveToRealPath(absolutePath);
       if (
