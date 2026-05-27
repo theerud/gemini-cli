@@ -107,6 +107,12 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
         model: 'gemini-2.5-flash-lite',
       },
     },
+    'gemini-3.1-flash-lite': {
+      extends: 'chat-base-3',
+      modelConfig: {
+        model: 'gemini-3.1-flash-lite',
+      },
+    },
     'gemma-4-31b-it': {
       extends: 'chat-base-3',
       modelConfig: {
@@ -264,7 +270,7 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
     },
     'chat-compression-3.1-flash-lite': {
       modelConfig: {
-        model: 'gemini-3.1-flash-lite-preview',
+        model: 'gemini-3.1-flash-lite',
       },
     },
     'chat-compression-2.5-pro': {
@@ -305,10 +311,10 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
   ],
   modelDefinitions: {
     // Concrete Models
-    'gemini-3.1-flash-lite-preview': {
+    'gemini-3.1-flash-lite': {
       tier: 'flash-lite',
       family: 'gemini-3',
-      isPreview: true,
+      isPreview: false,
       isVisible: true,
       features: { thinking: false, multimodalToolUse: true },
     },
@@ -492,18 +498,8 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
         },
       ],
     },
-    'gemini-3.1-flash-lite-preview': {
-      default: 'gemini-3.1-flash-lite-preview',
-      contexts: [
-        {
-          condition: { hasAccessToPreview: false },
-          target: 'gemini-2.5-flash-lite',
-        },
-        {
-          condition: { useGemini3_1FlashLite: false },
-          target: 'gemini-2.5-flash-lite',
-        },
-      ],
+    'gemini-3.1-flash-lite': {
+      default: 'gemini-3.1-flash-lite',
     },
     flash: {
       default: 'gemini-3-flash-preview',
@@ -515,28 +511,7 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
       ],
     },
     'flash-lite': {
-      default: 'gemini-3.1-flash-lite-preview',
-      contexts: [
-        {
-          condition: { hasAccessToPreview: false },
-          target: 'gemini-2.5-flash-lite',
-        },
-        {
-          condition: { useGemini3_1FlashLite: false },
-          target: 'gemini-2.5-flash-lite',
-        },
-        {
-          condition: {
-            requestedModels: [
-              'auto-gemini-2.5',
-              'gemini-2.5-pro',
-              'gemini-2.5-flash',
-              'gemini-2.5-flash-lite',
-            ],
-          },
-          target: 'gemini-2.5-flash-lite',
-        },
-      ],
+      default: 'gemini-3.1-flash-lite',
     },
     'auto-gemini-3': {
       default: 'gemini-3-pro-preview',
@@ -733,22 +708,7 @@ export const DEFAULT_MODEL_CONFIGS: ModelConfigServiceConfig = {
     ],
     lite: [
       {
-        model: 'gemini-3.1-flash-lite-preview',
-        actions: {
-          terminal: 'silent',
-          transient: 'silent',
-          not_found: 'silent',
-          unknown: 'silent',
-        },
-        stateTransitions: {
-          terminal: 'terminal',
-          transient: 'terminal',
-          not_found: 'terminal',
-          unknown: 'terminal',
-        },
-      },
-      {
-        model: 'gemini-2.5-flash-lite',
+        model: 'flash-lite',
         actions: {
           terminal: 'silent',
           transient: 'silent',

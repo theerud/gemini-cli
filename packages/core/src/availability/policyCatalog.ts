@@ -14,7 +14,6 @@ import {
   DEFAULT_GEMINI_FLASH_LITE_MODEL,
   DEFAULT_GEMINI_FLASH_MODEL,
   DEFAULT_GEMINI_MODEL,
-  PREVIEW_GEMINI_3_1_FLASH_LITE_MODEL,
   PREVIEW_GEMINI_FLASH_MODEL,
   PREVIEW_GEMINI_MODEL,
   resolveModel,
@@ -68,10 +67,6 @@ const AUTO_ROUTING_OVERRIDES = {
 
 const FLASH_LITE_CHAIN: ModelPolicyChain = [
   definePolicy({
-    model: PREVIEW_GEMINI_3_1_FLASH_LITE_MODEL,
-    actions: SILENT_ACTIONS,
-  }),
-  definePolicy({
     model: DEFAULT_GEMINI_FLASH_LITE_MODEL,
     actions: SILENT_ACTIONS,
   }),
@@ -98,7 +93,6 @@ export function getModelPolicyChain(
     const proModel = resolveModel(
       PREVIEW_GEMINI_MODEL,
       options.useGemini31,
-      options.useGemini31FlashLite,
       options.useCustomToolModel,
     );
     return [
@@ -137,19 +131,8 @@ export function createSingleModelChain(model: string): ModelPolicyChain {
   return [definePolicy({ model, isLastResort: true })];
 }
 
-export function getFlashLitePolicyChain(
-  options?: ModelPolicyOptions,
-): ModelPolicyChain {
-  const chain = cloneChain(FLASH_LITE_CHAIN);
-  if (!options) return chain;
-
-  // Filter out the 3.1 Preview model if it's not enabled or the user lacks preview access
-  return chain.filter((policy) => {
-    if (policy.model === PREVIEW_GEMINI_3_1_FLASH_LITE_MODEL) {
-      return options.useGemini31FlashLite && options.previewEnabled;
-    }
-    return true;
-  });
+export function getFlashLitePolicyChain(): ModelPolicyChain {
+  return cloneChain(FLASH_LITE_CHAIN);
 }
 
 /**

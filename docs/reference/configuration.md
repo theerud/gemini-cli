@@ -596,6 +596,12 @@ their corresponding top-level category object in your `settings.json` file.
           "model": "flash-lite"
         }
       },
+      "gemini-3.1-flash-lite": {
+        "extends": "chat-base-3",
+        "modelConfig": {
+          "model": "gemini-3.1-flash-lite"
+        }
+      },
       "gemma-4-31b-it": {
         "extends": "chat-base-3",
         "modelConfig": {
@@ -758,7 +764,7 @@ their corresponding top-level category object in your `settings.json` file.
       },
       "chat-compression-3.1-flash-lite": {
         "modelConfig": {
-          "model": "gemini-3.1-flash-lite-preview"
+          "model": "gemini-3.1-flash-lite"
         }
       },
       "chat-compression-2.5-pro": {
@@ -812,10 +818,10 @@ their corresponding top-level category object in your `settings.json` file.
 
     ```json
     {
-      "gemini-3.1-flash-lite-preview": {
+      "gemini-3.1-flash-lite": {
         "tier": "flash-lite",
         "family": "gemini-3",
-        "isPreview": true,
+        "isPreview": false,
         "isVisible": true,
         "features": {
           "thinking": false,
@@ -1092,16 +1098,8 @@ their corresponding top-level category object in your `settings.json` file.
           }
         ]
       },
-      "gemini-3.1-flash-lite-preview": {
-        "default": "gemini-3.1-flash-lite-preview",
-        "contexts": [
-          {
-            "condition": {
-              "useGemini3_1FlashLite": false
-            },
-            "target": "gemini-2.5-flash-lite"
-          }
-        ]
+      "gemini-3.1-flash-lite": {
+        "default": "gemini-3.1-flash-lite"
       },
       "flash": {
         "default": "gemini-3-flash-preview",
@@ -1115,15 +1113,7 @@ their corresponding top-level category object in your `settings.json` file.
         ]
       },
       "flash-lite": {
-        "default": "gemini-2.5-flash-lite",
-        "contexts": [
-          {
-            "condition": {
-              "useGemini3_1FlashLite": true
-            },
-            "target": "gemini-3.1-flash-lite-preview"
-          }
-        ]
+        "default": "gemini-3.1-flash-lite"
       },
       "auto-gemini-3": {
         "default": "gemini-3-pro-preview",
