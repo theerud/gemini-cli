@@ -76,6 +76,7 @@ export class PromptProvider {
       false,
       context.config.getHasAccessToPreviewModel?.() ?? true,
       context.config,
+      context.config.hasGemini35FlashGAAccess?.() ?? false,
     );
     const isModernModel = supportsModernFeatures(desiredModel);
     const activeSnippets = isModernModel ? snippets : legacySnippets;
@@ -302,6 +303,7 @@ export class PromptProvider {
       false,
       context.config.getHasAccessToPreviewModel?.() ?? true,
       context.config,
+      context.config.hasGemini35FlashGAAccess?.() ?? false,
     );
     const isModernModel = supportsModernFeatures(desiredModel);
     const activeSnippets = isModernModel ? snippets : legacySnippets;
