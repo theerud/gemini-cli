@@ -1423,6 +1423,7 @@ export async function discoverTools(
         error,
         mcpServerName,
       );
+      throw error;
     }
     return [];
   }
