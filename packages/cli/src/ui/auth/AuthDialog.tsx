@@ -85,7 +85,7 @@ export function AuthDialog({
     );
   }
 
-  let defaultAuthType = null;
+  let defaultAuthType: AuthType | null = null;
   const defaultAuthTypeEnv = process.env['GEMINI_DEFAULT_AUTH_TYPE'];
   if (
     defaultAuthTypeEnv &&
